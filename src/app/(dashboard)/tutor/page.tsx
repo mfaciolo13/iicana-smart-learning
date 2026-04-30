@@ -1,0 +1,95 @@
+import { createClient } from "@/lib/supabase/server";
+
+export default async function TutorDashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: tutor } = await supabase
+    .from("tutors")
+    .select("id")
+    .eq("profile_id", user?.id)
+    .single();
+
+  const { data: students } = tutor
+    ? await supabase
+        .from("students")
+        .select("id, status, profiles(full_name)")
+        .eq("tutor_id", tutor.id)
+    : { data: [] };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Panel del Tutor</h2>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <h3 className="text-base font-semibold text-gray-800 mb-4">
+          Mis alumnos a cargo
+        </h3>
+        {students && students.length > 0 ? (
+          <div className="space-y-3">
+            {students.map((s) => {
+              const profile = s.profiles as unknown as { full_name: string } | null;
+              return (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-gray-100"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">
+                      {profile?.full_name}
+                    </p>
+                    <p className="text-xs text-gray-400 capitalize">
+                      {s.status}
+                    </p>
+                  </div>
+                  <a
+                    href={`/tutor/student/${s.id}`}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Ver →
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">
+            No tenés alumnos asignados todavía.
+          </p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {[
+          {
+            label: "Asistencia",
+            href: "/tutor/attendance",
+            desc: "Consultá las asistencias",
+          },
+          { label: "Notas", href: "/tutor/grades", desc: "Ver calificaciones" },
+          {
+            label: "Pagos",
+            href: "/tutor/payments",
+            desc: "Estado de cuotas",
+          },
+          {
+            label: "Notificaciones",
+            href: "/tutor/notifications",
+            desc: "Mensajes del instituto",
+          },
+        ].map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className="bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-300 transition-colors"
+          >
+            <p className="text-sm font-semibold text-gray-800">{item.label}</p>
+            <p className="text-xs text-gray-400 mt-1">{item.desc}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
