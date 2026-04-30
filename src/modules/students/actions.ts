@@ -1,0 +1,104 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth/helpers";
+import {
+  createStudentSchema,
+  updateStudentSchema,
+} from "./schemas";
+import {
+  createStudent,
+  updateStudent,
+  deleteStudent,
+} from "./services/students.service";
+
+export async function createStudentAction(formData: FormData) {
+  await requireRole(["admin"]);
+
+  const raw = {
+    email: formData.get("email") as string,
+    fullName: formData.get("fullName") as string,
+    phone: (formData.get("phone") as string) || undefined,
+    dni: formData.get("dni") as string,
+    birthDate: formData.get("birthDate") as string,
+    level: (formData.get("level") as string) || undefined,
+    tutorId: (formData.get("tutorId") as string) || undefined,
+  };
+
+  const parsed = createStudentSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+
+  // Create Supabase auth user
+  const { data: authData, error: authError } =
+    await supabase.auth.admin.createUser({
+      email: parsed.data.email,
+      password: Math.random().toString(36).slice(-10), // temp password
+      email_confirm: true,
+      user_metadata: {
+        full_name: parsed.data.fullName,
+        role: "alumno",
+      },
+    });
+
+  if (authError || !authData.user) {
+    return { error: authError?.message ?? "Error creando usuario" };
+  }
+
+  // Create profile
+  await supabase.from("profiles").insert({
+    id: authData.user.id,
+    email: parsed.data.email,
+    full_name: parsed.data.fullName,
+    phone: parsed.data.phone ?? null,
+    role: "alumno",
+  });
+
+  // Create student record
+  await createStudent(authData.user.id, parsed.data);
+
+  revalidatePath("/admin/students");
+  redirect("/admin/students");
+}
+
+export async function updateStudentAction(formData: FormData) {
+  await requireRole(["admin"]);
+
+  const raw = {
+    id: formData.get("id") as string,
+    fullName: (formData.get("fullName") as string) || undefined,
+    phone: (formData.get("phone") as string) || undefined,
+    dni: (formData.get("dni") as string) || undefined,
+    birthDate: (formData.get("birthDate") as string) || undefined,
+    level: (formData.get("level") as string) || undefined,
+    status: (formData.get("status") as string) || undefined,
+    tutorId: (formData.get("tutorId") as string) || undefined,
+  };
+
+  const parsed = updateStudentSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  await updateStudent(parsed.data);
+
+  revalidatePath("/admin/students");
+  redirect(`/admin/students/${parsed.data.id}`);
+}
+
+export async function deleteStudentAction(formData: FormData) {
+  await requireRole(["admin"]);
+
+  const id = formData.get("id") as string;
+  if (!id) return { error: "ID requerido" };
+
+  await deleteStudent(id);
+
+  revalidatePath("/admin/students");
+  redirect("/admin/students");
+}

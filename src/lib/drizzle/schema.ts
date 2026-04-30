@@ -1,0 +1,300 @@
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  date,
+  integer,
+  numeric,
+  boolean,
+  pgEnum,
+} from "drizzle-orm/pg-core";
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+export const roleEnum = pgEnum("role", [
+  "admin",
+  "profesor",
+  "alumno",
+  "tutor",
+]);
+
+export const studentStatusEnum = pgEnum("student_status", [
+  "active",
+  "inactive",
+  "suspended",
+  "graduated",
+]);
+
+export const courseStatusEnum = pgEnum("course_status", [
+  "active",
+  "inactive",
+  "completed",
+]);
+
+export const enrollmentStatusEnum = pgEnum("enrollment_status", [
+  "active",
+  "completed",
+  "withdrawn",
+]);
+
+export const attendanceStatusEnum = pgEnum("attendance_status", [
+  "present",
+  "absent",
+  "late",
+]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending",
+  "paid",
+  "overdue",
+  "suspended",
+]);
+
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "cash",
+  "transfer",
+  "card",
+]);
+
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "absence",
+  "payment",
+  "grade",
+  "general",
+  "alert",
+]);
+
+export const complaintTypeEnum = pgEnum("complaint_type", [
+  "academic",
+  "administrative",
+  "infrastructure",
+  "teacher",
+]);
+
+export const complaintStatusEnum = pgEnum("complaint_status", [
+  "open",
+  "in_progress",
+  "resolved",
+  "closed",
+]);
+
+export const levelEnum = pgEnum("level", [
+  "beginner",
+  "elementary",
+  "pre_intermediate",
+  "intermediate",
+  "upper_intermediate",
+  "advanced",
+]);
+
+export const evaluationTypeEnum = pgEnum("evaluation_type", [
+  "parcial",
+  "final",
+  "oral",
+  "homework",
+  "quiz",
+]);
+
+// ─── Tables ───────────────────────────────────────────────────────────────────
+
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey(), // mirrors auth.users.id
+  email: text("email").notNull().unique(),
+  role: roleEnum("role").notNull(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone"),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const tutors = pgTable("tutors", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  dni: text("dni").notNull().unique(),
+  relationship: text("relationship").notNull(), // madre, padre, tutor legal, etc.
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const students = pgTable("students", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  dni: text("dni").notNull().unique(),
+  birthDate: date("birth_date").notNull(),
+  tutorId: uuid("tutor_id").references(() => tutors.id, {
+    onDelete: "set null",
+  }),
+  level: levelEnum("level"),
+  status: studentStatusEnum("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const teachers = pgTable("teachers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  dni: text("dni").notNull().unique(),
+  specialization: text("specialization"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const courses = pgTable("courses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  level: levelEnum("level").notNull(),
+  schedule: text("schedule").notNull(), // e.g. "Lun/Mié 18:00-19:30"
+  classroom: text("classroom"),
+  maxCapacity: integer("max_capacity").notNull().default(15),
+  teacherId: uuid("teacher_id").references(() => teachers.id, {
+    onDelete: "set null",
+  }),
+  status: courseStatusEnum("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const enrollments = pgTable("enrollments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => students.id, { onDelete: "cascade" }),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  enrolledAt: timestamp("enrolled_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  status: enrollmentStatusEnum("status").notNull().default("active"),
+});
+
+export const attendance = pgTable("attendance", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  enrollmentId: uuid("enrollment_id")
+    .notNull()
+    .references(() => enrollments.id, { onDelete: "cascade" }),
+  classDate: date("class_date").notNull(),
+  status: attendanceStatusEnum("status").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const grades = pgTable("grades", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  enrollmentId: uuid("enrollment_id")
+    .notNull()
+    .references(() => enrollments.id, { onDelete: "cascade" }),
+  evaluationType: evaluationTypeEnum("evaluation_type").notNull(),
+  score: numeric("score", { precision: 4, scale: 2 }).notNull(), // 1.00 – 10.00
+  evaluatedAt: timestamp("evaluated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  notes: text("notes"),
+});
+
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => students.id, { onDelete: "cascade" }),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  dueDate: date("due_date").notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  method: paymentMethodEnum("method"),
+  status: paymentStatusEnum("status").notNull().default("pending"),
+  receiptNumber: text("receipt_number").unique(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  type: notificationTypeEnum("type").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const complaints = pgTable("complaints", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  type: complaintTypeEnum("type").notNull(),
+  description: text("description").notNull(),
+  status: complaintStatusEnum("status").notNull().default("open"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type Profile = typeof profiles.$inferSelect;
+export type NewProfile = typeof profiles.$inferInsert;
+
+export type Student = typeof students.$inferSelect;
+export type NewStudent = typeof students.$inferInsert;
+
+export type Tutor = typeof tutors.$inferSelect;
+export type NewTutor = typeof tutors.$inferInsert;
+
+export type Teacher = typeof teachers.$inferSelect;
+export type NewTeacher = typeof teachers.$inferInsert;
+
+export type Course = typeof courses.$inferSelect;
+export type NewCourse = typeof courses.$inferInsert;
+
+export type Enrollment = typeof enrollments.$inferSelect;
+export type NewEnrollment = typeof enrollments.$inferInsert;
+
+export type Attendance = typeof attendance.$inferSelect;
+export type NewAttendance = typeof attendance.$inferInsert;
+
+export type Grade = typeof grades.$inferSelect;
+export type NewGrade = typeof grades.$inferInsert;
+
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;
+
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;
+
+export type Complaint = typeof complaints.$inferSelect;
+export type NewComplaint = typeof complaints.$inferInsert;

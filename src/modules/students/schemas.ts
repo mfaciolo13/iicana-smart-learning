@@ -1,0 +1,32 @@
+import { z } from "zod";
+
+export const createStudentSchema = z.object({
+  // Profile fields
+  email: z.string().email("Email inválido"),
+  fullName: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
+  phone: z.string().optional(),
+  // Student fields
+  dni: z.string().min(7, "DNI inválido").max(8, "DNI inválido"),
+  birthDate: z.string().min(1, "Fecha de nacimiento requerida"),
+  level: z
+    .enum([
+      "beginner",
+      "elementary",
+      "pre_intermediate",
+      "intermediate",
+      "upper_intermediate",
+      "advanced",
+    ])
+    .optional(),
+  tutorId: z.string().uuid().optional(),
+});
+
+export const updateStudentSchema = createStudentSchema.partial().extend({
+  id: z.string().uuid(),
+  status: z
+    .enum(["active", "inactive", "suspended", "graduated"])
+    .optional(),
+});
+
+export type CreateStudentInput = z.infer<typeof createStudentSchema>;
+export type UpdateStudentInput = z.infer<typeof updateStudentSchema>;
