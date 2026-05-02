@@ -215,6 +215,20 @@ src/
 - Escalabilidad: hasta 1000 alumnos y 50 docentes
 - Auditabilidad: logs de operaciones críticas por 12 meses
 
+## Regla obligatoria: diseño responsive
+
+**TODO el código que se escriba debe ser responsive por defecto.** El sistema debe funcionar correctamente en 320px–1920px. Aplicar siempre:
+
+- Grids: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` según contexto
+- Tablas: `overflow-x-auto` siempre, columnas secundarias con `hidden sm:table-cell` o `hidden md:table-cell`
+- Formularios: columna única en mobile, `sm:grid-cols-2` en desktop
+- Sidebar: colapsable en mobile (overlay drawer), visible fija en `lg:` en adelante
+- Topbar: visible en mobile con botón hamburguesa para abrir sidebar
+- Espaciado y padding: menores en mobile (`p-4 sm:p-6`), mayores en desktop
+- Tipografía: escalar con breakpoints cuando sea necesario
+- No usar anchos fijos sin fallback responsive
+- Probar mentalmente la vista en 375px (iPhone) antes de considerar una pantalla terminada
+
 ## Lo que hay que construir (en orden)
 
 1. Inicializar proyecto con `pnpm create next-app`

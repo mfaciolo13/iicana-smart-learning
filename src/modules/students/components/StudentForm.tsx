@@ -1,7 +1,11 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import type { StudentWithProfile } from "../types";
+import { Button, buttonVariants } from "@/components/ui/Button";
+import { Input, Field, Select } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
 
 const LEVELS = [
   { value: "beginner", label: "Principiante" },
@@ -32,146 +36,107 @@ export function StudentForm({
   submitLabel = "Guardar",
 }: StudentFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
-
   const isEditing = !!student;
 
   return (
     <form ref={formRef} action={action} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={student.id} />}
 
-      {/* Personal data */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-sm font-semibold text-gray-800 mb-4">
-          Datos personales
-        </h3>
+      <Card title="Datos personales" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Nombre completo *
-            </label>
-            <input
+          <Field label="Nombre completo" required id="fullName">
+            <Input
+              id="fullName"
               name="fullName"
               type="text"
               required
               defaultValue={student?.profile.fullName}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Juan Pérez"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              DNI *
-            </label>
-            <input
+          <Field label="DNI" required id="dni">
+            <Input
+              id="dni"
               name="dni"
               type="text"
               required
               minLength={7}
               maxLength={8}
               defaultValue={student?.dni}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="12345678"
             />
-          </div>
+          </Field>
 
           {!isEditing && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Email *
-              </label>
-              <input
+            <Field label="Email" required id="email">
+              <Input
+                id="email"
                 name="email"
                 type="email"
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoComplete="email"
+                placeholder="alumno@email.com"
               />
-            </div>
+            </Field>
           )}
 
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Teléfono
-            </label>
-            <input
+          <Field label="Teléfono" id="phone">
+            <Input
+              id="phone"
               name="phone"
               type="tel"
               defaultValue={student?.profile.phone ?? ""}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="+54 9 351 000 0000"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Fecha de nacimiento *
-            </label>
-            <input
+          <Field label="Fecha de nacimiento" required={!isEditing} id="birthDate">
+            <Input
+              id="birthDate"
               name="birthDate"
               type="date"
               required={!isEditing}
               defaultValue={student?.birthDate}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
+          </Field>
         </div>
-      </div>
+      </Card>
 
-      {/* Academic data */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-sm font-semibold text-gray-800 mb-4">
-          Datos académicos
-        </h3>
+      <Card title="Datos académicos" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Nivel
-            </label>
-            <select
-              name="level"
-              defaultValue={student?.level ?? ""}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
+          <Field label="Nivel" id="level">
+            <Select id="level" name="level" defaultValue={student?.level ?? ""}>
               <option value="">Sin asignar</option>
               {LEVELS.map((l) => (
                 <option key={l.value} value={l.value}>
                   {l.label}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </Field>
 
           {isEditing && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Estado
-              </label>
-              <select
-                name="status"
-                defaultValue={student?.status}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
+            <Field label="Estado" id="status">
+              <Select id="status" name="status" defaultValue={student?.status}>
                 {STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
                   </option>
                 ))}
-              </select>
-            </div>
+              </Select>
+            </Field>
           )}
         </div>
-      </div>
+      </Card>
 
       <div className="flex justify-end gap-3">
-        <a
-          href="/admin/students"
-          className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
+        <Link href="/admin/students" className={buttonVariants({ variant: "secondary" })}>
           Cancelar
-        </a>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
+        </Link>
+        <Button type="submit" variant="primary">
           {submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

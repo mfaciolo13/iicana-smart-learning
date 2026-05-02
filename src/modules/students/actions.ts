@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import {
   createStudentSchema,
@@ -32,13 +32,13 @@ export async function createStudentAction(formData: FormData) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
-  // Create Supabase auth user
+  // Create Supabase auth user (requires SUPABASE_SECRET_KEY)
   const { data: authData, error: authError } =
-    await supabase.auth.admin.createUser({
+    await adminSupabase.auth.admin.createUser({
       email: parsed.data.email,
-      password: Math.random().toString(36).slice(-10), // temp password
+      password: Math.random().toString(36).slice(-10),
       email_confirm: true,
       user_metadata: {
         full_name: parsed.data.fullName,
@@ -50,8 +50,8 @@ export async function createStudentAction(formData: FormData) {
     return { error: authError?.message ?? "Error creando usuario" };
   }
 
-  // Create profile
-  await supabase.from("profiles").insert({
+  // Create profile (via admin client, bypasses RLS)
+  await adminSupabase.from("profiles").insert({
     id: authData.user.id,
     email: parsed.data.email,
     full_name: parsed.data.fullName,

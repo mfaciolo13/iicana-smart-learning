@@ -1,0 +1,70 @@
+import Link from "next/link";
+import { Badge } from "@/components/ui/Badge";
+import type { AssessmentListItem, AssessmentStatus } from "../types";
+
+const STATUS_CONFIG: Record<AssessmentStatus, { label: string; variant: "info" | "success" | "neutral" | "warning" }> = {
+  draft: { label: "Borrador", variant: "warning" },
+  published: { label: "Publicado", variant: "success" },
+  archived: { label: "Archivado", variant: "neutral" },
+};
+
+interface AssessmentListProps {
+  assessments: AssessmentListItem[];
+}
+
+export function AssessmentList({ assessments }: AssessmentListProps) {
+  if (assessments.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+          <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.346A3.979 3.979 0 0114 16v1a2 2 0 01-2 2H10a2 2 0 01-2-2v-1c0-.728-.294-1.35-.764-1.814l-.347-.347z" />
+          </svg>
+        </div>
+        <p className="text-base font-semibold text-slate-700">Sin evaluaciones</p>
+        <p className="text-sm text-slate-400 mt-1">Generá la primera con IA.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm" role="table">
+        <thead>
+          <tr className="border-b-2 border-slate-200">
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Evaluación</th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">Curso</th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Preguntas</th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Intentos</th>
+            <th className="py-3" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {assessments.map((a) => {
+            const cfg = STATUS_CONFIG[a.status];
+            return (
+              <tr key={a.id} className="hover:bg-slate-50 transition-colors">
+                <td className="py-3 pr-4">
+                  <p className="font-medium text-slate-900 truncate max-w-[200px]">{a.topic}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{a.weekLabel}</p>
+                </td>
+                <td className="py-3 pr-4 text-slate-500 hidden sm:table-cell">{a.courseName}</td>
+                <td className="py-3 pr-4">
+                  <Badge variant={cfg.variant} dot={false}>{cfg.label}</Badge>
+                </td>
+                <td className="py-3 pr-4 text-slate-500 hidden md:table-cell">{a.questionCount}</td>
+                <td className="py-3 pr-4 text-slate-500 hidden md:table-cell">{a.attemptCount}</td>
+                <td className="py-3 text-right">
+                  <Link href={`/admin/assessments/${a.id}`} className="text-brand-700 hover:underline text-xs font-medium">
+                    Ver →
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

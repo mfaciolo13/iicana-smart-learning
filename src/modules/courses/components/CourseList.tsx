@@ -1,0 +1,108 @@
+import Link from "next/link";
+import type { CourseListItem } from "../types";
+import { Badge } from "@/components/ui/Badge";
+
+const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "info" }> = {
+  active: { label: "Activo", variant: "success" },
+  inactive: { label: "Inactivo", variant: "neutral" },
+  completed: { label: "Finalizado", variant: "info" },
+};
+
+const LEVEL_LABELS: Record<string, string> = {
+  beginner: "Principiante",
+  elementary: "Elemental",
+  pre_intermediate: "Pre-inter.",
+  intermediate: "Intermedio",
+  upper_intermediate: "Upper-inter.",
+  advanced: "Avanzado",
+};
+
+interface CourseListProps {
+  courses: CourseListItem[];
+}
+
+export function CourseList({ courses }: CourseListProps) {
+  if (courses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+          <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        </div>
+        <p className="text-base font-semibold text-slate-700">Aún no hay cursos cargados</p>
+        <p className="text-sm text-slate-400 mt-1">Empezá creando el primero.</p>
+        <Link
+          href="/admin/courses/new"
+          className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
+        >
+          + Nuevo curso
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm" role="table">
+        <thead>
+          <tr className="border-b-2 border-brand-700">
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
+              Curso
+            </th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">
+              Nivel
+            </th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">
+              Horario
+            </th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden lg:table-cell">
+              Docente
+            </th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
+              Cupo
+            </th>
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
+              Estado
+            </th>
+            <th className="py-3" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {courses.map((course) => {
+            const statusCfg = STATUS_CONFIG[course.status] ?? { label: course.status, variant: "neutral" as const };
+            const isFull = course.enrollmentCount >= course.maxCapacity;
+            return (
+              <tr key={course.id} className="hover:bg-brand-50 transition-colors">
+                <td className="py-3.5 pr-4 font-medium text-slate-900">{course.name}</td>
+                <td className="py-3.5 pr-4 hidden sm:table-cell">
+                  <Badge variant="info" dot={false}>{LEVEL_LABELS[course.level] ?? course.level}</Badge>
+                </td>
+                <td className="py-3.5 pr-4 text-slate-500 text-xs hidden md:table-cell">{course.schedule}</td>
+                <td className="py-3.5 pr-4 text-slate-500 hidden lg:table-cell">
+                  {course.teacherName ?? <span className="text-slate-400">Sin asignar</span>}
+                </td>
+                <td className="py-3.5 pr-4">
+                  <span className={`text-xs font-medium ${isFull ? "text-red-600" : "text-slate-600"}`}>
+                    {course.enrollmentCount}/{course.maxCapacity}
+                  </span>
+                </td>
+                <td className="py-3.5 pr-4">
+                  <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                </td>
+                <td className="py-3.5 text-right">
+                  <Link
+                    href={`/admin/courses/${course.id}`}
+                    className="text-brand-700 hover:underline text-xs font-medium"
+                  >
+                    Ver →
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

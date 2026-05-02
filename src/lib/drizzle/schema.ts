@@ -8,6 +8,7 @@ import {
   numeric,
   boolean,
   pgEnum,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -94,6 +95,12 @@ export const evaluationTypeEnum = pgEnum("evaluation_type", [
   "oral",
   "homework",
   "quiz",
+]);
+
+export const assessmentStatusEnum = pgEnum("assessment_status", [
+  "draft",
+  "published",
+  "archived",
 ]);
 
 // ─── Tables ───────────────────────────────────────────────────────────────────
@@ -264,6 +271,37 @@ export const complaints = pgTable("complaints", {
     .defaultNow(),
 });
 
+export const assessments = pgTable("assessments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  weekLabel: text("week_label").notNull(), // e.g. "Semana 3 — Mayo 2025"
+  topic: text("topic").notNull(),
+  status: assessmentStatusEnum("status").notNull().default("draft"),
+  questions: jsonb("questions").notNull().default([]),
+  // questions shape: { question, options: string[], correct: number, explanation }[]
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const assessmentAttempts = pgTable("assessment_attempts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  assessmentId: uuid("assessment_id")
+    .notNull()
+    .references(() => assessments.id, { onDelete: "cascade" }),
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  answers: jsonb("answers").notNull().default([]),
+  // answers shape: number[] — index of chosen option per question
+  score: integer("score").notNull().default(0), // 0–100
+  completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Profile = typeof profiles.$inferSelect;
@@ -298,3 +336,9 @@ export type NewNotification = typeof notifications.$inferInsert;
 
 export type Complaint = typeof complaints.$inferSelect;
 export type NewComplaint = typeof complaints.$inferInsert;
+
+export type Assessment = typeof assessments.$inferSelect;
+export type NewAssessment = typeof assessments.$inferInsert;
+
+export type AssessmentAttempt = typeof assessmentAttempts.$inferSelect;
+export type NewAssessmentAttempt = typeof assessmentAttempts.$inferInsert;

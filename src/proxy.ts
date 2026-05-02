@@ -1,26 +1,21 @@
-import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
 
-const ROLE_ROUTES: Record<string, string[]> = {
-  "/admin": ["admin"],
-  "/profesor": ["profesor"],
-  "/alumno": ["alumno"],
-  "/tutor": ["tutor"],
-};
+const PROTECTED_PREFIXES = ["/admin", "/profesor", "/alumno", "/tutor"];
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
+          cookiesToSet.forEach(({ name, value, options }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({ request });
@@ -32,54 +27,19 @@ export async function proxy(request: NextRequest) {
     }
   );
 
+  // getUser() validates the session and refreshes the access token if needed.
+  // It also clears stale/invalid tokens from the response cookies automatically.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-
-  // Redirect unauthenticated users away from protected routes
-  const isProtectedRoute = Object.keys(ROLE_ROUTES).some((prefix) =>
-    pathname.startsWith(prefix)
+  const isProtectedRoute = PROTECTED_PREFIXES.some((p) =>
+    pathname.startsWith(p)
   );
 
   if (isProtectedRoute && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Enforce role-based access
-  if (user && isProtectedRoute) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const role = profile?.role as string | undefined;
-
-    const matchedPrefix = Object.keys(ROLE_ROUTES).find((prefix) =>
-      pathname.startsWith(prefix)
-    );
-
-    if (matchedPrefix && role) {
-      const allowed = ROLE_ROUTES[matchedPrefix];
-      if (!allowed.includes(role)) {
-        // Redirect to the user's own dashboard
-        return NextResponse.redirect(new URL(`/${role}`, request.url));
-      }
-    }
-  }
-
-  // Redirect authenticated users away from auth pages
-  if (user && (pathname === "/login" || pathname === "/register")) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const role = profile?.role ?? "alumno";
-    return NextResponse.redirect(new URL(`/${role}`, request.url));
   }
 
   return supabaseResponse;

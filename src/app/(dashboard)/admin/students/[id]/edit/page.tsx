@@ -16,10 +16,10 @@ export default async function EditStudentPage({
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-slate-900">
           Editar alumno
         </h2>
-        <p className="text-sm text-gray-400 mt-0.5">
+        <p className="text-sm text-slate-400 mt-0.5">
           {student.profile.fullName}
         </p>
       </div>

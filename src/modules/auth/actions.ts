@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { loginSchema, registerSchema } from "./schemas";
 
-export async function loginAction(formData: FormData) {
+export async function loginAction(_prev: unknown, formData: FormData) {
   const raw = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
@@ -16,29 +16,50 @@ export async function loginAction(formData: FormData) {
   }
 
   const supabase = await createClient();
+
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) {
+    if (error.message.toLowerCase().includes("email not confirmed")) {
+      return { needsConfirmation: true };
+    }
     return { error: "Credenciales inválidas. Verificá tu email y contraseña." };
   }
 
-  // Get role to redirect to correct dashboard
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const role = profile?.role ?? "alumno";
-    redirect(`/${role}`);
+  if (!user) {
+    return { error: "No se pudo obtener la sesión." };
   }
 
-  redirect("/login");
+  let { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  // Profile missing — auto-create from auth metadata
+  if (!profile) {
+    const meta = user.user_metadata ?? {};
+    const { data: created } = await supabase
+      .from("profiles")
+      .insert({
+        id: user.id,
+        email: user.email!,
+        full_name: (meta.full_name as string) ?? "",
+        role: (meta.role as string) ?? "alumno",
+      })
+      .select("role")
+      .single();
+    profile = created;
+  }
+
+  // redirect() throws internally — Next.js includes Set-Cookie headers from
+  // the supabase session in the redirect response, so cookies are committed
+  // before the browser navigates.
+  redirect(`/${profile?.role ?? "alumno"}`);
 }
 
 export async function registerAction(formData: FormData) {
@@ -73,7 +94,6 @@ export async function registerAction(formData: FormData) {
   }
 
   if (data.user) {
-    // Insert profile row
     await supabase.from("profiles").insert({
       id: data.user.id,
       email: parsed.data.email,

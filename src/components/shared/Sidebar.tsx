@@ -4,113 +4,193 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/modules/auth/actions";
 import type { UserRole } from "@/modules/auth/types";
+import { cn } from "@/lib/cn";
+import {
+  LayoutDashboard,
+  GraduationCap,
+  UserCheck,
+  BookOpen,
+  ClipboardList,
+  CalendarCheck,
+  Star,
+  CreditCard,
+  MessageSquare,
+  AlertCircle,
+  BarChart2,
+  Home,
+  Award,
+  Users,
+  PenLine,
+  LogOut,
+  X,
+  ShieldCheck,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 
 interface NavItem {
   label: string;
   href: string;
+  icon: LucideIcon;
 }
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   admin: [
-    { label: "Dashboard", href: "/admin" },
-    { label: "Alumnos", href: "/admin/students" },
-    { label: "Docentes", href: "/admin/teachers" },
-    { label: "Cursos", href: "/admin/courses" },
-    { label: "Inscripciones", href: "/admin/enrollments" },
-    { label: "Asistencia", href: "/admin/attendance" },
-    { label: "Notas", href: "/admin/grades" },
-    { label: "Pagos", href: "/admin/payments" },
-    { label: "Notificaciones", href: "/admin/notifications" },
-    { label: "Reclamos", href: "/admin/complaints" },
-    { label: "Reportes", href: "/admin/reports" },
-    { label: "Usuarios", href: "/admin/users" },
+    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { label: "Alumnos", href: "/admin/students", icon: GraduationCap },
+    { label: "Docentes", href: "/admin/teachers", icon: UserCheck },
+    { label: "Cursos", href: "/admin/courses", icon: BookOpen },
+    { label: "Inscripciones", href: "/admin/enrollments", icon: ClipboardList },
+    { label: "Asistencia", href: "/admin/attendance", icon: CalendarCheck },
+    { label: "Notas", href: "/admin/grades", icon: Star },
+    { label: "Pagos", href: "/admin/payments", icon: CreditCard },
+    { label: "Comunicaciones", href: "/admin/notifications", icon: MessageSquare },
+    { label: "Reclamos", href: "/admin/complaints", icon: AlertCircle },
+    { label: "Reportes", href: "/admin/reports", icon: BarChart2 },
+    { label: "Usuarios", href: "/admin/users", icon: ShieldCheck },
+    { label: "Autoevaluaciones IA", href: "/admin/assessments", icon: Sparkles },
   ],
   profesor: [
-    { label: "Dashboard", href: "/profesor" },
-    { label: "Mis Cursos", href: "/profesor/courses" },
-    { label: "Asistencia", href: "/profesor/attendance" },
-    { label: "Notas", href: "/profesor/grades" },
-    { label: "Notificaciones", href: "/profesor/notifications" },
+    { label: "Mis Cursos", href: "/profesor", icon: BookOpen },
+    { label: "Asistencia", href: "/profesor/attendance", icon: CalendarCheck },
+    { label: "Cargar Notas", href: "/profesor/grades", icon: PenLine },
+    { label: "Mensajes", href: "/profesor/notifications", icon: MessageSquare },
+    { label: "Mi Perfil", href: "/profesor/profile", icon: UserCheck },
   ],
   alumno: [
-    { label: "Dashboard", href: "/alumno" },
-    { label: "Mi Curso", href: "/alumno/course" },
-    { label: "Asistencia", href: "/alumno/attendance" },
-    { label: "Notas", href: "/alumno/grades" },
-    { label: "Pagos", href: "/alumno/payments" },
-    { label: "Notificaciones", href: "/alumno/notifications" },
-    { label: "Reclamos", href: "/alumno/complaints" },
+    { label: "Inicio", href: "/alumno", icon: Home },
+    { label: "Mis Notas", href: "/alumno/grades", icon: Award },
+    { label: "Asistencia", href: "/alumno/attendance", icon: CalendarCheck },
+    { label: "Autoevaluaciones", href: "/alumno/assessments", icon: Sparkles },
+    { label: "Pagos", href: "/alumno/payments", icon: CreditCard },
+    { label: "Mensajes", href: "/alumno/notifications", icon: MessageSquare },
   ],
   tutor: [
-    { label: "Dashboard", href: "/tutor" },
-    { label: "Mi Alumno", href: "/tutor/student" },
-    { label: "Asistencia", href: "/tutor/attendance" },
-    { label: "Notas", href: "/tutor/grades" },
-    { label: "Pagos", href: "/tutor/payments" },
-    { label: "Notificaciones", href: "/tutor/notifications" },
+    { label: "Inicio", href: "/tutor", icon: Home },
+    { label: "Mis Hijos/as", href: "/tutor/student", icon: Users },
+    { label: "Pagos", href: "/tutor/payments", icon: CreditCard },
+    { label: "Mensajes", href: "/tutor/notifications", icon: MessageSquare },
   ],
 };
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  admin: "Administrador",
+  profesor: "Docente",
+  alumno: "Alumno",
+  tutor: "Tutor",
+};
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+}
 
 interface SidebarProps {
   role: UserRole;
   fullName: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ role, fullName }: SidebarProps) {
+export function Sidebar({ role, fullName, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const items = NAV_ITEMS[role];
 
-  const roleLabel: Record<UserRole, string> = {
-    admin: "Administrador",
-    profesor: "Docente",
-    alumno: "Alumno",
-    tutor: "Tutor",
-  };
-
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-white border-r border-gray-200">
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-gray-100">
-        <h1 className="text-lg font-bold text-blue-700">IICANA</h1>
-        <p className="text-xs text-gray-400 mt-0.5">Smart Learning</p>
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-50 flex flex-col w-64 min-h-screen shrink-0 border-r border-white/5 transition-transform duration-200 ease-in-out",
+        "lg:relative lg:translate-x-0 lg:z-auto",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}
+      style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%)" }}
+      aria-label="Menú principal"
+    >
+      {/* Logo + close button */}
+      <div className="px-6 pt-6 pb-5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black shrink-0"
+            style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
+          >
+            I
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white leading-none">IICANA</p>
+            <p className="text-[10px] text-white/40 mt-0.5 leading-none">Smart Learning</p>
+          </div>
+        </div>
+        {/* Close button — only visible on mobile */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="lg:hidden p-1 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+          aria-label="Cerrar menú"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 pb-3 space-y-0.5 overflow-y-auto" aria-label="Navegación principal">
         {items.map((item) => {
           const isActive =
             item.href === `/${role}`
               ? pathname === item.href
               : pathname.startsWith(item.href);
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+              onClick={onClose}
+              className={cn(
+                "group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150",
                 isActive
-                  ? "bg-blue-50 text-blue-700 font-medium"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              }`}
+                  ? "bg-white/10 text-white font-medium"
+                  : "text-white/50 hover:bg-white/5 hover:text-white/90"
+              )}
             >
-              {item.label}
+              <Icon
+                className={cn(
+                  "w-4 h-4 shrink-0 transition-colors",
+                  isActive ? "text-blue-400" : "text-white/40 group-hover:text-white/70"
+                )}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
+              <span className="truncate">{item.label}</span>
+              {isActive && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+              )}
             </Link>
           );
         })}
       </nav>
 
       {/* User footer */}
-      <div className="px-4 py-4 border-t border-gray-100">
-        <div className="mb-3">
-          <p className="text-sm font-medium text-gray-800 truncate">
-            {fullName}
-          </p>
-          <p className="text-xs text-gray-400">{roleLabel[role]}</p>
+      <div className="px-3 pb-4 pt-2 border-t border-white/5">
+        <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-white/5 mb-1">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+          >
+            {getInitials(fullName)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-white truncate">{fullName}</p>
+            <p className="text-[10px] text-white/40 truncate">{ROLE_LABELS[role]}</p>
+          </div>
         </div>
         <form action={logoutAction}>
           <button
             type="submit"
-            className="w-full text-left text-sm text-red-500 hover:text-red-700 transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-white/40 hover:bg-red-500/10 hover:text-red-400 transition-colors"
           >
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
             Cerrar sesión
           </button>
         </form>
