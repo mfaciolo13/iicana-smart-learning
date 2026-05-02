@@ -13,7 +13,7 @@ interface AttendanceTakerProps {
   enrollments: EnrollmentListItem[];
   courseId: string;
   classDate: string;
-  action: (formData: FormData) => Promise<unknown>;
+  action: (formData: FormData) => Promise<void>;
 }
 
 export function AttendanceTaker({ enrollments, courseId, classDate, action }: AttendanceTakerProps) {
