@@ -12,7 +12,7 @@ import {
   sendToCourse,
 } from "./services/notifications.service";
 
-export async function sendNotificationAction(formData: FormData) {
+export async function sendNotificationAction(formData: FormData): Promise<void> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -23,9 +23,7 @@ export async function sendNotificationAction(formData: FormData) {
   };
 
   const parsed = sendNotificationSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return;
 
   const { targetId, type, title, body } = parsed.data;
   const payload = { type: type as never, title, body };
@@ -52,7 +50,7 @@ export async function markAsReadAction(formData: FormData) {
   const id = formData.get("id") as string;
   if (!id) return;
 
-  await markAsRead(id);
+  await markAsRead(id, user.id);
   revalidatePath("/admin/notifications");
   revalidatePath("/alumno/notifications");
   revalidatePath("/tutor/notifications");

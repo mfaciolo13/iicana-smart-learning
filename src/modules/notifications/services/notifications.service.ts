@@ -58,11 +58,11 @@ export async function getUnreadCount(userId: string): Promise<number> {
   return row?.count ?? 0;
 }
 
-export async function markAsRead(id: string) {
+export async function markAsRead(id: string, userId: string) {
   await db
     .update(notifications)
     .set({ read: true })
-    .where(eq(notifications.id, id));
+    .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
 }
 
 export async function markAllAsRead(userId: string) {
