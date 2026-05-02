@@ -6,7 +6,7 @@ import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { createComplaintSchema, updateComplaintStatusSchema } from "./schemas";
 import { createComplaint, updateComplaintStatus } from "./services/complaints.service";
 
-export async function createComplaintAction(formData: FormData) {
+export async function createComplaintAction(formData: FormData): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
@@ -16,11 +16,9 @@ export async function createComplaintAction(formData: FormData) {
   };
 
   const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return;
 
-  const complaint = await createComplaint(user.id, parsed.data);
+  await createComplaint(user.id, parsed.data);
 
   revalidatePath("/alumno/complaints");
   revalidatePath("/tutor/complaints");
@@ -29,7 +27,7 @@ export async function createComplaintAction(formData: FormData) {
   redirect(`/alumno/complaints`);
 }
 
-export async function createComplaintAsTutorAction(formData: FormData) {
+export async function createComplaintAsTutorAction(formData: FormData): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
@@ -39,9 +37,7 @@ export async function createComplaintAsTutorAction(formData: FormData) {
   };
 
   const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return;
 
   await createComplaint(user.id, parsed.data);
 
@@ -50,7 +46,7 @@ export async function createComplaintAsTutorAction(formData: FormData) {
   redirect("/tutor/complaints");
 }
 
-export async function createComplaintAsProfesorAction(formData: FormData) {
+export async function createComplaintAsProfesorAction(formData: FormData): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
@@ -60,9 +56,7 @@ export async function createComplaintAsProfesorAction(formData: FormData) {
   };
 
   const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return;
 
   await createComplaint(user.id, parsed.data);
 
@@ -71,7 +65,7 @@ export async function createComplaintAsProfesorAction(formData: FormData) {
   redirect("/profesor/complaints");
 }
 
-export async function updateComplaintStatusAction(formData: FormData) {
+export async function updateComplaintStatusAction(formData: FormData): Promise<void> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -80,9 +74,7 @@ export async function updateComplaintStatusAction(formData: FormData) {
   };
 
   const parsed = updateComplaintStatusSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return;
 
   await updateComplaintStatus(parsed.data.id, parsed.data.status);
 

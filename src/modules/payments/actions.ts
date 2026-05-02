@@ -11,7 +11,7 @@ import {
   markOverduePayments,
 } from "./services/payments.service";
 
-export async function createPaymentAction(formData: FormData) {
+export async function createPaymentAction(formData: FormData): Promise<void> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -22,9 +22,7 @@ export async function createPaymentAction(formData: FormData) {
   };
 
   const parsed = createPaymentSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return;
 
   const payment = await createPayment(parsed.data);
 
@@ -32,7 +30,7 @@ export async function createPaymentAction(formData: FormData) {
   redirect(`/admin/payments/${payment.id}`);
 }
 
-export async function markAsPaidAction(formData: FormData) {
+export async function markAsPaidAction(formData: FormData): Promise<void> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -42,9 +40,7 @@ export async function markAsPaidAction(formData: FormData) {
   };
 
   const parsed = markAsPaidSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return;
 
   await markAsPaid(parsed.data);
 
@@ -52,7 +48,7 @@ export async function markAsPaidAction(formData: FormData) {
   redirect(`/admin/payments/${parsed.data.id}`);
 }
 
-export async function updatePaymentStatusAction(formData: FormData) {
+export async function updatePaymentStatusAction(formData: FormData): Promise<void> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -61,9 +57,7 @@ export async function updatePaymentStatusAction(formData: FormData) {
   };
 
   const parsed = updatePaymentStatusSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return;
 
   await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
 
@@ -71,9 +65,8 @@ export async function updatePaymentStatusAction(formData: FormData) {
   redirect(`/admin/payments/${parsed.data.id}`);
 }
 
-export async function markOverduePaymentsAction() {
+export async function markOverduePaymentsAction(): Promise<void> {
   await requireRole(["admin"]);
-  const count = await markOverduePayments();
+  await markOverduePayments();
   revalidatePath("/admin/payments");
-  return { count };
 }

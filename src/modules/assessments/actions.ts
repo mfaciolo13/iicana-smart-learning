@@ -21,10 +21,10 @@ import type { QuizQuestion } from "./types";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-export async function generateAssessmentAction(formData: FormData) {
+export async function generateAssessmentAction(formData: FormData): Promise<void> {
   await requireRole(["admin"]);
   const user = await getCurrentUser();
-  if (!user) return { error: "Sin sesión" };
+  if (!user) return;
 
   const raw = {
     courseId: formData.get("courseId") as string,
@@ -33,7 +33,7 @@ export async function generateAssessmentAction(formData: FormData) {
   };
 
   const parsed = generateAssessmentSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) return;
 
   const prompt = `Sos un profesor experto de inglés en Argentina.
 Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
@@ -69,14 +69,12 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return { error: "La IA no devolvió preguntas válidas. Intentá de nuevo." };
+    if (!jsonMatch) return;
 
     questions = JSON.parse(jsonMatch[0]) as QuizQuestion[];
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return { error: "No se pudieron procesar las preguntas generadas." };
-    }
+    if (!Array.isArray(questions) || questions.length === 0) return;
   } catch {
-    return { error: "Error al contactar la IA. Verificá tu clave API e intentá de nuevo." };
+    return;
   }
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
@@ -85,11 +83,11 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
   redirect(`/admin/assessments/${assessment.id}`);
 }
 
-export async function publishAssessmentAction(formData: FormData) {
+export async function publishAssessmentAction(formData: FormData): Promise<void> {
   await requireRole(["admin"]);
 
   const parsed = publishAssessmentSchema.safeParse({ id: formData.get("id") });
-  if (!parsed.success) return { error: "ID inválido" };
+  if (!parsed.success) return;
 
   await publishAssessment(parsed.data.id);
 
@@ -98,11 +96,11 @@ export async function publishAssessmentAction(formData: FormData) {
   redirect(`/admin/assessments/${parsed.data.id}`);
 }
 
-export async function archiveAssessmentAction(formData: FormData) {
+export async function archiveAssessmentAction(formData: FormData): Promise<void> {
   await requireRole(["admin"]);
 
   const id = formData.get("id") as string;
-  if (!id) return { error: "ID requerido" };
+  if (!id) return;
 
   await archiveAssessment(id);
 
@@ -111,27 +109,27 @@ export async function archiveAssessmentAction(formData: FormData) {
   redirect(`/admin/assessments/${id}`);
 }
 
-export async function submitAttemptAction(formData: FormData) {
+export async function submitAttemptAction(formData: FormData): Promise<void> {
   await requireRole(["alumno"]);
   const user = await getCurrentUser();
-  if (!user) return { error: "Sin sesión" };
+  if (!user) return;
 
   const answersRaw = formData.get("answers") as string;
   let answers: number[];
   try {
     answers = JSON.parse(answersRaw);
   } catch {
-    return { error: "Respuestas inválidas" };
+    return;
   }
 
   const parsed = submitAttemptSchema.safeParse({
     assessmentId: formData.get("assessmentId"),
     answers,
   });
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) return;
 
   const detail = await getAssessmentDetail(parsed.data.assessmentId);
-  if (!detail || detail.status !== "published") return { error: "Evaluación no disponible" };
+  if (!detail || detail.status !== "published") return;
 
   await submitAttempt(parsed.data, user.id, detail.questions);
 
