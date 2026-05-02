@@ -76,6 +76,15 @@ export async function registerAction(formData: FormData) {
     return { error: parsed.error.issues[0].message };
   }
 
+  // Self-registration is only allowed for non-privileged roles.
+  // Admins create other admins/teachers via the Users panel.
+  const allowedSelfRegisterRoles = ["alumno", "tutor"] as const;
+  type AllowedRole = (typeof allowedSelfRegisterRoles)[number];
+  if (!(allowedSelfRegisterRoles as readonly string[]).includes(parsed.data.role)) {
+    return { error: "Rol no permitido para el registro público." };
+  }
+  const safeRole: AllowedRole = parsed.data.role as AllowedRole;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signUp({
@@ -84,7 +93,7 @@ export async function registerAction(formData: FormData) {
     options: {
       data: {
         full_name: parsed.data.fullName,
-        role: parsed.data.role,
+        role: safeRole,
       },
     },
   });
@@ -98,7 +107,7 @@ export async function registerAction(formData: FormData) {
       id: data.user.id,
       email: parsed.data.email,
       full_name: parsed.data.fullName,
-      role: parsed.data.role,
+      role: safeRole,
     });
   }
 
