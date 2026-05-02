@@ -1,78 +1,100 @@
+"use client";
+
+import { useActionState } from "react";
 import { loginAction } from "@/modules/auth/actions";
+import { Button } from "@/components/ui/Button";
+import { Input, Field } from "@/components/ui/Input";
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ registered?: string; error?: string }>;
-}) {
+type ActionState = { error?: string; needsConfirmation?: boolean } | null;
+
+export default function LoginPage() {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(
+    loginAction as never,
+    null
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">IICANA</h1>
-            <p className="text-gray-500 mt-1">Sistema de Gestión Académica</p>
-          </div>
-
-          <LoginForm />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-[480px]">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-brand-700 tracking-tight">IICANA</h1>
+          <p className="text-sm text-slate-500 mt-1">Sistema de Gestión Académica</p>
         </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-8">
+          <h2 className="text-xl font-semibold text-slate-900 mb-6">Iniciá sesión</h2>
+
+          {/* Email not confirmed */}
+          {state?.needsConfirmation && (
+            <div className="mb-5 p-4 rounded-xl bg-warning-50 border border-amber-200">
+              <p className="text-sm font-semibold text-amber-800 mb-1">
+                Confirmá tu email
+              </p>
+              <p className="text-xs text-amber-700">
+                Te enviamos un email de confirmación. Revisá tu bandeja de
+                entrada (y spam) y hacé clic en el link antes de ingresar.
+              </p>
+            </div>
+          )}
+
+          {/* Generic error */}
+          {state?.error && !state.needsConfirmation && (
+            <div className="mb-5 p-3 rounded-lg bg-danger-50 border border-red-200">
+              <p className="text-sm text-red-700">{state.error}</p>
+            </div>
+          )}
+
+          <form action={formAction} className="space-y-5" aria-labelledby="login-title">
+            <Field label="Email" required id="email">
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                autoFocus
+                placeholder="tu@email.com"
+                disabled={pending}
+              />
+            </Field>
+
+            <Field label="Contraseña" required id="password">
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                disabled={pending}
+              />
+            </Field>
+
+            <Button
+              type="submit"
+              fullWidth
+              size="lg"
+              loading={pending}
+              className="mt-2"
+            >
+              {pending ? "Ingresando..." : "Ingresar"}
+            </Button>
+
+            <p className="text-center text-sm text-slate-500">
+              ¿No tenés cuenta?{" "}
+              <a href="/register" className="text-brand-700 hover:underline font-medium">
+                Registrarse
+              </a>
+            </p>
+          </form>
+        </div>
+
+        <p className="text-center text-xs text-slate-400 mt-6">
+          © IICANA Pueyrredón {new Date().getFullYear()}
+        </p>
       </div>
     </div>
-  );
-}
-
-function LoginForm() {
-  return (
-    <form action={loginAction as never} className="space-y-4">
-      <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="tu@email.com"
-        />
-      </div>
-
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Contraseña
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="••••••••"
-        />
-      </div>
-
-      <button
-        type="submit"
-        className="w-full bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
-      >
-        Iniciar sesión
-      </button>
-
-      <p className="text-center text-sm text-gray-500">
-        ¿No tenés cuenta?{" "}
-        <a href="/register" className="text-blue-600 hover:underline">
-          Registrarse
-        </a>
-      </p>
-    </form>
   );
 }

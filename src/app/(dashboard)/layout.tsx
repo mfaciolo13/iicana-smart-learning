@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Sidebar } from "@/components/shared/Sidebar";
+import { DashboardShell } from "@/components/shared/DashboardShell";
 import type { UserRole } from "@/modules/auth/types";
 
 export default async function DashboardLayout({
@@ -24,12 +24,8 @@ export default async function DashboardLayout({
   if (!profile) redirect("/login");
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        role={profile.role as UserRole}
-        fullName={profile.full_name}
-      />
-      <main className="flex-1 p-8 overflow-auto">{children}</main>
-    </div>
+    <DashboardShell role={profile.role as UserRole} fullName={profile.full_name}>
+      {children}
+    </DashboardShell>
   );
 }

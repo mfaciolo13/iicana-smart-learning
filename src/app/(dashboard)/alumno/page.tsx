@@ -1,10 +1,9 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AlumnoDashboardPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { data: student } = await supabase
     .from("students")
@@ -31,47 +30,30 @@ export default async function AlumnoDashboardPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Mi Panel</h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-6">Mi Panel</h2>
 
-      {/* Enrollment info */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
-        <h3 className="text-base font-semibold text-gray-800 mb-3">
-          Mi curso actual
-        </h3>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-4">
+        <h3 className="text-base font-semibold text-slate-800 mb-3">Mi curso actual</h3>
         {enrollments && enrollments.length > 0 ? (
           enrollments.map((e) => {
-            const course = e.courses as unknown as {
-              name: string;
-              schedule: string;
-              level: string;
-            } | null;
+            const course = e.courses as unknown as { name: string; schedule: string; level: string } | null;
             return (
-              <div key={e.id} className="text-sm text-gray-700">
+              <div key={e.id} className="text-sm text-slate-700">
                 <p className="font-medium">{course?.name}</p>
-                <p className="text-gray-400 mt-0.5">
-                  {course?.level} · {course?.schedule}
-                </p>
+                <p className="text-slate-400 mt-0.5">{course?.level} · {course?.schedule}</p>
               </div>
             );
           })
         ) : (
-          <p className="text-sm text-gray-400">
-            No estás inscripto en ningún curso.
-          </p>
+          <p className="text-sm text-slate-400">No estás inscripto en ningún curso.</p>
         )}
       </div>
 
-      {/* Pending payments */}
       {pendingPayments && pendingPayments.length > 0 && (
-        <div className="bg-amber-50 rounded-xl border border-amber-200 p-5 mb-4">
-          <h3 className="text-sm font-semibold text-amber-800 mb-2">
-            Pagos pendientes
-          </h3>
+        <div className="bg-warning-50 rounded-xl border border-amber-200 p-5 mb-4">
+          <h3 className="text-sm font-semibold text-amber-800 mb-2">Pagos pendientes</h3>
           {pendingPayments.map((p) => (
-            <div
-              key={p.id}
-              className="flex justify-between text-xs text-amber-700"
-            >
+            <div key={p.id} className="flex justify-between text-xs text-amber-700">
               <span>Vence: {p.due_date}</span>
               <span className="font-medium">${p.amount}</span>
             </div>
@@ -81,30 +63,18 @@ export default async function AlumnoDashboardPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          {
-            label: "Ver asistencia",
-            href: "/alumno/attendance",
-            desc: "Tu % de asistencia",
-          },
-          {
-            label: "Ver notas",
-            href: "/alumno/grades",
-            desc: "Tus calificaciones",
-          },
-          {
-            label: "Notificaciones",
-            href: "/alumno/notifications",
-            desc: "Mensajes del instituto",
-          },
+          { label: "Ver asistencia", href: "/alumno/attendance", desc: "Tu % de asistencia" },
+          { label: "Ver notas", href: "/alumno/grades", desc: "Tus calificaciones" },
+          { label: "Notificaciones", href: "/alumno/notifications", desc: "Mensajes del instituto" },
         ].map((item) => (
-          <a
+          <Link
             key={item.href}
             href={item.href}
-            className="bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-300 transition-colors"
+            className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:border-brand-300 transition-colors"
           >
-            <p className="text-sm font-semibold text-gray-800">{item.label}</p>
-            <p className="text-xs text-gray-400 mt-1">{item.desc}</p>
-          </a>
+            <p className="text-sm font-semibold text-slate-800">{item.label}</p>
+            <p className="text-xs text-slate-400 mt-1">{item.desc}</p>
+          </Link>
         ))}
       </div>
     </div>

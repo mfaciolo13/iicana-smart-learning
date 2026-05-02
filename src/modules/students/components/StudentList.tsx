@@ -1,18 +1,13 @@
 import Link from "next/link";
 import type { StudentListItem } from "../types";
+import { Badge } from "@/components/ui/Badge";
+import type { VariantProps } from "class-variance-authority";
 
-const STATUS_LABELS: Record<string, string> = {
-  active: "Activo",
-  inactive: "Inactivo",
-  suspended: "Suspendido",
-  graduated: "Egresado",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-700",
-  inactive: "bg-gray-100 text-gray-600",
-  suspended: "bg-red-100 text-red-700",
-  graduated: "bg-blue-100 text-blue-700",
+const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
+  active: { label: "Activo", variant: "success" },
+  inactive: { label: "Inactivo", variant: "neutral" },
+  suspended: { label: "Suspendido", variant: "danger" },
+  graduated: { label: "Egresado", variant: "info" as never },
 };
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -31,65 +26,76 @@ interface StudentListProps {
 export function StudentList({ students }: StudentListProps) {
   if (students.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400 text-sm">
-        No se encontraron alumnos.
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+          <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <p className="text-base font-semibold text-slate-700">Aún no hay alumnos cargados</p>
+        <p className="text-sm text-slate-400 mt-1">Empezá registrando el primero.</p>
+        <Link
+          href="/admin/students/new"
+          className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
+        >
+          + Nuevo alumno
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm" role="table">
         <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left font-medium text-gray-500 py-3 pr-4">
+          <tr className="border-b-2 border-brand-700">
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
               Nombre
             </th>
-            <th className="text-left font-medium text-gray-500 py-3 pr-4">
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
               DNI
             </th>
-            <th className="text-left font-medium text-gray-500 py-3 pr-4">
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">
               Email
             </th>
-            <th className="text-left font-medium text-gray-500 py-3 pr-4">
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">
               Nivel
             </th>
-            <th className="text-left font-medium text-gray-500 py-3 pr-4">
+            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
               Estado
             </th>
             <th className="py-3" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
-          {students.map((student) => (
-            <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-              <td className="py-3 pr-4 font-medium text-gray-900">
-                {student.fullName}
-              </td>
-              <td className="py-3 pr-4 text-gray-600">{student.dni}</td>
-              <td className="py-3 pr-4 text-gray-600">{student.email}</td>
-              <td className="py-3 pr-4 text-gray-600">
-                {student.level ? LEVEL_LABELS[student.level] : "—"}
-              </td>
-              <td className="py-3 pr-4">
-                <span
-                  className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                    STATUS_COLORS[student.status] ?? "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {STATUS_LABELS[student.status] ?? student.status}
-                </span>
-              </td>
-              <td className="py-3 text-right">
-                <Link
-                  href={`/admin/students/${student.id}`}
-                  className="text-blue-600 hover:underline text-xs"
-                >
-                  Ver →
-                </Link>
-              </td>
-            </tr>
-          ))}
+        <tbody className="divide-y divide-slate-100">
+          {students.map((student) => {
+            const status = STATUS_CONFIG[student.status] ?? { label: student.status, variant: "neutral" as const };
+            return (
+              <tr key={student.id} className="hover:bg-brand-50 transition-colors">
+                <td className="py-3.5 pr-4 font-medium text-slate-900">{student.fullName}</td>
+                <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{student.dni}</td>
+                <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{student.email}</td>
+                <td className="py-3.5 pr-4 hidden sm:table-cell">
+                  {student.level ? (
+                    <Badge variant="info" dot={false}>{LEVEL_LABELS[student.level] ?? student.level}</Badge>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </td>
+                <td className="py-3.5 pr-4">
+                  <Badge variant={status.variant}>{status.label}</Badge>
+                </td>
+                <td className="py-3.5 text-right">
+                  <Link
+                    href={`/admin/students/${student.id}`}
+                    className="text-brand-700 hover:underline text-xs font-medium"
+                  >
+                    Ver →
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
