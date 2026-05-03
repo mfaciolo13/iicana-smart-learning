@@ -56,26 +56,17 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
   const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
   const siteUrl = `${proto}://${host}`;
 
-  const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: { redirectTo: `${siteUrl}/update-password` },
-  });
-
-  if (linkError || !linkData?.properties?.action_link) {
-    return { error: "No se pudo generar el link. Verificá que el usuario exista." };
-  }
-
-  const inviteLink = linkData.properties.action_link;
+  const encoded = Buffer.from(email).toString("base64url");
+  const safeInviteUrl = `${siteUrl}/invite/${encoded}`;
 
   await sendInvitationEmail({
     to: email,
     fullName: fullName || email,
     role: role || "alumno",
-    inviteLink,
+    inviteLink: safeInviteUrl,
   }).catch(() => {});
 
-  return { success: `Invitación reenviada a ${email}`, inviteLink };
+  return { success: `Invitación reenviada a ${email}`, inviteLink: safeInviteUrl };
 }
 
 export async function unbanUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
