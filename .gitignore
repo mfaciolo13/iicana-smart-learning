@@ -45,3 +45,5 @@ node_modules
 # local claude / mcp config
 .claude/
 .mcp.json
+
+.vercel
