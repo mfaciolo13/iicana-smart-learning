@@ -21,10 +21,10 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
   const parsed = createCourseSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await createCourse(parsed.data);
+  const course = await createCourse(parsed.data);
 
   revalidatePath("/admin/courses");
-  return { success: "Curso creado correctamente", redirectTo: "/admin/courses" };
+  return { success: "Curso creado correctamente", redirectTo: `/admin/courses/${course.id}` };
 }
 
 export async function updateCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
