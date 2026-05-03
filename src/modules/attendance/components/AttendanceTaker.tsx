@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
@@ -20,10 +21,15 @@ interface AttendanceTakerProps {
 }
 
 export function AttendanceTaker({ enrollments, courseId, classDate, action }: AttendanceTakerProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   if (enrollments.length === 0) {

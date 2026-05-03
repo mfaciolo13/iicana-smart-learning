@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import type { GradeWithDetails } from "../types";
@@ -26,11 +27,16 @@ interface GradeFormProps {
 }
 
 export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" }: GradeFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!grade;
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   return (
@@ -51,7 +57,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" 
           )}
 
           <Field label="Tipo de evaluación" required id="evaluationType">
-            <Select id="evaluationType" name="evaluationType" required defaultValue={grade?.evaluationType ?? ""}>
+            <Select id="evaluationType" name="evaluationType" required defaultValue={grade?.evaluationType ?? "parcial"}>
               <option value="" disabled>Seleccioná el tipo</option>
               {EVAL_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>

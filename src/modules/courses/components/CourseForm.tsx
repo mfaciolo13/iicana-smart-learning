@@ -2,12 +2,14 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { CourseWithTeacher } from "../types";
 import type { TeacherListItem } from "@/modules/teachers/types";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field, Select } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { SchedulePicker } from "./SchedulePicker";
 import type { ActionResult } from "@/lib/action-result";
 
 const LEVELS = [
@@ -33,11 +35,16 @@ interface CourseFormProps {
 }
 
 export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }: CourseFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!course;
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   return (
@@ -59,8 +66,8 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
             </Select>
           </Field>
 
-          <Field label="Horario" required id="schedule" helper="ej. Lun/Mié 18:00–19:30">
-            <Input id="schedule" name="schedule" type="text" required defaultValue={course?.schedule} placeholder="Lun/Mié 18:00–19:30" />
+          <Field label="Horario" required id="schedule" className="sm:col-span-2">
+            <SchedulePicker defaultValue={course?.schedule} />
           </Field>
 
           <Field label="Aula" id="classroom">

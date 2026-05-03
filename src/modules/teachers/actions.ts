@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import { createTeacherSchema, updateTeacherSchema } from "./schemas";
@@ -50,7 +49,7 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
   const { data: linkData } = await adminSupabase.auth.admin.generateLink({
     type: "recovery",
     email: parsed.data.email,
-    options: { redirectTo: `${siteUrl}/auth/update-password` },
+    options: { redirectTo: `${siteUrl}/update-password` },
   });
   if (linkData?.properties?.action_link) {
     await sendInvitationEmail({
@@ -62,7 +61,7 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
   }
 
   revalidatePath("/admin/teachers");
-  redirect("/admin/teachers");
+  return { success: "Docente registrado correctamente", redirectTo: "/admin/teachers" };
 }
 
 export async function updateTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -82,7 +81,7 @@ export async function updateTeacherAction(_prev: ActionResult, formData: FormDat
   await updateTeacher(parsed.data);
 
   revalidatePath("/admin/teachers");
-  redirect(`/admin/teachers/${parsed.data.id}`);
+  return { success: "Docente actualizado", redirectTo: `/admin/teachers/${parsed.data.id}` };
 }
 
 export async function deleteTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -94,5 +93,5 @@ export async function deleteTeacherAction(_prev: ActionResult, formData: FormDat
   await deleteTeacher(id);
 
   revalidatePath("/admin/teachers");
-  redirect("/admin/teachers");
+  return { success: "Docente eliminado", redirectTo: "/admin/teachers" };
 }

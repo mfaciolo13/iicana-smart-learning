@@ -3,7 +3,7 @@ import { getPayments, getPaymentSummary } from "@/modules/payments/services/paym
 import { PaymentList } from "@/modules/payments/components/PaymentList";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
-import { markOverduePaymentsAction } from "@/modules/payments/actions";
+import { markOverduePaymentsAction, runOverdueChecksAction } from "@/modules/payments/actions";
 
 const STATUS_TABS = [
   { value: "all", label: "Todos" },
@@ -38,6 +38,9 @@ export default async function PaymentsPage({
         <div className="flex items-center gap-2 flex-wrap">
           <FormButton action={markOverduePaymentsAction} variant="secondary" size="sm">
             Actualizar vencidos
+          </FormButton>
+          <FormButton action={runOverdueChecksAction} variant="secondary" size="sm">
+            Verificar alertas y mora
           </FormButton>
           <Link href="/admin/payments/new" className={buttonVariants({ variant: "primary" })}>
             + Registrar pago

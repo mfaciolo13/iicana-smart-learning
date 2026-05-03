@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { StudentListItem } from "@/modules/students/types";
 import { Button, buttonVariants } from "@/components/ui/Button";
@@ -23,10 +24,15 @@ function defaultDueDate() {
 }
 
 export function PaymentForm({ students, defaultStudentId, action }: PaymentFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   return (
@@ -51,7 +57,7 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
           </Field>
 
           <Field label="Notas" id="notes" className="sm:col-span-2">
-            <Textarea id="notes" name="notes" placeholder="Descripción opcional del pago..." />
+            <Textarea id="notes" name="notes" maxLength={500} placeholder="Descripción opcional del pago..." />
           </Field>
         </div>
       </Card>
