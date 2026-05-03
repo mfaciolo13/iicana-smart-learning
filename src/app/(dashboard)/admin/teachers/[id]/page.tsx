@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getTeacherById } from "@/modules/teachers/services/teachers.service";
 import { deleteTeacherAction } from "@/modules/teachers/actions";
+import { resendInvitationAction } from "@/modules/users/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -55,6 +56,18 @@ export default async function TeacherDetailPage({
               </div>
             ))}
           </dl>
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <FormButton
+              action={resendInvitationAction}
+              fields={{ email: teacher.profile.email, fullName: teacher.profile.fullName, role: "profesor" }}
+              variant="ghost"
+              size="sm"
+              className="w-full justify-center text-slate-600"
+              confirmMessage={`¿Reenviar invitación a ${teacher.profile.email}?`}
+            >
+              Reenviar invitación por email
+            </FormButton>
+          </div>
         </Card>
 
         <Card title="Datos profesionales">
