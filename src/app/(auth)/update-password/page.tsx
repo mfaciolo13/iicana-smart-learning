@@ -15,19 +15,52 @@ export default function UpdatePasswordPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // The browser client automatically parses the recovery token from the URL hash
-    // and fires PASSWORD_RECOVERY / SIGNED_IN when it's valid.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const url = new URL(window.location.href);
+
+    // PKCE flow: Supabase redirects with ?code= when the project has PKCE enabled
+    const code = url.searchParams.get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error: exchError }) => {
+        if (exchError) setStage("invalid");
+        else setStage("form");
+      });
+      // Clean up the code from the URL so a refresh doesn't re-use it
+      window.history.replaceState({}, "", url.pathname);
+      return;
+    }
+
+    // Implicit/hash flow: Supabase redirects with #access_token= (admin generateLink)
+    const hash = window.location.hash.slice(1);
+    const hashParams = new URLSearchParams(hash);
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token") ?? "";
+    const type = hashParams.get("type");
+
+    if (accessToken && type === "recovery") {
+      supabase.auth
+        .setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(({ error: sessError }) => {
+          if (sessError) setStage("invalid");
+          else setStage("form");
+        });
+      // Clean up hash from URL
+      window.history.replaceState({}, "", url.pathname);
+      return;
+    }
+
+    // Fallback: listen for PASSWORD_RECOVERY event (fires on client init when hash is present)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setStage("form");
       }
     });
 
-    // Fallback: if the user already has a valid session (e.g. revisiting the page)
+    // Also check for an existing valid session (e.g. user revisits the page)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setStage("form");
       else {
-        // Give the hash-based exchange a moment to fire; if nothing comes, mark invalid.
         setTimeout(() => {
           setStage((prev) => (prev === "loading" ? "invalid" : prev));
         }, 2500);
@@ -37,7 +70,7 @@ export default function UpdatePasswordPage() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: { preventDefault(): void; currentTarget: HTMLFormElement }) {
     e.preventDefault();
     const form = e.currentTarget;
     const password = (form.elements.namedItem("password") as HTMLInputElement).value;
@@ -64,8 +97,9 @@ export default function UpdatePasswordPage() {
 
     setStage("success");
 
-    // Redirect to the portal that matches the user's role
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -80,7 +114,7 @@ export default function UpdatePasswordPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-[480px]">
+      <div className="w-full max-w-120">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-brand-700 tracking-tight">IICANA</h1>
           <p className="text-sm text-slate-500 mt-1">Sistema de Gestión Académica</p>
@@ -103,7 +137,7 @@ export default function UpdatePasswordPage() {
               </div>
               <h2 className="text-lg font-semibold text-slate-900 mb-2">Link inválido o expirado</h2>
               <p className="text-sm text-slate-500 mb-6">
-                El link de invitación ya fue usado o expiró (24 hs). Pedile al administrador que te reenvíe el acceso.
+                El link de acceso ya fue usado o expiró. Pedile al administrador que te reenvíe el acceso.
               </p>
               <Link href="/login" className="text-sm text-brand-700 hover:underline font-medium">
                 Ir al login
