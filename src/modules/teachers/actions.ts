@@ -51,11 +51,13 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
   const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
   const siteUrl = `${proto}://${host}`;
 
-  const { data: linkData } = await adminSupabase.auth.admin.generateLink({
+  const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
     type: "recovery",
     email: parsed.data.email,
     options: { redirectTo: `${siteUrl}/update-password` },
   });
+
+  if (linkError) console.error("[teachers] generateLink error:", linkError.message);
 
   const inviteLink = linkData?.properties?.action_link;
   if (inviteLink) {
