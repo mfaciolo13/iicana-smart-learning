@@ -1,7 +1,10 @@
 import { createStudentAction } from "@/modules/students/actions";
 import { StudentForm } from "@/modules/students/components/StudentForm";
+import { getTutorsList } from "@/modules/students/services/students.service";
 
-export default function NewStudentPage() {
+export default async function NewStudentPage() {
+  const tutors = await getTutorsList();
+
   return (
     <div>
       <div className="mb-6">
@@ -12,6 +15,7 @@ export default function NewStudentPage() {
       </div>
 
       <StudentForm
+        tutors={tutors}
         action={createStudentAction}
         submitLabel="Registrar alumno"
       />

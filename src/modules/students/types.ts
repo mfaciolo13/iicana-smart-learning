@@ -12,6 +12,7 @@ export interface StudentWithProfile {
   dni: string;
   birthDate: string;
   level: Level | null;
+  placementTestScore: number | null;
   status: StudentStatus;
   profileId: string;
   tutorId: string | null;

@@ -143,6 +143,7 @@ export const students = pgTable("students", {
     onDelete: "set null",
   }),
   level: levelEnum("level"),
+  placementTestScore: integer("placement_test_score"),
   status: studentStatusEnum("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

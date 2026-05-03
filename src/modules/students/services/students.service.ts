@@ -1,5 +1,5 @@
 import { db } from "@/lib/drizzle";
-import { students, profiles } from "@/lib/drizzle/schema";
+import { students, profiles, tutors } from "@/lib/drizzle/schema";
 import { eq, ilike, or } from "drizzle-orm";
 import type { CreateStudentInput, UpdateStudentInput } from "../schemas";
 import type { StudentListItem, StudentWithProfile } from "../types";
@@ -39,6 +39,7 @@ export async function getStudentById(
       dni: students.dni,
       birthDate: students.birthDate,
       level: students.level,
+      placementTestScore: students.placementTestScore,
       status: students.status,
       profileId: students.profileId,
       tutorId: students.tutorId,
@@ -67,6 +68,7 @@ export async function getStudentByProfileId(
       dni: students.dni,
       birthDate: students.birthDate,
       level: students.level,
+      placementTestScore: students.placementTestScore,
       status: students.status,
       profileId: students.profileId,
       tutorId: students.tutorId,
@@ -86,6 +88,19 @@ export async function getStudentByProfileId(
   return (rows[0] as StudentWithProfile) ?? null;
 }
 
+export async function getTutorsList(): Promise<{ id: string; fullName: string; relationship: string }[]> {
+  const rows = await db
+    .select({
+      id: tutors.id,
+      fullName: profiles.fullName,
+      relationship: tutors.relationship,
+    })
+    .from(tutors)
+    .innerJoin(profiles, eq(tutors.profileId, profiles.id))
+    .orderBy(profiles.fullName);
+  return rows;
+}
+
 export async function createStudent(
   profileId: string,
   input: CreateStudentInput
@@ -97,6 +112,7 @@ export async function createStudent(
       dni: input.dni,
       birthDate: input.birthDate,
       level: input.level,
+      placementTestScore: input.placementTestScore ?? null,
       tutorId: input.tutorId ?? null,
       status: "active",
     })
@@ -105,11 +121,12 @@ export async function createStudent(
 }
 
 export async function updateStudent(input: UpdateStudentInput) {
-  const { id, ...data } = input;
+  const { id, tutorId, ...data } = input;
   const [updated] = await db
     .update(students)
     .set({
       ...data,
+      tutorId: tutorId ?? null,
       updatedAt: new Date(),
     })
     .where(eq(students.id, id))
