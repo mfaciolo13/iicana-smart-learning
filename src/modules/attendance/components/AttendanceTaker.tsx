@@ -1,7 +1,10 @@
 "use client";
 
+import { useActionState, useEffect } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
+import type { ActionResult } from "@/lib/action-result";
 
 const STATUS_OPTIONS = [
   { value: "present", label: "Presente", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
@@ -13,10 +16,16 @@ interface AttendanceTakerProps {
   enrollments: EnrollmentListItem[];
   courseId: string;
   classDate: string;
-  action: (formData: FormData) => Promise<void>;
+  action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
 }
 
 export function AttendanceTaker({ enrollments, courseId, classDate, action }: AttendanceTakerProps) {
+  const [state, formAction, isPending] = useActionState(action, undefined);
+
+  useEffect(() => {
+    if (state?.error) toast.error(state.error);
+  }, [state]);
+
   if (enrollments.length === 0) {
     return (
       <div className="py-10 text-center text-sm text-slate-400">
@@ -26,7 +35,7 @@ export function AttendanceTaker({ enrollments, courseId, classDate, action }: At
   }
 
   return (
-    <form action={action} className="space-y-1">
+    <form action={formAction} className="space-y-1">
       <input type="hidden" name="courseId" value={courseId} />
       <input type="hidden" name="classDate" value={classDate} />
       <input type="hidden" name="enrollmentIds" value={enrollments.map((e) => e.id).join(",")} />
@@ -44,10 +53,7 @@ export function AttendanceTaker({ enrollments, courseId, classDate, action }: At
 
             <div className="flex gap-1.5 shrink-0">
               {STATUS_OPTIONS.map((opt) => (
-                <label
-                  key={opt.value}
-                  className="flex items-center gap-1 cursor-pointer"
-                >
+                <label key={opt.value} className="flex items-center gap-1 cursor-pointer">
                   <input
                     type="radio"
                     name={`status_${enrollment.id}`}
@@ -66,7 +72,7 @@ export function AttendanceTaker({ enrollments, courseId, classDate, action }: At
       </div>
 
       <div className="flex justify-end pt-4">
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="primary" loading={isPending}>
           Guardar asistencia ({enrollments.length} alumnos)
         </Button>
       </div>

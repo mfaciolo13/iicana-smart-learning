@@ -1,12 +1,14 @@
 "use client";
 
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import type { CourseListItem } from "@/modules/courses/types";
 import type { Profile } from "@/lib/drizzle/schema";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
-import { useState } from "react";
+import type { ActionResult } from "@/lib/action-result";
 
 const TYPE_OPTIONS = [
   { value: "general", label: "General" },
@@ -19,18 +21,21 @@ const TYPE_OPTIONS = [
 interface NotificationFormProps {
   courses: CourseListItem[];
   users: Pick<Profile, "id" | "fullName" | "role">[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  action: (formData: FormData) => Promise<any>;
+  action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
 }
 
 export function NotificationForm({ courses, users, action }: NotificationFormProps) {
+  const [state, formAction, isPending] = useActionState(action, undefined);
   const [targetGroup, setTargetGroup] = useState<"role" | "course" | "user">("role");
 
+  useEffect(() => {
+    if (state?.error) toast.error(state.error);
+  }, [state]);
+
   return (
-    <form action={action} className="space-y-6">
+    <form action={formAction} className="space-y-6">
       <Card title="Destinatario" padding="md">
         <div className="space-y-4">
-          {/* Target type */}
           <div className="flex gap-2 flex-wrap">
             {(["role", "course", "user"] as const).map((t) => (
               <button
@@ -65,9 +70,7 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
               <Select id="targetId" name="targetId" required defaultValue="">
                 <option value="" disabled>Seleccioná un curso</option>
                 {courses.map((c) => (
-                  <option key={c.id} value={`course:${c.id}`}>
-                    {c.name}
-                  </option>
+                  <option key={c.id} value={`course:${c.id}`}>{c.name}</option>
                 ))}
               </Select>
             </Field>
@@ -78,9 +81,7 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
               <Select id="targetId" name="targetId" required defaultValue="">
                 <option value="" disabled>Seleccioná un usuario</option>
                 {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName} ({u.role})
-                  </option>
+                  <option key={u.id} value={u.id}>{u.fullName} ({u.role})</option>
                 ))}
               </Select>
             </Field>
@@ -99,24 +100,11 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
           </Field>
 
           <Field label="Título" required id="title">
-            <Input
-              id="title"
-              name="title"
-              required
-              maxLength={100}
-              placeholder="Ej: Recordatorio de pago"
-            />
+            <Input id="title" name="title" required maxLength={100} placeholder="Ej: Recordatorio de pago" />
           </Field>
 
           <Field label="Mensaje" required id="body">
-            <Textarea
-              id="body"
-              name="body"
-              required
-              maxLength={500}
-              placeholder="Escribí el contenido de la notificación..."
-              className="min-h-[100px]"
-            />
+            <Textarea id="body" name="body" required maxLength={500} placeholder="Escribí el contenido de la notificación..." className="min-h-[100px]" />
           </Field>
         </div>
       </Card>
@@ -125,7 +113,7 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
         <Link href="/admin/notifications" className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="primary" loading={isPending}>
           Enviar notificación
         </Button>
       </div>

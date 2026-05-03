@@ -10,8 +10,9 @@ import {
   updatePaymentStatus,
   markOverduePayments,
 } from "./services/payments.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function createPaymentAction(formData: FormData): Promise<void> {
+export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -22,7 +23,7 @@ export async function createPaymentAction(formData: FormData): Promise<void> {
   };
 
   const parsed = createPaymentSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const payment = await createPayment(parsed.data);
 
@@ -30,7 +31,7 @@ export async function createPaymentAction(formData: FormData): Promise<void> {
   redirect(`/admin/payments/${payment.id}`);
 }
 
-export async function markAsPaidAction(formData: FormData): Promise<void> {
+export async function markAsPaidAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -40,7 +41,7 @@ export async function markAsPaidAction(formData: FormData): Promise<void> {
   };
 
   const parsed = markAsPaidSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await markAsPaid(parsed.data);
 
@@ -48,7 +49,7 @@ export async function markAsPaidAction(formData: FormData): Promise<void> {
   redirect(`/admin/payments/${parsed.data.id}`);
 }
 
-export async function updatePaymentStatusAction(formData: FormData): Promise<void> {
+export async function updatePaymentStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -57,7 +58,7 @@ export async function updatePaymentStatusAction(formData: FormData): Promise<voi
   };
 
   const parsed = updatePaymentStatusSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
 
@@ -65,8 +66,9 @@ export async function updatePaymentStatusAction(formData: FormData): Promise<voi
   redirect(`/admin/payments/${parsed.data.id}`);
 }
 
-export async function markOverduePaymentsAction(): Promise<void> {
+export async function markOverduePaymentsAction(_prev: ActionResult): Promise<ActionResult> {
   await requireRole(["admin"]);
   await markOverduePayments();
   revalidatePath("/admin/payments");
+  return { success: "Pagos vencidos actualizados" };
 }

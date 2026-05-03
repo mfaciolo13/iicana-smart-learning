@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCourseById } from "@/modules/courses/services/courses.service";
 import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
 import { deleteCourseAction } from "@/modules/courses/actions";
+import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -49,26 +50,17 @@ export default async function CourseDetailPage({
           <h2 className="text-2xl font-bold text-slate-900">{course.name}</h2>
         </div>
         <div className="flex gap-2">
-          <Link
-            href={`/admin/courses/${course.id}/edit`}
-            className={buttonVariants({ variant: "secondary" })}
-          >
+          <Link href={`/admin/courses/${course.id}/edit`} className={buttonVariants({ variant: "secondary" })}>
             Editar
           </Link>
-          <form action={deleteCourseAction as never}>
-            <input type="hidden" name="id" value={course.id} />
-            <button
-              type="submit"
-              className={buttonVariants({ variant: "danger" })}
-              onClick={(e) => {
-                if (!confirm("¿Estás seguro de eliminar este curso? Esta acción no se puede deshacer.")) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              Eliminar
-            </button>
-          </form>
+          <FormButton
+            action={deleteCourseAction}
+            fields={{ id: course.id }}
+            variant="danger"
+            confirmMessage="¿Estás seguro de eliminar este curso? Esta acción no se puede deshacer."
+          >
+            Eliminar
+          </FormButton>
         </div>
       </div>
 
@@ -77,9 +69,7 @@ export default async function CourseDetailPage({
           <dl className="space-y-3 pt-1">
             <div className="flex justify-between text-sm items-center">
               <dt className="text-slate-500">Nivel</dt>
-              <dd>
-                <Badge variant="info" dot={false}>{LEVEL_LABELS[course.level] ?? course.level}</Badge>
-              </dd>
+              <dd><Badge variant="info" dot={false}>{LEVEL_LABELS[course.level] ?? course.level}</Badge></dd>
             </div>
             <div className="flex justify-between text-sm items-center">
               <dt className="text-slate-500">Estado</dt>
@@ -100,13 +90,10 @@ export default async function CourseDetailPage({
 
         <Card title="Cupo y docente">
           <dl className="space-y-4 pt-1">
-            {/* Occupancy bar */}
             <div>
               <div className="flex justify-between text-sm mb-1.5">
                 <dt className="text-slate-500">Inscriptos</dt>
-                <dd className="font-medium text-slate-800">
-                  {course.enrollmentCount} / {course.maxCapacity}
-                </dd>
+                <dd className="font-medium text-slate-800">{course.enrollmentCount} / {course.maxCapacity}</dd>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
@@ -118,7 +105,6 @@ export default async function CourseDetailPage({
               </div>
               <p className="text-xs text-slate-400 mt-1">{occupancy}% de ocupación</p>
             </div>
-
             <div className="flex justify-between text-sm">
               <dt className="text-slate-500">Docente</dt>
               <dd className="font-medium text-slate-800">
@@ -135,14 +121,10 @@ export default async function CourseDetailPage({
         </Card>
       </div>
 
-      {/* Enrolled students */}
       <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-900">Alumnos inscriptos</h3>
-          <Link
-            href={`/admin/enrollments/new?courseId=${course.id}`}
-            className="text-xs text-brand-700 hover:underline font-medium"
-          >
+          <Link href={`/admin/enrollments/new?courseId=${course.id}`} className="text-xs text-brand-700 hover:underline font-medium">
             + Inscribir alumno
           </Link>
         </div>

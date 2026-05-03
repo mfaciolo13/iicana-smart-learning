@@ -4,17 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
-import {
-  createStudentSchema,
-  updateStudentSchema,
-} from "./schemas";
-import {
-  createStudent,
-  updateStudent,
-  deleteStudent,
-} from "./services/students.service";
+import { createStudentSchema, updateStudentSchema } from "./schemas";
+import { createStudent, updateStudent, deleteStudent } from "./services/students.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function createStudentAction(formData: FormData) {
+export async function createStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -28,29 +22,21 @@ export async function createStudentAction(formData: FormData) {
   };
 
   const parsed = createStudentSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const adminSupabase = createAdminClient();
 
-  // Create Supabase auth user (requires SUPABASE_SECRET_KEY)
-  const { data: authData, error: authError } =
-    await adminSupabase.auth.admin.createUser({
-      email: parsed.data.email,
-      password: Math.random().toString(36).slice(-10),
-      email_confirm: true,
-      user_metadata: {
-        full_name: parsed.data.fullName,
-        role: "alumno",
-      },
-    });
+  const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
+    email: parsed.data.email,
+    password: Math.random().toString(36).slice(-10),
+    email_confirm: true,
+    user_metadata: { full_name: parsed.data.fullName, role: "alumno" },
+  });
 
   if (authError || !authData.user) {
     return { error: authError?.message ?? "Error creando usuario" };
   }
 
-  // Create profile (via admin client, bypasses RLS)
   await adminSupabase.from("profiles").insert({
     id: authData.user.id,
     email: parsed.data.email,
@@ -59,14 +45,13 @@ export async function createStudentAction(formData: FormData) {
     role: "alumno",
   });
 
-  // Create student record
   await createStudent(authData.user.id, parsed.data);
 
   revalidatePath("/admin/students");
   redirect("/admin/students");
 }
 
-export async function updateStudentAction(formData: FormData) {
+export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -81,9 +66,7 @@ export async function updateStudentAction(formData: FormData) {
   };
 
   const parsed = updateStudentSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await updateStudent(parsed.data);
 
@@ -91,7 +74,7 @@ export async function updateStudentAction(formData: FormData) {
   redirect(`/admin/students/${parsed.data.id}`);
 }
 
-export async function deleteStudentAction(formData: FormData) {
+export async function deleteStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const id = formData.get("id") as string;

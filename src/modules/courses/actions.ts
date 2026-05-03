@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { createCourseSchema, updateCourseSchema } from "./schemas";
 import { createCourse, updateCourse, deleteCourse } from "./services/courses.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function createCourseAction(formData: FormData) {
+export async function createCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -19,9 +20,7 @@ export async function createCourseAction(formData: FormData) {
   };
 
   const parsed = createCourseSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await createCourse(parsed.data);
 
@@ -29,7 +28,7 @@ export async function createCourseAction(formData: FormData) {
   redirect("/admin/courses");
 }
 
-export async function updateCourseAction(formData: FormData) {
+export async function updateCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -44,9 +43,7 @@ export async function updateCourseAction(formData: FormData) {
   };
 
   const parsed = updateCourseSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await updateCourse(parsed.data);
 
@@ -54,7 +51,7 @@ export async function updateCourseAction(formData: FormData) {
   redirect(`/admin/courses/${parsed.data.id}`);
 }
 
-export async function deleteCourseAction(formData: FormData) {
+export async function deleteCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const id = formData.get("id") as string;

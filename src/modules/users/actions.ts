@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { updateUserSchema } from "./schemas";
 import { updateUser, banUser, unbanUser } from "./services/users.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function updateUserAction(formData: FormData): Promise<void> {
+export async function updateUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -17,7 +18,7 @@ export async function updateUserAction(formData: FormData): Promise<void> {
   };
 
   const parsed = updateUserSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await updateUser(parsed.data);
 
@@ -25,11 +26,11 @@ export async function updateUserAction(formData: FormData): Promise<void> {
   redirect(`/admin/users/${parsed.data.id}`);
 }
 
-export async function banUserAction(formData: FormData): Promise<void> {
+export async function banUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const id = formData.get("id") as string;
-  if (!id) return;
+  if (!id) return { error: "ID requerido" };
 
   await banUser(id);
 
@@ -37,11 +38,11 @@ export async function banUserAction(formData: FormData): Promise<void> {
   redirect(`/admin/users/${id}`);
 }
 
-export async function unbanUserAction(formData: FormData): Promise<void> {
+export async function unbanUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const id = formData.get("id") as string;
-  if (!id) return;
+  if (!id) return { error: "ID requerido" };
 
   await unbanUser(id);
 

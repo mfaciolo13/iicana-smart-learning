@@ -1,6 +1,9 @@
+"use client";
+
 import type { NotificationItem } from "../types";
 import { markAsReadAction } from "../actions";
 import { Badge } from "@/components/ui/Badge";
+import { FormButton } from "@/components/ui/FormButton";
 
 const TYPE_CONFIG: Record<string, { label: string; variant: "info" | "warning" | "success" | "danger" | "neutral" }> = {
   absence: { label: "Ausencia", variant: "warning" },
@@ -73,15 +76,15 @@ export function NotificationList({
             </div>
 
             {showMarkRead && !n.read && (
-              <form action={markAsReadAction} className="shrink-0">
-                <input type="hidden" name="id" value={n.id} />
-                <button
-                  type="submit"
-                  className="text-xs text-brand-700 hover:underline font-medium mt-1"
-                >
-                  Marcar leída
-                </button>
-              </form>
+              <FormButton
+                action={markAsReadAction}
+                fields={{ id: n.id }}
+                variant="ghost"
+                size="sm"
+                className="shrink-0 text-xs text-brand-700 hover:underline font-medium mt-1 h-auto p-0"
+              >
+                Marcar leída
+              </FormButton>
             )}
           </li>
         );

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyNotifications } from "@/modules/notifications/services/notifications.service";
 import { NotificationList } from "@/modules/notifications/components/NotificationList";
 import { markAllAsReadAction } from "@/modules/notifications/actions";
-import { buttonVariants } from "@/components/ui/Button";
+import { FormButton } from "@/components/ui/FormButton";
 
 export default async function ProfesorNotificationsPage() {
   const supabase = await createClient();
@@ -23,11 +23,9 @@ export default async function ProfesorNotificationsPage() {
           </p>
         </div>
         {unread > 0 && (
-          <form action={markAllAsReadAction}>
-            <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-              Marcar todas como leídas
-            </button>
-          </form>
+          <FormButton action={markAllAsReadAction} variant="secondary" size="sm">
+            Marcar todas como leídas
+          </FormButton>
         )}
       </div>
 

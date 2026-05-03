@@ -1,9 +1,12 @@
 "use client";
 
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import type { ActionResult } from "@/lib/action-result";
 
 const TYPE_OPTIONS = [
   { value: "academic", label: "Académico — notas, promedios, contenido" },
@@ -14,13 +17,18 @@ const TYPE_OPTIONS = [
 
 interface ComplaintFormProps {
   cancelHref: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  action: (formData: FormData) => Promise<any>;
+  action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
 }
 
 export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
+  const [state, formAction, isPending] = useActionState(action, undefined);
+
+  useEffect(() => {
+    if (state?.error) toast.error(state.error);
+  }, [state]);
+
   return (
-    <form action={action} className="space-y-6">
+    <form action={formAction} className="space-y-6">
       <Card title="Datos del reclamo" padding="md">
         <div className="space-y-4">
           <Field label="Categoría" required id="type">
@@ -54,7 +62,7 @@ export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
         <Link href={cancelHref} className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="primary" loading={isPending}>
           Enviar reclamo
         </Button>
       </div>

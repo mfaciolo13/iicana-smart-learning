@@ -6,8 +6,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import { createTeacherSchema, updateTeacherSchema } from "./schemas";
 import { createTeacher, updateTeacher, deleteTeacher } from "./services/teachers.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function createTeacherAction(formData: FormData) {
+export async function createTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -19,9 +20,7 @@ export async function createTeacherAction(formData: FormData) {
   };
 
   const parsed = createTeacherSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const adminSupabase = createAdminClient();
 
@@ -29,10 +28,7 @@ export async function createTeacherAction(formData: FormData) {
     email: parsed.data.email,
     password: Math.random().toString(36).slice(-10),
     email_confirm: true,
-    user_metadata: {
-      full_name: parsed.data.fullName,
-      role: "profesor",
-    },
+    user_metadata: { full_name: parsed.data.fullName, role: "profesor" },
   });
 
   if (authError || !authData.user) {
@@ -53,7 +49,7 @@ export async function createTeacherAction(formData: FormData) {
   redirect("/admin/teachers");
 }
 
-export async function updateTeacherAction(formData: FormData) {
+export async function updateTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -65,9 +61,7 @@ export async function updateTeacherAction(formData: FormData) {
   };
 
   const parsed = updateTeacherSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await updateTeacher(parsed.data);
 
@@ -75,7 +69,7 @@ export async function updateTeacherAction(formData: FormData) {
   redirect(`/admin/teachers/${parsed.data.id}`);
 }
 
-export async function deleteTeacherAction(formData: FormData) {
+export async function deleteTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const id = formData.get("id") as string;
