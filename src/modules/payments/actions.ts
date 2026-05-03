@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { createPaymentSchema, markAsPaidSchema, updatePaymentStatusSchema } from "./schemas";
 import {
@@ -9,7 +8,12 @@ import {
   markAsPaid,
   updatePaymentStatus,
   markOverduePayments,
+  getOverdueAlertTargets,
+  markOverdueAlertSent,
+  getSuspensionTargets,
+  suspendStudentAndPayments,
 } from "./services/payments.service";
+import { sendToRole, sendToUser } from "@/modules/notifications/services/notifications.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -28,7 +32,7 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
   const payment = await createPayment(parsed.data);
 
   revalidatePath("/admin/payments");
-  redirect(`/admin/payments/${payment.id}`);
+  return { success: "Pago registrado correctamente", redirectTo: `/admin/payments/${payment.id}` };
 }
 
 export async function markAsPaidAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -46,7 +50,7 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
   await markAsPaid(parsed.data);
 
   revalidatePath("/admin/payments");
-  redirect(`/admin/payments/${parsed.data.id}`);
+  return { success: "Pago registrado como abonado" };
 }
 
 export async function updatePaymentStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -63,7 +67,7 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
   await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
 
   revalidatePath("/admin/payments");
-  redirect(`/admin/payments/${parsed.data.id}`);
+  return { success: "Estado actualizado" };
 }
 
 export async function markOverduePaymentsAction(_prev: ActionResult): Promise<ActionResult> {
@@ -71,4 +75,51 @@ export async function markOverduePaymentsAction(_prev: ActionResult): Promise<Ac
   await markOverduePayments();
   revalidatePath("/admin/payments");
   return { success: "Pagos vencidos actualizados" };
+}
+
+export async function runOverdueChecksAction(_prev: ActionResult, _formData?: FormData): Promise<ActionResult> {
+  await requireRole(["admin"]);
+
+  await markOverduePayments();
+
+  const alertTargets = await getOverdueAlertTargets();
+  for (const t of alertTargets) {
+    const payload = {
+      type: "payment" as const,
+      title: "Alerta de mora",
+      body: `${t.studentName} tiene un pago vencido hace más de 15 días.`,
+    };
+    await sendToRole("admin", payload);
+    if (t.tutorProfileId) await sendToUser(t.tutorProfileId, payload);
+  }
+  if (alertTargets.length > 0) {
+    await markOverdueAlertSent(alertTargets.map((t) => t.paymentId));
+  }
+
+  const suspensionTargets = await getSuspensionTargets();
+  const byStudent = new Map<string, typeof suspensionTargets>();
+  for (const t of suspensionTargets) {
+    const list = byStudent.get(t.studentId) ?? [];
+    list.push(t);
+    byStudent.set(t.studentId, list);
+  }
+  let suspended = 0;
+  for (const [studentId, items] of byStudent.entries()) {
+    await suspendStudentAndPayments(studentId, items.map((i) => i.paymentId));
+    const { studentName, tutorProfileId } = items[0];
+    const payload = {
+      type: "payment" as const,
+      title: "Alumno suspendido por mora",
+      body: `${studentName} fue suspendido por tener pagos vencidos hace más de 30 días.`,
+    };
+    await sendToRole("admin", payload);
+    if (tutorProfileId) await sendToUser(tutorProfileId, payload);
+    suspended++;
+  }
+
+  revalidatePath("/admin/payments");
+  const parts: string[] = [];
+  if (alertTargets.length > 0) parts.push(`${alertTargets.length} alerta(s) de mora enviada(s)`);
+  if (suspended > 0) parts.push(`${suspended} alumno(s) suspendido(s)`);
+  return { success: parts.length > 0 ? parts.join(", ") : "Sin cambios pendientes" };
 }

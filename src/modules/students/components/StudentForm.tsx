@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { StudentWithProfile } from "../types";
 import { Button, buttonVariants } from "@/components/ui/Button";
@@ -39,11 +40,16 @@ interface StudentFormProps {
 }
 
 export function StudentForm({ student, tutors = [], action, submitLabel = "Guardar" }: StudentFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!student;
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   return (

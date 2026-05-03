@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { sendNotificationSchema } from "./schemas";
 import {
@@ -38,7 +37,7 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
   }
 
   revalidatePath("/admin/notifications");
-  redirect("/admin/notifications");
+  return { success: "Notificación enviada correctamente", redirectTo: "/admin/notifications" };
 }
 
 export async function markAsReadAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

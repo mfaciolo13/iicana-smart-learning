@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -29,13 +30,17 @@ export function FormButton({
   confirmMessage,
   className,
 }: FormButtonProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const formRef = useRef<HTMLFormElement>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
-    if (state?.success) toast.success(state.success);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

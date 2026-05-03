@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences } from "./services/attendance.service";
 import { sendToRole, sendToUser } from "@/modules/notifications/services/notifications.service";
@@ -30,7 +29,6 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
 
   await recordBulkAttendance(records);
 
-  // Check for consecutive absences and notify
   const absentIds = records.filter((r) => r.status === "absent").map((r) => r.enrollmentId);
   const alerts = await checkConsecutiveAbsences(absentIds);
   for (const alert of alerts) {
@@ -46,5 +44,6 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
   }
 
   revalidatePath("/admin/attendance");
-  redirect("/admin/attendance");
+  revalidatePath("/profesor/attendance");
+  return { success: "Asistencia registrada correctamente", redirectTo: "/admin/attendance" };
 }

@@ -48,7 +48,17 @@ export default async function PaymentDetailPage({
           <h2 className="text-2xl font-bold text-slate-900">{payment.studentName}</h2>
           <p className="text-sm text-slate-500 mt-0.5">DNI {payment.studentDni}</p>
         </div>
-        <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+        <div className="flex items-center gap-3">
+          {payment.status === "paid" && (
+            <Link
+              href={`/admin/payments/${payment.id}/receipt`}
+              className="text-sm text-brand-700 hover:underline font-medium"
+            >
+              Ver recibo →
+            </Link>
+          )}
+          <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

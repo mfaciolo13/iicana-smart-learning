@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { createCourseSchema, updateCourseSchema } from "./schemas";
 import { createCourse, updateCourse, deleteCourse } from "./services/courses.service";
@@ -25,7 +24,7 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
   await createCourse(parsed.data);
 
   revalidatePath("/admin/courses");
-  redirect("/admin/courses");
+  return { success: "Curso creado correctamente", redirectTo: "/admin/courses" };
 }
 
 export async function updateCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -48,7 +47,7 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
   await updateCourse(parsed.data);
 
   revalidatePath("/admin/courses");
-  redirect(`/admin/courses/${parsed.data.id}`);
+  return { success: "Curso actualizado", redirectTo: `/admin/courses/${parsed.data.id}` };
 }
 
 export async function deleteCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -60,5 +59,5 @@ export async function deleteCourseAction(_prev: ActionResult, formData: FormData
   await deleteCourse(id);
 
   revalidatePath("/admin/courses");
-  redirect("/admin/courses");
+  return { success: "Curso eliminado", redirectTo: "/admin/courses" };
 }

@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { StudentListItem } from "@/modules/students/types";
 import type { CourseListItem } from "@/modules/courses/types";
@@ -28,10 +29,15 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 export function EnrollmentForm({ students, courses, action, defaultStudentId, defaultCourseId }: EnrollmentFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   return (

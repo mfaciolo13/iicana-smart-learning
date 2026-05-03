@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { createGradeSchema, updateGradeSchema } from "./schemas";
 import { createGrade, updateGrade, deleteGrade } from "./services/grades.service";
@@ -23,7 +22,8 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
   await createGrade(parsed.data);
 
   revalidatePath("/admin/grades");
-  redirect("/admin/grades");
+  revalidatePath("/profesor/grades");
+  return { success: "Nota cargada correctamente", redirectTo: "/admin/grades" };
 }
 
 export async function updateGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -42,7 +42,8 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
   await updateGrade(parsed.data);
 
   revalidatePath("/admin/grades");
-  redirect(`/admin/grades/${parsed.data.id}`);
+  revalidatePath("/profesor/grades");
+  return { success: "Nota actualizada", redirectTo: `/admin/grades/${parsed.data.id}` };
 }
 
 export async function deleteGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -54,5 +55,6 @@ export async function deleteGradeAction(_prev: ActionResult, formData: FormData)
   await deleteGrade(id);
 
   revalidatePath("/admin/grades");
-  redirect("/admin/grades");
+  revalidatePath("/profesor/grades");
+  return { success: "Nota eliminada", redirectTo: "/admin/grades" };
 }

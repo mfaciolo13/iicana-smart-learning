@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { CourseListItem } from "@/modules/courses/types";
 import type { Profile } from "@/lib/drizzle/schema";
@@ -25,11 +26,16 @@ interface NotificationFormProps {
 }
 
 export function NotificationForm({ courses, users, action }: NotificationFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const [targetGroup, setTargetGroup] = useState<"role" | "course" | "user">("role");
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   return (

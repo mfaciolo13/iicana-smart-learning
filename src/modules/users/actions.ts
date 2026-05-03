@@ -55,7 +55,7 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
   const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
     type: "recovery",
     email,
-    options: { redirectTo: `${siteUrl}/auth/update-password` },
+    options: { redirectTo: `${siteUrl}/update-password` },
   });
 
   if (linkError || !linkData?.properties?.action_link) {

@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Field, Select, Textarea } from "@/components/ui/Input";
@@ -21,10 +22,15 @@ interface ComplaintFormProps {
 }
 
 export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
   }, [state]);
 
   return (
@@ -52,7 +58,7 @@ export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
             />
           </Field>
 
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             Tu reclamo será revisado por el equipo administrativo en un plazo máximo de 48hs.
           </p>
         </div>

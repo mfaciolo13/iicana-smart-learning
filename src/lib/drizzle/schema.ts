@@ -58,6 +58,21 @@ export const paymentMethodEnum = pgEnum("payment_method", [
   "card",
 ]);
 
+export const marketingChannelEnum = pgEnum("marketing_channel", [
+  "social_media",
+  "email",
+  "flyers",
+  "word_of_mouth",
+  "website",
+  "other",
+]);
+
+export const inquiryStatusEnum = pgEnum("inquiry_status", [
+  "pending",
+  "enrolled",
+  "lost",
+]);
+
 export const notificationTypeEnum = pgEnum("notification_type", [
   "absence",
   "payment",
@@ -196,6 +211,7 @@ export const enrollments = pgTable("enrollments", {
     .notNull()
     .defaultNow(),
   status: enrollmentStatusEnum("status").notNull().default("active"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
 });
 
 export const attendance = pgTable("attendance", {
@@ -236,6 +252,7 @@ export const payments = pgTable("payments", {
   status: paymentStatusEnum("status").notNull().default("pending"),
   receiptNumber: text("receipt_number").unique(),
   notes: text("notes"),
+  overdueAlertSentAt: timestamp("overdue_alert_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -301,6 +318,77 @@ export const assessmentAttempts = pgTable("assessment_attempts", {
   // answers shape: number[] — index of chosen option per question
   score: integer("score").notNull().default(0), // 0–100
   completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const marketingCampaigns = pgTable("marketing_campaigns", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  channel: marketingChannelEnum("channel").notNull(),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date"),
+  budget: numeric("budget", { precision: 10, scale: 2 }),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const inquiries = pgTable("inquiries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  campaignId: uuid("campaign_id").references(() => marketingCampaigns.id, {
+    onDelete: "set null",
+  }),
+  status: inquiryStatusEnum("status").notNull().default("pending"),
+  notes: text("notes"),
+  receivedAt: date("received_at").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const teacherSurveys = pgTable("teacher_surveys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teacherId: uuid("teacher_id")
+    .notNull()
+    .references(() => teachers.id, { onDelete: "cascade" }),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  enrollmentId: uuid("enrollment_id").references(() => enrollments.id, {
+    onDelete: "set null",
+  }),
+  rating1: integer("rating1").notNull(), // Claridad al explicar
+  rating2: integer("rating2").notNull(), // Disponibilidad para consultas
+  rating3: integer("rating3").notNull(), // Ritmo de la clase
+  rating4: integer("rating4").notNull(), // Recomendaría este docente
+  comment: text("comment"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const classObservations = pgTable("class_observations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teacherId: uuid("teacher_id")
+    .notNull()
+    .references(() => teachers.id, { onDelete: "cascade" }),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  observedBy: uuid("observed_by")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  observedAt: date("observed_at").notNull(),
+  overallRating: integer("overall_rating").notNull(), // 1–5
+  observations: text("observations").notNull(),
+  strengths: text("strengths"),
+  improvements: text("improvements"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // ─── Types ────────────────────────────────────────────────────────────────────

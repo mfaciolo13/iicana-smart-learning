@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { createEnrollmentSchema, updateEnrollmentSchema } from "./schemas";
 import {
@@ -28,7 +27,7 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/students");
   revalidatePath("/admin/courses");
-  redirect("/admin/enrollments");
+  return { success: "Inscripción creada correctamente", redirectTo: "/admin/enrollments" };
 }
 
 export async function updateEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -47,7 +46,7 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/students");
   revalidatePath("/admin/courses");
-  redirect(`/admin/enrollments/${parsed.data.id}`);
+  return { success: "Inscripción actualizada" };
 }
 
 export async function deleteEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -61,5 +60,5 @@ export async function deleteEnrollmentAction(_prev: ActionResult, formData: Form
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/students");
   revalidatePath("/admin/courses");
-  redirect("/admin/enrollments");
+  return { success: "Inscripción eliminada", redirectTo: "/admin/enrollments" };
 }

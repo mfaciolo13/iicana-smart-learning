@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import { createStudentSchema, updateStudentSchema } from "./schemas";
@@ -52,7 +51,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   const { data: linkData } = await adminSupabase.auth.admin.generateLink({
     type: "recovery",
     email: parsed.data.email,
-    options: { redirectTo: `${siteUrl}/auth/update-password` },
+    options: { redirectTo: `${siteUrl}/update-password` },
   });
   if (linkData?.properties?.action_link) {
     await sendInvitationEmail({
@@ -64,7 +63,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   }
 
   revalidatePath("/admin/students");
-  redirect("/admin/students");
+  return { success: "Alumno registrado correctamente", redirectTo: "/admin/students" };
 }
 
 export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -87,7 +86,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
   await updateStudent(parsed.data);
 
   revalidatePath("/admin/students");
-  redirect(`/admin/students/${parsed.data.id}`);
+  return { success: "Alumno actualizado", redirectTo: `/admin/students/${parsed.data.id}` };
 }
 
 export async function deleteStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -99,5 +98,5 @@ export async function deleteStudentAction(_prev: ActionResult, formData: FormDat
   await deleteStudent(id);
 
   revalidatePath("/admin/students");
-  redirect("/admin/students");
+  return { success: "Alumno eliminado", redirectTo: "/admin/students" };
 }

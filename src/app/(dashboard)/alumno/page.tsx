@@ -65,6 +65,7 @@ export default async function AlumnoDashboardPage() {
         {[
           { label: "Ver asistencia", href: "/alumno/attendance", desc: "Tu % de asistencia" },
           { label: "Ver notas", href: "/alumno/grades", desc: "Tus calificaciones" },
+          { label: "Evaluar docentes", href: "/alumno/evaluations", desc: "Encuesta anónima" },
           { label: "Notificaciones", href: "/alumno/notifications", desc: "Mensajes del instituto" },
         ].map((item) => (
           <Link

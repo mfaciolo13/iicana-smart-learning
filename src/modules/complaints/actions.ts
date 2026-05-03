@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { createComplaintSchema, updateComplaintStatusSchema } from "./schemas";
 import { createComplaint, updateComplaintStatus } from "./services/complaints.service";
@@ -22,10 +21,8 @@ export async function createComplaintAction(_prev: ActionResult, formData: FormD
   await createComplaint(user.id, parsed.data);
 
   revalidatePath("/alumno/complaints");
-  revalidatePath("/tutor/complaints");
-  revalidatePath("/profesor/complaints");
   revalidatePath("/admin/complaints");
-  redirect("/alumno/complaints");
+  return { success: "Reclamo enviado correctamente", redirectTo: "/alumno/complaints" };
 }
 
 export async function createComplaintAsTutorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -44,7 +41,7 @@ export async function createComplaintAsTutorAction(_prev: ActionResult, formData
 
   revalidatePath("/tutor/complaints");
   revalidatePath("/admin/complaints");
-  redirect("/tutor/complaints");
+  return { success: "Reclamo enviado correctamente", redirectTo: "/tutor/complaints" };
 }
 
 export async function createComplaintAsProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -63,7 +60,7 @@ export async function createComplaintAsProfesorAction(_prev: ActionResult, formD
 
   revalidatePath("/profesor/complaints");
   revalidatePath("/admin/complaints");
-  redirect("/profesor/complaints");
+  return { success: "Reclamo enviado correctamente", redirectTo: "/profesor/complaints" };
 }
 
 export async function updateComplaintStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -80,5 +77,5 @@ export async function updateComplaintStatusAction(_prev: ActionResult, formData:
   await updateComplaintStatus(parsed.data.id, parsed.data.status);
 
   revalidatePath("/admin/complaints");
-  redirect(`/admin/complaints/${parsed.data.id}`);
+  return { success: "Estado actualizado" };
 }
