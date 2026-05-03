@@ -48,9 +48,11 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
 
   await createStudent(authData.user.id, parsed.data);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const { data: linkData } = await adminSupabase.auth.admin.generateLink({
     type: "recovery",
     email: parsed.data.email,
+    options: { redirectTo: `${siteUrl}/auth/update-password` },
   });
   if (linkData?.properties?.action_link) {
     await sendInvitationEmail({
