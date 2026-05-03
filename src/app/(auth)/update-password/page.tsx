@@ -31,9 +31,16 @@ export default function UpdatePasswordPage() {
       return;
     }
 
-    // Implicit/hash flow: Supabase redirects with #access_token= (admin generateLink)
+    // Supabase error in hash (e.g. otp_expired, access_denied)
     const hash = window.location.hash.slice(1);
     const hashParams = new URLSearchParams(hash);
+    if (hashParams.get("error")) {
+      window.history.replaceState({}, "", url.pathname);
+      setStage("invalid");
+      return;
+    }
+
+    // Implicit/hash flow: Supabase redirects with #access_token= (admin generateLink)
     const accessToken = hashParams.get("access_token");
     const refreshToken = hashParams.get("refresh_token") ?? "";
     const type = hashParams.get("type");
