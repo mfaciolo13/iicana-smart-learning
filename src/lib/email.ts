@@ -3,6 +3,7 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "IICANA <noreply@iicana.edu.ar>";
+const IS_DEV = process.env.NODE_ENV === "development";
 
 const ROLE_LABELS: Record<string, string> = {
   alumno: "alumno/a",
@@ -21,6 +22,10 @@ export async function sendInvitationEmail({
   role: string;
   inviteLink: string;
 }) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Invitation email for ${to}\n🔗 Link: ${inviteLink}\n`);
+    return;
+  }
   const roleLabel = ROLE_LABELS[role] ?? role;
   const firstName = fullName.split(" ")[0];
 
