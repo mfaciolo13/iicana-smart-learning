@@ -54,21 +54,32 @@ export function EnrollmentForm({ students, courses, action, defaultStudentId, de
           </Field>
 
           <Field label="Curso" required id="courseId">
-            <Select id="courseId" name="courseId" required defaultValue={defaultCourseId ?? ""}>
-              <option value="" disabled>Seleccioná un curso</option>
-              {courses
-                .filter((c) => c.status === "active")
-                .map((c) => {
-                  const available = c.maxCapacity - c.enrollmentCount;
-                  const isFull = available <= 0;
-                  return (
-                    <option key={c.id} value={c.id} disabled={isFull}>
-                      {c.name} — {LEVEL_LABELS[c.level] ?? c.level}{" "}
-                      {isFull ? "(Sin cupo)" : `(${available} lugar${available !== 1 ? "es" : ""} disponible${available !== 1 ? "s" : ""})`}
-                    </option>
-                  );
-                })}
-            </Select>
+            {(() => {
+              const available = courses.filter(
+                (c) => c.status === "active" && c.maxCapacity - c.enrollmentCount > 0
+              );
+              if (available.length === 0) {
+                return (
+                  <p className="text-sm text-slate-400 py-2">
+                    No hay cursos activos con cupo disponible.
+                  </p>
+                );
+              }
+              return (
+                <Select id="courseId" name="courseId" required defaultValue={defaultCourseId ?? ""}>
+                  <option value="" disabled>Seleccioná un curso</option>
+                  {available.map((c) => {
+                    const spots = c.maxCapacity - c.enrollmentCount;
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {c.name} — {LEVEL_LABELS[c.level] ?? c.level}{" "}
+                        ({spots} lugar{spots !== 1 ? "es" : ""} disponible{spots !== 1 ? "s" : ""})
+                      </option>
+                    );
+                  })}
+                </Select>
+              );
+            })()}
           </Field>
         </div>
 
