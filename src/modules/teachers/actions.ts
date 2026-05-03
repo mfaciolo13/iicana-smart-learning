@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import { createTeacherSchema, updateTeacherSchema } from "./schemas";
@@ -45,23 +46,29 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
 
   await createTeacher(authData.user.id, parsed.data);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const hdrs = await headers();
+  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
+  const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
+  const siteUrl = `${proto}://${host}`;
+
   const { data: linkData } = await adminSupabase.auth.admin.generateLink({
     type: "recovery",
     email: parsed.data.email,
     options: { redirectTo: `${siteUrl}/update-password` },
   });
-  if (linkData?.properties?.action_link) {
+
+  const inviteLink = linkData?.properties?.action_link;
+  if (inviteLink) {
     await sendInvitationEmail({
       to: parsed.data.email,
       fullName: parsed.data.fullName,
       role: "profesor",
-      inviteLink: linkData.properties.action_link,
+      inviteLink,
     }).catch(() => {});
   }
 
   revalidatePath("/admin/teachers");
-  return { success: "Docente registrado correctamente", redirectTo: "/admin/teachers" };
+  return { success: "Docente registrado correctamente", redirectTo: "/admin/teachers", inviteLink: inviteLink ?? undefined };
 }
 
 export async function updateTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

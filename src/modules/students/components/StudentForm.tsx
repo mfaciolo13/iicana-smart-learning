@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import type { StudentWithProfile } from "../types";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field, Select } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { InviteLinkModal } from "@/components/ui/InviteLinkModal";
 import type { ActionResult } from "@/lib/action-result";
 
 const LEVELS = [
@@ -42,17 +43,32 @@ interface StudentFormProps {
 export function StudentForm({ student, tutors = [], action, submitLabel = "Guardar" }: StudentFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
   const isEditing = !!student;
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
-      if (state.redirectTo) router.push(state.redirectTo);
+      if (state.inviteLink) {
+        setInviteLink(state.inviteLink);
+      } else if (state.redirectTo) {
+        router.push(state.redirectTo);
+      }
     }
   }, [state]);
 
   return (
+    <>
+    {inviteLink && (
+      <InviteLinkModal
+        link={inviteLink}
+        onContinue={() => {
+          setInviteLink(null);
+          if (state?.redirectTo) router.push(state.redirectTo);
+        }}
+      />
+    )}
     <form action={formAction} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={student.id} />}
 
@@ -168,5 +184,6 @@ export function StudentForm({ student, tutors = [], action, submitLabel = "Guard
         </Button>
       </div>
     </form>
+    </>
   );
 }
