@@ -1,11 +1,14 @@
 "use client";
 
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import type { GradeWithDetails } from "../types";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import type { ActionResult } from "@/lib/action-result";
 
 const EVAL_TYPES = [
   { value: "parcial", label: "Parcial" },
@@ -18,16 +21,20 @@ const EVAL_TYPES = [
 interface GradeFormProps {
   enrollments: EnrollmentListItem[];
   grade?: GradeWithDetails;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  action: (formData: FormData) => Promise<any>;
+  action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
   submitLabel?: string;
 }
 
 export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" }: GradeFormProps) {
+  const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!grade;
 
+  useEffect(() => {
+    if (state?.error) toast.error(state.error);
+  }, [state]);
+
   return (
-    <form action={action} className="space-y-6">
+    <form action={formAction} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={grade.id} />}
 
       <Card title="Datos de la evaluación" padding="md">
@@ -37,21 +44,14 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" 
               <Select id="enrollmentId" name="enrollmentId" required defaultValue="">
                 <option value="" disabled>Seleccioná un alumno</option>
                 {enrollments.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.studentName} — {e.courseName}
-                  </option>
+                  <option key={e.id} value={e.id}>{e.studentName} — {e.courseName}</option>
                 ))}
               </Select>
             </Field>
           )}
 
           <Field label="Tipo de evaluación" required id="evaluationType">
-            <Select
-              id="evaluationType"
-              name="evaluationType"
-              required
-              defaultValue={grade?.evaluationType ?? ""}
-            >
+            <Select id="evaluationType" name="evaluationType" required defaultValue={grade?.evaluationType ?? ""}>
               <option value="" disabled>Seleccioná el tipo</option>
               {EVAL_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -60,26 +60,11 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" 
           </Field>
 
           <Field label="Nota (1–10)" required id="score">
-            <Input
-              id="score"
-              name="score"
-              type="number"
-              required
-              min={1}
-              max={10}
-              step={0.5}
-              defaultValue={grade?.score ?? ""}
-              placeholder="ej. 8.5"
-            />
+            <Input id="score" name="score" type="number" required min={1} max={10} step={0.5} defaultValue={grade?.score ?? ""} placeholder="ej. 8.5" />
           </Field>
 
           <Field label="Observaciones" id="notes" className="sm:col-span-2">
-            <Textarea
-              id="notes"
-              name="notes"
-              defaultValue={grade?.notes ?? ""}
-              placeholder="Comentarios opcionales sobre la evaluación..."
-            />
+            <Textarea id="notes" name="notes" defaultValue={grade?.notes ?? ""} placeholder="Comentarios opcionales sobre la evaluación..." />
           </Field>
         </div>
       </Card>
@@ -88,7 +73,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" 
         <Link href="/admin/grades" className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
-        <Button type="submit" variant="primary">
+        <Button type="submit" variant="primary" loading={isPending}>
           {submitLabel}
         </Button>
       </div>

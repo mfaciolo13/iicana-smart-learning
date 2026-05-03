@@ -9,8 +9,9 @@ import {
   updateEnrollment,
   deleteEnrollment,
 } from "./services/enrollments.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function createEnrollmentAction(formData: FormData) {
+export async function createEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -19,14 +20,10 @@ export async function createEnrollmentAction(formData: FormData) {
   };
 
   const parsed = createEnrollmentSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const result = await validateAndCreateEnrollment(parsed.data);
-  if (result.error) {
-    return { error: result.error };
-  }
+  if (result.error) return { error: result.error };
 
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/students");
@@ -34,7 +31,7 @@ export async function createEnrollmentAction(formData: FormData) {
   redirect("/admin/enrollments");
 }
 
-export async function updateEnrollmentAction(formData: FormData) {
+export async function updateEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -43,9 +40,7 @@ export async function updateEnrollmentAction(formData: FormData) {
   };
 
   const parsed = updateEnrollmentSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await updateEnrollment(parsed.data);
 
@@ -55,7 +50,7 @@ export async function updateEnrollmentAction(formData: FormData) {
   redirect(`/admin/enrollments/${parsed.data.id}`);
 }
 
-export async function deleteEnrollmentAction(formData: FormData) {
+export async function deleteEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const id = formData.get("id") as string;

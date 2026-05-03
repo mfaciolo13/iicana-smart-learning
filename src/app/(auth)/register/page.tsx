@@ -1,8 +1,18 @@
+"use client";
+
+import { useActionState, useEffect } from "react";
+import { toast } from "sonner";
 import { registerAction } from "@/modules/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Field, Select } from "@/components/ui/Input";
 
 export default function RegisterPage() {
+  const [state, formAction, isPending] = useActionState(registerAction, undefined);
+
+  useEffect(() => {
+    if (state?.error) toast.error(state.error);
+  }, [state]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-md">
@@ -14,7 +24,7 @@ export default function RegisterPage() {
         <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-8">
           <h2 className="text-xl font-semibold text-slate-900 mb-6">Crear cuenta</h2>
 
-          <form action={registerAction as never} className="space-y-5">
+          <form action={formAction} className="space-y-5">
             <Field label="Nombre completo" required id="fullName">
               <Input id="fullName" name="fullName" type="text" required placeholder="Juan Pérez" />
             </Field>
@@ -28,8 +38,6 @@ export default function RegisterPage() {
                 <option value="" disabled>Seleccioná un rol</option>
                 <option value="alumno">Alumno</option>
                 <option value="tutor">Tutor</option>
-                <option value="profesor">Profesor</option>
-                <option value="admin">Administrador</option>
               </Select>
             </Field>
 
@@ -41,7 +49,7 @@ export default function RegisterPage() {
               <Input id="confirmPassword" name="confirmPassword" type="password" required autoComplete="new-password" placeholder="••••••••" />
             </Field>
 
-            <Button type="submit" fullWidth size="lg" className="mt-2">
+            <Button type="submit" fullWidth size="lg" className="mt-2" loading={isPending}>
               Crear cuenta
             </Button>
 

@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { createGradeSchema, updateGradeSchema } from "./schemas";
 import { createGrade, updateGrade, deleteGrade } from "./services/grades.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function createGradeAction(formData: FormData) {
+export async function createGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin", "profesor"]);
 
   const raw = {
@@ -17,9 +18,7 @@ export async function createGradeAction(formData: FormData) {
   };
 
   const parsed = createGradeSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await createGrade(parsed.data);
 
@@ -27,7 +26,7 @@ export async function createGradeAction(formData: FormData) {
   redirect("/admin/grades");
 }
 
-export async function updateGradeAction(formData: FormData) {
+export async function updateGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin", "profesor"]);
 
   const raw = {
@@ -38,9 +37,7 @@ export async function updateGradeAction(formData: FormData) {
   };
 
   const parsed = updateGradeSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await updateGrade(parsed.data);
 
@@ -48,7 +45,7 @@ export async function updateGradeAction(formData: FormData) {
   redirect(`/admin/grades/${parsed.data.id}`);
 }
 
-export async function deleteGradeAction(formData: FormData) {
+export async function deleteGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin", "profesor"]);
 
   const id = formData.get("id") as string;

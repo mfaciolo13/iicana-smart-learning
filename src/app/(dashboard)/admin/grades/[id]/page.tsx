@@ -4,7 +4,7 @@ import { getGradeById } from "@/modules/grades/services/grades.service";
 import { updateGradeAction, deleteGradeAction } from "@/modules/grades/actions";
 import { getEnrollments } from "@/modules/enrollments/services/enrollments.service";
 import { GradeForm } from "@/modules/grades/components/GradeForm";
-import { buttonVariants } from "@/components/ui/Button";
+import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
 
 function scoreVariant(score: number): "success" | "warning" | "danger" {
@@ -49,18 +49,15 @@ export default async function GradeDetailPage({
           <Badge variant={scoreVariant(score)} dot={false} className="text-base px-3 py-1">
             {score.toFixed(1)}
           </Badge>
-          <form action={deleteGradeAction as never}>
-            <input type="hidden" name="id" value={grade.id} />
-            <button
-              type="submit"
-              className={buttonVariants({ variant: "danger", size: "sm" })}
-              onClick={(e) => {
-                if (!confirm("¿Eliminar esta nota?")) e.preventDefault();
-              }}
-            >
-              Eliminar
-            </button>
-          </form>
+          <FormButton
+            action={deleteGradeAction}
+            fields={{ id: grade.id }}
+            variant="danger"
+            size="sm"
+            confirmMessage="¿Eliminar esta nota?"
+          >
+            Eliminar
+          </FormButton>
         </div>
       </div>
 

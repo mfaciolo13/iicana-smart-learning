@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getUserDetail } from "@/modules/users/services/users.service";
 import { updateUserAction, banUserAction, unbanUserAction } from "@/modules/users/actions";
+import { UserEditForm } from "@/modules/users/components/UserEditForm";
+import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { Button, buttonVariants } from "@/components/ui/Button";
-import { Input, Field, Select } from "@/components/ui/Input";
 
 const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" | "warning" | "neutral" }> = {
   admin: { label: "Admin", variant: "warning" },
@@ -47,60 +47,23 @@ export default async function UserDetailPage({
           <p className="text-sm text-slate-500 mt-0.5">{user.email}</p>
         </div>
         <div className="flex items-center gap-2">
-          {user.banned && (
-            <Badge variant="danger">Desactivado</Badge>
-          )}
+          {user.banned && <Badge variant="danger">Desactivado</Badge>}
           <Badge variant={roleCfg.variant} dot={false}>{roleCfg.label}</Badge>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Edit form */}
         <div className="lg:col-span-2">
-          <Card title="Editar usuario" padding="md">
-            <form action={updateUserAction} className="space-y-4">
-              <input type="hidden" name="id" value={user.id} />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Nombre completo" required id="fullName" className="sm:col-span-2">
-                  <Input
-                    id="fullName"
-                    name="fullName"
-                    required
-                    defaultValue={user.fullName}
-                  />
-                </Field>
-
-                <Field label="Teléfono" id="phone">
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    defaultValue={user.phone ?? ""}
-                    placeholder="Ej: 3516789012"
-                  />
-                </Field>
-
-                <Field label="Rol" required id="role">
-                  <Select id="role" name="role" required defaultValue={user.role}>
-                    <option value="admin">Administrador</option>
-                    <option value="profesor">Docente</option>
-                    <option value="alumno">Alumno</option>
-                    <option value="tutor">Tutor</option>
-                  </Select>
-                </Field>
-              </div>
-
-              <div className="flex justify-end">
-                <Button type="submit" variant="primary">Guardar cambios</Button>
-              </div>
-            </form>
-          </Card>
+          <UserEditForm
+            userId={user.id}
+            fullName={user.fullName}
+            phone={user.phone}
+            role={user.role}
+            action={updateUserAction}
+          />
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4">
-          {/* Avatar + info */}
           <Card title="Perfil" padding="md">
             <div className="flex items-center gap-3 mb-4">
               <div
@@ -131,42 +94,37 @@ export default async function UserDetailPage({
             </dl>
           </Card>
 
-          {/* Ban / Unban */}
           <Card title="Acceso al sistema" padding="md">
             {user.banned ? (
               <div className="space-y-3">
                 <p className="text-xs text-slate-500">
                   Este usuario no puede iniciar sesión. Reactivalo para restaurar el acceso.
                 </p>
-                <form action={unbanUserAction}>
-                  <input type="hidden" name="id" value={user.id} />
-                  <button
-                    type="submit"
-                    className={buttonVariants({ variant: "primary", size: "sm" }) + " w-full justify-center"}
-                  >
-                    Reactivar usuario
-                  </button>
-                </form>
+                <FormButton
+                  action={unbanUserAction}
+                  fields={{ id: user.id }}
+                  variant="primary"
+                  size="sm"
+                  className="w-full justify-center"
+                >
+                  Reactivar usuario
+                </FormButton>
               </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-xs text-slate-500">
                   Desactivar impide que el usuario inicie sesión. Sus datos se conservan.
                 </p>
-                <form action={banUserAction}>
-                  <input type="hidden" name="id" value={user.id} />
-                  <button
-                    type="submit"
-                    className={buttonVariants({ variant: "danger", size: "sm" }) + " w-full justify-center"}
-                    onClick={(e) => {
-                      if (!confirm(`¿Desactivar a ${user.fullName}? No podrá iniciar sesión.`)) {
-                        e.preventDefault();
-                      }
-                    }}
-                  >
-                    Desactivar usuario
-                  </button>
-                </form>
+                <FormButton
+                  action={banUserAction}
+                  fields={{ id: user.id }}
+                  variant="danger"
+                  size="sm"
+                  className="w-full justify-center"
+                  confirmMessage={`¿Desactivar a ${user.fullName}? No podrá iniciar sesión.`}
+                >
+                  Desactivar usuario
+                </FormButton>
               </div>
             )}
           </Card>

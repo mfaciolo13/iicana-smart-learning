@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getComplaintById } from "@/modules/complaints/services/complaints.service";
 import { updateComplaintStatusAction } from "@/modules/complaints/actions";
+import { ComplaintStatusForm } from "@/modules/complaints/components/ComplaintStatusForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { buttonVariants } from "@/components/ui/Button";
 
 const TYPE_LABELS: Record<string, string> = {
   academic: "Académico",
@@ -57,7 +57,6 @@ export default async function ComplaintDetailPage({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main */}
         <div className="lg:col-span-2 space-y-6">
           <Card title="Descripción del reclamo" padding="md">
             <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
@@ -89,7 +88,6 @@ export default async function ComplaintDetailPage({
           </Card>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4">
           <Card title="Autor" padding="md">
             <p className="text-sm font-semibold text-slate-900">{complaint.authorName}</p>
@@ -97,27 +95,11 @@ export default async function ComplaintDetailPage({
           </Card>
 
           {isResolvable && (
-            <Card title="Cambiar estado" padding="md">
-              <form action={updateComplaintStatusAction} className="space-y-3">
-                <input type="hidden" name="id" value={complaint.id} />
-                <select
-                  name="status"
-                  defaultValue={complaint.status}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  <option value="open">Abierto</option>
-                  <option value="in_progress">En proceso</option>
-                  <option value="resolved">Resuelto</option>
-                  <option value="closed">Cerrado</option>
-                </select>
-                <button
-                  type="submit"
-                  className={buttonVariants({ variant: "primary", size: "sm" }) + " w-full justify-center"}
-                >
-                  Actualizar estado
-                </button>
-              </form>
-            </Card>
+            <ComplaintStatusForm
+              complaintId={complaint.id}
+              currentStatus={complaint.status}
+              action={updateComplaintStatusAction}
+            />
           )}
         </div>
       </div>

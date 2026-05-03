@@ -2,11 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getEnrollmentById } from "@/modules/enrollments/services/enrollments.service";
 import { updateEnrollmentAction, deleteEnrollmentAction } from "@/modules/enrollments/actions";
-import { buttonVariants } from "@/components/ui/Button";
+import { FormButton } from "@/components/ui/FormButton";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Select, Field } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { EnrollmentStatusForm } from "@/modules/enrollments/components/EnrollmentStatusForm";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "warning" }> = {
   active: { label: "Activo", variant: "success" },
@@ -46,20 +45,14 @@ export default async function EnrollmentDetailPage({
             {enrollment.student.fullName} — {enrollment.course.name}
           </h2>
         </div>
-        <form action={deleteEnrollmentAction as never}>
-          <input type="hidden" name="id" value={enrollment.id} />
-          <button
-            type="submit"
-            className={buttonVariants({ variant: "danger" })}
-            onClick={(e) => {
-              if (!confirm("¿Eliminar esta inscripción? Esta acción no se puede deshacer.")) {
-                e.preventDefault();
-              }
-            }}
-          >
-            Eliminar
-          </button>
-        </form>
+        <FormButton
+          action={deleteEnrollmentAction}
+          fields={{ id: enrollment.id }}
+          variant="danger"
+          confirmMessage="¿Eliminar esta inscripción? Esta acción no se puede deshacer."
+        >
+          Eliminar
+        </FormButton>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -76,10 +69,7 @@ export default async function EnrollmentDetailPage({
               </div>
             ))}
             <div className="pt-1">
-              <Link
-                href={`/admin/students?q=${enrollment.student.dni}`}
-                className="text-xs text-brand-700 hover:underline"
-              >
+              <Link href={`/admin/students?q=${enrollment.student.dni}`} className="text-xs text-brand-700 hover:underline">
                 Ver perfil del alumno →
               </Link>
             </div>
@@ -92,10 +82,7 @@ export default async function EnrollmentDetailPage({
               { label: "Nombre", value: enrollment.course.name },
               { label: "Nivel", value: LEVEL_LABELS[enrollment.course.level] ?? enrollment.course.level },
               { label: "Horario", value: enrollment.course.schedule },
-              {
-                label: "Inscripto el",
-                value: new Date(enrollment.enrolledAt).toLocaleDateString("es-AR"),
-              },
+              { label: "Inscripto el", value: new Date(enrollment.enrolledAt).toLocaleDateString("es-AR") },
             ].map((item) => (
               <div key={item.label} className="flex justify-between text-sm">
                 <dt className="text-slate-500">{item.label}</dt>
@@ -106,25 +93,16 @@ export default async function EnrollmentDetailPage({
         </Card>
       </div>
 
-      {/* Status update */}
       <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-900">Estado de la inscripción</h3>
           <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
         </div>
-        <form action={updateEnrollmentAction as never} className="flex items-end gap-3">
-          <input type="hidden" name="id" value={enrollment.id} />
-          <Field label="Cambiar estado" id="status" className="flex-1 max-w-xs">
-            <Select id="status" name="status" defaultValue={enrollment.status}>
-              <option value="active">Activo</option>
-              <option value="completed">Completado</option>
-              <option value="withdrawn">Dado de baja</option>
-            </Select>
-          </Field>
-          <Button type="submit" variant="secondary">
-            Actualizar
-          </Button>
-        </form>
+        <EnrollmentStatusForm
+          enrollmentId={enrollment.id}
+          currentStatus={enrollment.status}
+          action={updateEnrollmentAction}
+        />
       </div>
     </div>
   );

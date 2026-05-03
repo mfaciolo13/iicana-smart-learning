@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getPayments, getPaymentSummary } from "@/modules/payments/services/payments.service";
 import { PaymentList } from "@/modules/payments/components/PaymentList";
+import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { markOverduePaymentsAction } from "@/modules/payments/actions";
 
@@ -35,21 +36,15 @@ export default async function PaymentsPage({
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <form action={markOverduePaymentsAction}>
-            <button
-              type="submit"
-              className={buttonVariants({ variant: "secondary", size: "sm" })}
-            >
-              Actualizar vencidos
-            </button>
-          </form>
+          <FormButton action={markOverduePaymentsAction} variant="secondary" size="sm">
+            Actualizar vencidos
+          </FormButton>
           <Link href="/admin/payments/new" className={buttonVariants({ variant: "primary" })}>
             + Registrar pago
           </Link>
         </div>
       </div>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Pendientes</p>
@@ -71,7 +66,6 @@ export default async function PaymentsPage({
         </div>
       </div>
 
-      {/* Filter tabs */}
       <div className="flex flex-wrap gap-1 mb-4 bg-slate-100 rounded-lg p-1 w-fit max-w-full">
         {STATUS_TABS.map((tab) => (
           <Link

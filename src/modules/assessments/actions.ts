@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import Anthropic from "@anthropic-ai/sdk";
-import { requireRole } from "@/lib/auth/helpers";
-import { getCurrentUser } from "@/lib/auth/helpers";
+import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import {
   generateAssessmentSchema,
   publishAssessmentSchema,
@@ -18,13 +17,14 @@ import {
   getAssessmentDetail,
 } from "./services/assessments.service";
 import type { QuizQuestion } from "./types";
+import type { ActionResult } from "@/lib/action-result";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-export async function generateAssessmentAction(formData: FormData): Promise<void> {
+export async function generateAssessmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
   const user = await getCurrentUser();
-  if (!user) return;
+  if (!user) return { error: "No autorizado" };
 
   const raw = {
     courseId: formData.get("courseId") as string,
@@ -33,7 +33,7 @@ export async function generateAssessmentAction(formData: FormData): Promise<void
   };
 
   const parsed = generateAssessmentSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const prompt = `Sos un profesor experto de inglés en Argentina.
 Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
@@ -69,12 +69,14 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return;
+    if (!jsonMatch) return { error: "Error generando preguntas. Intentá de nuevo." };
 
     questions = JSON.parse(jsonMatch[0]) as QuizQuestion[];
-    if (!Array.isArray(questions) || questions.length === 0) return;
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return { error: "Respuesta inválida del modelo. Intentá de nuevo." };
+    }
   } catch {
-    return;
+    return { error: "Error al conectar con el modelo de IA. Verificá tu conexión." };
   }
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
@@ -83,11 +85,11 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
   redirect(`/admin/assessments/${assessment.id}`);
 }
 
-export async function publishAssessmentAction(formData: FormData): Promise<void> {
+export async function publishAssessmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const parsed = publishAssessmentSchema.safeParse({ id: formData.get("id") });
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await publishAssessment(parsed.data.id);
 
@@ -96,11 +98,11 @@ export async function publishAssessmentAction(formData: FormData): Promise<void>
   redirect(`/admin/assessments/${parsed.data.id}`);
 }
 
-export async function archiveAssessmentAction(formData: FormData): Promise<void> {
+export async function archiveAssessmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const id = formData.get("id") as string;
-  if (!id) return;
+  if (!id) return { error: "ID requerido" };
 
   await archiveAssessment(id);
 
@@ -109,27 +111,27 @@ export async function archiveAssessmentAction(formData: FormData): Promise<void>
   redirect(`/admin/assessments/${id}`);
 }
 
-export async function submitAttemptAction(formData: FormData): Promise<void> {
+export async function submitAttemptAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["alumno"]);
   const user = await getCurrentUser();
-  if (!user) return;
+  if (!user) return { error: "No autorizado" };
 
   const answersRaw = formData.get("answers") as string;
   let answers: number[];
   try {
     answers = JSON.parse(answersRaw);
   } catch {
-    return;
+    return { error: "Respuestas inválidas" };
   }
 
   const parsed = submitAttemptSchema.safeParse({
     assessmentId: formData.get("assessmentId"),
     answers,
   });
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const detail = await getAssessmentDetail(parsed.data.assessmentId);
-  if (!detail || detail.status !== "published") return;
+  if (!detail || detail.status !== "published") return { error: "Evaluación no disponible" };
 
   await submitAttempt(parsed.data, user.id, detail.questions);
 

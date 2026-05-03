@@ -4,6 +4,7 @@ import { getStudentById } from "@/modules/students/services/students.service";
 import { getEnrollmentsByStudent } from "@/modules/enrollments/services/enrollments.service";
 import { getPaymentsByStudent } from "@/modules/payments/services/payments.service";
 import { deleteStudentAction } from "@/modules/students/actions";
+import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -46,37 +47,23 @@ export default async function StudentDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link
-            href="/admin/students"
-            className="text-sm text-slate-400 hover:text-slate-600 mb-1 block"
-          >
+          <Link href="/admin/students" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
             ← Alumnos
           </Link>
-          <h2 className="text-2xl font-bold text-slate-900">
-            {student.profile.fullName}
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900">{student.profile.fullName}</h2>
         </div>
         <div className="flex gap-2">
-          <Link
-            href={`/admin/students/${student.id}/edit`}
-            className={buttonVariants({ variant: "secondary" })}
-          >
+          <Link href={`/admin/students/${student.id}/edit`} className={buttonVariants({ variant: "secondary" })}>
             Editar
           </Link>
-          <form action={deleteStudentAction as never}>
-            <input type="hidden" name="id" value={student.id} />
-            <button
-              type="submit"
-              className={buttonVariants({ variant: "danger" })}
-              onClick={(e) => {
-                if (!confirm("¿Estás seguro de eliminar este alumno? Esta acción no se puede deshacer.")) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              Eliminar
-            </button>
-          </form>
+          <FormButton
+            action={deleteStudentAction}
+            fields={{ id: student.id }}
+            variant="danger"
+            confirmMessage="¿Estás seguro de eliminar este alumno? Esta acción no se puede deshacer."
+          >
+            Eliminar
+          </FormButton>
         </div>
       </div>
 
@@ -123,28 +110,20 @@ export default async function StudentDetailPage({
         </Card>
       </div>
 
-      {/* Enrollments */}
       <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-900">Inscripciones</h3>
-          <Link
-            href={`/admin/enrollments/new?studentId=${student.id}`}
-            className="text-xs text-brand-700 hover:underline font-medium"
-          >
+          <Link href={`/admin/enrollments/new?studentId=${student.id}`} className="text-xs text-brand-700 hover:underline font-medium">
             + Inscribir en curso
           </Link>
         </div>
         <EnrollmentList enrollments={studentEnrollments} />
       </div>
 
-      {/* Payments */}
       <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-900">Pagos</h3>
-          <Link
-            href={`/admin/payments/new?studentId=${student.id}`}
-            className="text-xs text-brand-700 hover:underline font-medium"
-          >
+          <Link href={`/admin/payments/new?studentId=${student.id}`} className="text-xs text-brand-700 hover:underline font-medium">
             + Registrar pago
           </Link>
         </div>

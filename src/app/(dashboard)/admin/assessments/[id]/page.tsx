@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getAssessmentDetail } from "@/modules/assessments/services/assessments.service";
 import { publishAssessmentAction, archiveAssessmentAction } from "@/modules/assessments/actions";
+import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { buttonVariants } from "@/components/ui/Button";
 import type { AssessmentStatus, QuizQuestion } from "@/modules/assessments/types";
 
 const STATUS_CONFIG: Record<AssessmentStatus, { label: string; variant: "info" | "success" | "neutral" | "warning" }> = {
@@ -43,7 +43,6 @@ export default async function AdminAssessmentDetailPage({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Questions preview */}
         <div className="lg:col-span-2 space-y-4">
           <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
             Preguntas generadas ({questions.length})
@@ -79,9 +78,7 @@ export default async function AdminAssessmentDetailPage({
           ))}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4">
-          {/* Stats */}
           <Card title="Estadísticas" padding="md">
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -113,19 +110,18 @@ export default async function AdminAssessmentDetailPage({
             </dl>
           </Card>
 
-          {/* Actions */}
           <Card title="Acciones" padding="md">
             <div className="space-y-3">
               {assessment.status === "draft" && (
-                <form action={publishAssessmentAction}>
-                  <input type="hidden" name="id" value={assessment.id} />
-                  <button
-                    type="submit"
-                    className={buttonVariants({ variant: "primary", size: "sm" }) + " w-full justify-center"}
-                  >
-                    Publicar evaluación
-                  </button>
-                </form>
+                <FormButton
+                  action={publishAssessmentAction}
+                  fields={{ id: assessment.id }}
+                  variant="primary"
+                  size="sm"
+                  className="w-full justify-center"
+                >
+                  Publicar evaluación
+                </FormButton>
               )}
 
               {assessment.status === "published" && (
@@ -133,15 +129,15 @@ export default async function AdminAssessmentDetailPage({
                   <p className="text-xs text-slate-500">
                     Los alumnos del curso pueden ver y responder esta evaluación.
                   </p>
-                  <form action={archiveAssessmentAction}>
-                    <input type="hidden" name="id" value={assessment.id} />
-                    <button
-                      type="submit"
-                      className={buttonVariants({ variant: "ghost", size: "sm" }) + " w-full justify-center"}
-                    >
-                      Archivar
-                    </button>
-                  </form>
+                  <FormButton
+                    action={archiveAssessmentAction}
+                    fields={{ id: assessment.id }}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-center"
+                  >
+                    Archivar
+                  </FormButton>
                 </div>
               )}
 

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { loginSchema, registerSchema } from "./schemas";
+import type { ActionResult } from "@/lib/action-result";
 
 export async function loginAction(_prev: unknown, formData: FormData) {
   const raw = {
@@ -40,7 +41,6 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     .eq("id", user.id)
     .single();
 
-  // Profile missing — auto-create from auth metadata
   if (!profile) {
     const meta = user.user_metadata ?? {};
     const { data: created } = await supabase
@@ -56,13 +56,10 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     profile = created;
   }
 
-  // redirect() throws internally — Next.js includes Set-Cookie headers from
-  // the supabase session in the redirect response, so cookies are committed
-  // before the browser navigates.
   redirect(`/${profile?.role ?? "alumno"}`);
 }
 
-export async function registerAction(formData: FormData) {
+export async function registerAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const raw = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
@@ -72,12 +69,8 @@ export async function registerAction(formData: FormData) {
   };
 
   const parsed = registerSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  // Self-registration is only allowed for non-privileged roles.
-  // Admins create other admins/teachers via the Users panel.
   const allowedSelfRegisterRoles = ["alumno", "tutor"] as const;
   type AllowedRole = (typeof allowedSelfRegisterRoles)[number];
   if (!(allowedSelfRegisterRoles as readonly string[]).includes(parsed.data.role)) {
@@ -98,9 +91,7 @@ export async function registerAction(formData: FormData) {
     },
   });
 
-  if (error) {
-    return { error: error.message };
-  }
+  if (error) return { error: error.message };
 
   if (data.user) {
     await supabase.from("profiles").insert({

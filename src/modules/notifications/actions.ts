@@ -11,8 +11,9 @@ import {
   sendToRole,
   sendToCourse,
 } from "./services/notifications.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function sendNotificationAction(formData: FormData): Promise<void> {
+export async function sendNotificationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -23,19 +24,16 @@ export async function sendNotificationAction(formData: FormData): Promise<void> 
   };
 
   const parsed = sendNotificationSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const { targetId, type, title, body } = parsed.data;
   const payload = { type: type as never, title, body };
 
   if (targetId.startsWith("role:")) {
-    const role = targetId.replace("role:", "");
-    await sendToRole(role, payload);
+    await sendToRole(targetId.replace("role:", ""), payload);
   } else if (targetId.startsWith("course:")) {
-    const courseId = targetId.replace("course:", "");
-    await sendToCourse(courseId, payload);
+    await sendToCourse(targetId.replace("course:", ""), payload);
   } else {
-    // individual user UUID
     await sendToUser(targetId, payload);
   }
 
@@ -43,7 +41,7 @@ export async function sendNotificationAction(formData: FormData): Promise<void> 
   redirect("/admin/notifications");
 }
 
-export async function markAsReadAction(formData: FormData) {
+export async function markAsReadAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return;
 
@@ -57,7 +55,7 @@ export async function markAsReadAction(formData: FormData) {
   revalidatePath("/profesor/notifications");
 }
 
-export async function markAllAsReadAction() {
+export async function markAllAsReadAction(_prev: ActionResult, _formData?: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return;
 
@@ -66,4 +64,5 @@ export async function markAllAsReadAction() {
   revalidatePath("/alumno/notifications");
   revalidatePath("/tutor/notifications");
   revalidatePath("/profesor/notifications");
+  return { success: "Notificaciones marcadas como leídas" };
 }

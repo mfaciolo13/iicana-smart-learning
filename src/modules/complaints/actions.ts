@@ -5,10 +5,11 @@ import { redirect } from "next/navigation";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { createComplaintSchema, updateComplaintStatusSchema } from "./schemas";
 import { createComplaint, updateComplaintStatus } from "./services/complaints.service";
+import type { ActionResult } from "@/lib/action-result";
 
-export async function createComplaintAction(formData: FormData): Promise<void> {
+export async function createComplaintAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
+  if (!user) return { error: "No autorizado" };
 
   const raw = {
     type: formData.get("type") as string,
@@ -16,7 +17,7 @@ export async function createComplaintAction(formData: FormData): Promise<void> {
   };
 
   const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await createComplaint(user.id, parsed.data);
 
@@ -24,12 +25,12 @@ export async function createComplaintAction(formData: FormData): Promise<void> {
   revalidatePath("/tutor/complaints");
   revalidatePath("/profesor/complaints");
   revalidatePath("/admin/complaints");
-  redirect(`/alumno/complaints`);
+  redirect("/alumno/complaints");
 }
 
-export async function createComplaintAsTutorAction(formData: FormData): Promise<void> {
+export async function createComplaintAsTutorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
+  if (!user) return { error: "No autorizado" };
 
   const raw = {
     type: formData.get("type") as string,
@@ -37,7 +38,7 @@ export async function createComplaintAsTutorAction(formData: FormData): Promise<
   };
 
   const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await createComplaint(user.id, parsed.data);
 
@@ -46,9 +47,9 @@ export async function createComplaintAsTutorAction(formData: FormData): Promise<
   redirect("/tutor/complaints");
 }
 
-export async function createComplaintAsProfesorAction(formData: FormData): Promise<void> {
+export async function createComplaintAsProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
+  if (!user) return { error: "No autorizado" };
 
   const raw = {
     type: formData.get("type") as string,
@@ -56,7 +57,7 @@ export async function createComplaintAsProfesorAction(formData: FormData): Promi
   };
 
   const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await createComplaint(user.id, parsed.data);
 
@@ -65,7 +66,7 @@ export async function createComplaintAsProfesorAction(formData: FormData): Promi
   redirect("/profesor/complaints");
 }
 
-export async function updateComplaintStatusAction(formData: FormData): Promise<void> {
+export async function updateComplaintStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["admin"]);
 
   const raw = {
@@ -74,7 +75,7 @@ export async function updateComplaintStatusAction(formData: FormData): Promise<v
   };
 
   const parsed = updateComplaintStatusSchema.safeParse(raw);
-  if (!parsed.success) return;
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await updateComplaintStatus(parsed.data.id, parsed.data.status);
 
