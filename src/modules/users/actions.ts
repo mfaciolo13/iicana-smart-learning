@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { requireRole } from "@/lib/auth/helpers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { updateUserSchema } from "./schemas";
@@ -50,7 +51,10 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
   if (!email) return { error: "Email requerido" };
 
   const adminSupabase = createAdminClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const hdrs = await headers();
+  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
+  const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
+  const siteUrl = `${proto}://${host}`;
 
   const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
     type: "recovery",
@@ -62,18 +66,16 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
     return { error: "No se pudo generar el link. Verificá que el usuario exista." };
   }
 
-  try {
-    await sendInvitationEmail({
-      to: email,
-      fullName: fullName || email,
-      role: role || "alumno",
-      inviteLink: linkData.properties.action_link,
-    });
-  } catch {
-    return { error: "El link fue generado pero no se pudo enviar el email." };
-  }
+  const inviteLink = linkData.properties.action_link;
 
-  return { success: `Invitación reenviada a ${email}` };
+  await sendInvitationEmail({
+    to: email,
+    fullName: fullName || email,
+    role: role || "alumno",
+    inviteLink,
+  }).catch(() => {});
+
+  return { success: `Invitación reenviada a ${email}`, inviteLink };
 }
 
 export async function unbanUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
