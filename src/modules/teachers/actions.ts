@@ -51,27 +51,18 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
   const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
   const siteUrl = `${proto}://${host}`;
 
-  const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
-    type: "recovery",
-    email: parsed.data.email,
-    options: { redirectTo: `${siteUrl}/update-password` },
-  });
+  const encoded = Buffer.from(parsed.data.email).toString("base64url");
+  const safeInviteUrl = `${siteUrl}/invite/${encoded}`;
 
-  if (linkError) console.error("[teachers] generateLink error:", linkError.message);
-
-  const inviteLink = linkData?.properties?.action_link;
-  if (inviteLink) console.log("[teachers] invite link generated for:", parsed.data.email, "→ redirect_to:", `${siteUrl}/update-password`);
-  if (inviteLink) {
-    await sendInvitationEmail({
-      to: parsed.data.email,
-      fullName: parsed.data.fullName,
-      role: "profesor",
-      inviteLink,
-    }).catch(() => {});
-  }
+  await sendInvitationEmail({
+    to: parsed.data.email,
+    fullName: parsed.data.fullName,
+    role: "profesor",
+    inviteLink: safeInviteUrl,
+  }).catch(() => {});
 
   revalidatePath("/admin/teachers");
-  return { success: "Docente registrado correctamente", redirectTo: "/admin/teachers", inviteLink: inviteLink ?? undefined };
+  return { success: "Docente registrado correctamente", redirectTo: "/admin/teachers", inviteLink: safeInviteUrl };
 }
 
 export async function updateTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

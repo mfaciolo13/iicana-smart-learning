@@ -20,7 +20,7 @@ export async function sendInvitationEmail({
   to: string;
   fullName: string;
   role: string;
-  inviteLink: string;
+  inviteLink: string; // safe /invite/[encoded] URL, not a raw Supabase OTP link
 }) {
   if (IS_DEV) {
     console.log(`\n📧 [DEV] Invitation email for ${to}\n🔗 Link: ${inviteLink}\n`);
@@ -53,12 +53,25 @@ export async function sendInvitationEmail({
             <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
             <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
               Tu cuenta de <strong>${roleLabel}</strong> en IICANA Smart Learning fue creada por el equipo administrativo.
+              Para ingresar por primera vez, establecé tu contraseña haciendo clic en el botón de abajo.
             </p>
             <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">
-              Para ingresar por primera vez y establecer tu contraseña, usá el <strong>link de acceso que el administrador te va a enviar por separado</strong> (por WhatsApp u otro medio).
+              El link no expira hasta que lo uses.
             </p>
+            <!-- CTA -->
+            <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
+              <tr>
+                <td style="background:#1d4ed8;border-radius:8px;">
+                  <a href="${inviteLink}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
+                    Establecer mi contraseña →
+                  </a>
+                </td>
+              </tr>
+            </table>
             <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
-              Si no esperabas este email, podés ignorarlo con seguridad.
+              Si no esperabas este email, podés ignorarlo con seguridad.<br />
+              Si el botón no funciona, copiá este link en tu navegador:<br />
+              <a href="${inviteLink}" style="color:#3b82f6;word-break:break-all;">${inviteLink}</a>
             </p>
           </td>
         </tr>
