@@ -82,12 +82,6 @@ export default function LoginPage() {
               {pending ? "Ingresando..." : "Ingresar"}
             </Button>
 
-            <p className="text-center text-sm text-slate-500">
-              ¿No tenés cuenta?{" "}
-              <a href="/register" className="text-brand-700 hover:underline font-medium">
-                Registrarse
-              </a>
-            </p>
           </form>
         </div>
 
