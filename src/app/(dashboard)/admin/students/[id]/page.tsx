@@ -4,6 +4,7 @@ import { getStudentById } from "@/modules/students/services/students.service";
 import { getEnrollmentsByStudent } from "@/modules/enrollments/services/enrollments.service";
 import { getPaymentsByStudent } from "@/modules/payments/services/payments.service";
 import { deleteStudentAction } from "@/modules/students/actions";
+import { resendInvitationAction } from "@/modules/users/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -82,6 +83,18 @@ export default async function StudentDetailPage({
               </div>
             ))}
           </dl>
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <FormButton
+              action={resendInvitationAction}
+              fields={{ email: student.profile.email, fullName: student.profile.fullName, role: "alumno" }}
+              variant="ghost"
+              size="sm"
+              className="w-full justify-center text-slate-600"
+              confirmMessage={`¿Reenviar invitación a ${student.profile.email}?`}
+            >
+              Reenviar invitación por email
+            </FormButton>
+          </div>
         </Card>
 
         <Card title="Datos académicos">

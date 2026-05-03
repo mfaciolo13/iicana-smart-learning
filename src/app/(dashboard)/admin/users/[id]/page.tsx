@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getUserDetail } from "@/modules/users/services/users.service";
-import { updateUserAction, banUserAction, unbanUserAction } from "@/modules/users/actions";
+import { updateUserAction, banUserAction, unbanUserAction, resendInvitationAction } from "@/modules/users/actions";
 import { UserEditForm } from "@/modules/users/components/UserEditForm";
 import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
@@ -127,6 +127,18 @@ export default async function UserDetailPage({
                 </FormButton>
               </div>
             )}
+            <div className="pt-3 mt-3 border-t border-slate-100">
+              <FormButton
+                action={resendInvitationAction}
+                fields={{ email: user.email, fullName: user.fullName, role: user.role }}
+                variant="ghost"
+                size="sm"
+                className="w-full justify-center text-slate-600"
+                confirmMessage={`¿Reenviar invitación a ${user.email}?`}
+              >
+                Reenviar invitación por email
+              </FormButton>
+            </div>
           </Card>
         </div>
       </div>
