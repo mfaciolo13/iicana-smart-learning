@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
-import { attendance, enrollments, students, courses, profiles } from "@/lib/drizzle/schema";
-import { eq, and, desc, count, sql } from "drizzle-orm";
+import { attendance, enrollments, students, courses, profiles, tutors } from "@/lib/drizzle/schema";
+import { eq, and, desc, count, sql, inArray } from "drizzle-orm";
 import type { AttendanceRecord, AttendanceSession } from "../types";
 
 export async function getAttendanceByCourse(
@@ -85,6 +85,75 @@ export async function isAttendanceRecorded(courseId: string, classDate: string):
     .where(and(eq(enrollments.courseId, courseId), eq(attendance.classDate, classDate)));
 
   return (row?.total ?? 0) > 0;
+}
+
+export interface ConsecutiveAbsenceAlert {
+  enrollmentId: string;
+  studentName: string;
+  courseName: string;
+  studentProfileId: string;
+  tutorProfileId: string | null;
+}
+
+export async function checkConsecutiveAbsences(
+  absentEnrollmentIds: string[]
+): Promise<ConsecutiveAbsenceAlert[]> {
+  if (absentEnrollmentIds.length === 0) return [];
+
+  // Get last 2 attendance records for each absent enrollment
+  const lastTwo = await db
+    .select({
+      enrollmentId: attendance.enrollmentId,
+      status: attendance.status,
+    })
+    .from(attendance)
+    .where(inArray(attendance.enrollmentId, absentEnrollmentIds))
+    .orderBy(attendance.enrollmentId, desc(attendance.classDate));
+
+  // Group by enrollment and keep only last 2
+  const byEnrollment = new Map<string, string[]>();
+  for (const row of lastTwo) {
+    const list = byEnrollment.get(row.enrollmentId) ?? [];
+    if (list.length < 2) list.push(row.status);
+    byEnrollment.set(row.enrollmentId, list);
+  }
+
+  // Find enrollments with 2 consecutive absences
+  const triggered = [...byEnrollment.entries()]
+    .filter(([, statuses]) => statuses.length === 2 && statuses[0] === "absent" && statuses[1] === "absent")
+    .map(([id]) => id);
+
+  if (triggered.length === 0) return [];
+
+  // Fetch student + course + tutor info for triggered enrollments
+  const info = await db
+    .select({
+      enrollmentId: enrollments.id,
+      studentName: profiles.fullName,
+      courseName: courses.name,
+      studentProfileId: students.profileId,
+      tutorId: students.tutorId,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(inArray(enrollments.id, triggered));
+
+  // Resolve tutor profileId for each alert
+  const tutorIds = info.map((r) => r.tutorId).filter(Boolean) as string[];
+  const tutorProfiles = tutorIds.length > 0
+    ? await db.select({ id: tutors.id, profileId: tutors.profileId }).from(tutors).where(inArray(tutors.id, tutorIds))
+    : [];
+  const tutorMap = new Map(tutorProfiles.map((t) => [t.id, t.profileId]));
+
+  return info.map((r) => ({
+    enrollmentId: r.enrollmentId,
+    studentName: r.studentName,
+    courseName: r.courseName,
+    studentProfileId: r.studentProfileId,
+    tutorProfileId: r.tutorId ? (tutorMap.get(r.tutorId) ?? null) : null,
+  }));
 }
 
 export async function recordBulkAttendance(
