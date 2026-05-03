@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/Button";
@@ -53,7 +53,9 @@ export function FormButton({
   function handleConfirm() {
     setShowConfirm(false);
     if (formRef.current) {
-      formAction(new FormData(formRef.current));
+      startTransition(() => {
+        formAction(new FormData(formRef.current!));
+      });
     }
   }
 
