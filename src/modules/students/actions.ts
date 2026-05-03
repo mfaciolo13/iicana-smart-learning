@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import { createStudentSchema, updateStudentSchema } from "./schemas";
 import { createStudent, updateStudent, deleteStudent } from "./services/students.service";
+import { sendInvitationEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -46,6 +47,19 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   });
 
   await createStudent(authData.user.id, parsed.data);
+
+  const { data: linkData } = await adminSupabase.auth.admin.generateLink({
+    type: "recovery",
+    email: parsed.data.email,
+  });
+  if (linkData?.properties?.action_link) {
+    await sendInvitationEmail({
+      to: parsed.data.email,
+      fullName: parsed.data.fullName,
+      role: "alumno",
+      inviteLink: linkData.properties.action_link,
+    }).catch(() => {});
+  }
 
   revalidatePath("/admin/students");
   redirect("/admin/students");
