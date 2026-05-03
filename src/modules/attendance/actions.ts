@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
-import { recordBulkAttendance, isAttendanceRecorded } from "./services/attendance.service";
+import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences } from "./services/attendance.service";
+import { sendToRole, sendToUser } from "@/modules/notifications/services/notifications.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function recordAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -28,6 +29,21 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
   }));
 
   await recordBulkAttendance(records);
+
+  // Check for consecutive absences and notify
+  const absentIds = records.filter((r) => r.status === "absent").map((r) => r.enrollmentId);
+  const alerts = await checkConsecutiveAbsences(absentIds);
+  for (const alert of alerts) {
+    const payload = {
+      type: "absence" as const,
+      title: "2 ausencias consecutivas",
+      body: `${alert.studentName} acumuló 2 ausencias seguidas en ${alert.courseName}.`,
+    };
+    await sendToRole("admin", payload);
+    if (alert.tutorProfileId) {
+      await sendToUser(alert.tutorProfileId, payload);
+    }
+  }
 
   revalidatePath("/admin/attendance");
   redirect("/admin/attendance");
