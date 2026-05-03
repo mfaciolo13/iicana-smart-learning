@@ -29,6 +29,7 @@ export function TeacherForm({ teacher, action, submitLabel = "Guardar" }: Teache
       toast.success(state.success);
       if (state.inviteLink) {
         setInviteLink(state.inviteLink);
+        prompt("Link de acceso generado — copialo y mandáselo al docente:", state.inviteLink);
       } else if (state.redirectTo) {
         router.push(state.redirectTo);
       }

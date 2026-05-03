@@ -52,6 +52,7 @@ export function StudentForm({ student, tutors = [], action, submitLabel = "Guard
       toast.success(state.success);
       if (state.inviteLink) {
         setInviteLink(state.inviteLink);
+        prompt("Link de acceso generado — copialo y mandáselo al alumno:", state.inviteLink);
       } else if (state.redirectTo) {
         router.push(state.redirectTo);
       }
