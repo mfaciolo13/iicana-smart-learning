@@ -62,6 +62,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   if (linkError) console.error("[students] generateLink error:", linkError.message);
 
   const inviteLink = linkData?.properties?.action_link;
+  if (inviteLink) console.log("[students] invite link generated for:", parsed.data.email, "→ redirect_to:", `${siteUrl}/update-password`);
   if (inviteLink) {
     await sendInvitationEmail({
       to: parsed.data.email,
