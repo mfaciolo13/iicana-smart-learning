@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "IICANA Smart Learning",
-  description: "Sistema de gestión académica — IICANA filial Pueyrredón",
+  title: "Smart Learning",
+  description: "Sistema de gestión académica inteligente",
 };
 
 export default function RootLayout({

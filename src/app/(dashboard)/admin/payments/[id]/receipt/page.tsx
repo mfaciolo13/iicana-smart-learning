@@ -44,7 +44,7 @@ export default async function PaymentReceiptPage({
 
       <div className="max-w-lg mx-auto bg-white border border-slate-200 rounded-2xl shadow-sm p-10 print:shadow-none print:border-none print:rounded-none print:p-8">
         <div className="text-center mb-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Instituto IICANA</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Smart Learning</p>
           <h1 className="text-2xl font-bold text-slate-900">Recibo de Pago</h1>
           {payment.receiptNumber && (
             <p className="text-sm font-mono text-slate-500 mt-1">N° {payment.receiptNumber}</p>
@@ -84,7 +84,7 @@ export default async function PaymentReceiptPage({
         </div>
 
         <div className="mt-10 pt-6 border-t border-slate-100 text-center text-xs text-slate-300">
-          Documento generado por IICANA Smart Learning
+          Documento generado por Smart Learning
         </div>
       </div>
     </div>
