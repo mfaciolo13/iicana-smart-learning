@@ -18,9 +18,10 @@ interface AttendanceTakerProps {
   courseId: string;
   classDate: string;
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
+  redirectTo?: string;
 }
 
-export function AttendanceTaker({ enrollments, courseId, classDate, action }: AttendanceTakerProps) {
+export function AttendanceTaker({ enrollments, courseId, classDate, action, redirectTo }: AttendanceTakerProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
 
@@ -45,6 +46,7 @@ export function AttendanceTaker({ enrollments, courseId, classDate, action }: At
       <input type="hidden" name="courseId" value={courseId} />
       <input type="hidden" name="classDate" value={classDate} />
       <input type="hidden" name="enrollmentIds" value={enrollments.map((e) => e.id).join(",")} />
+      {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
 
       <div className="space-y-1">
         {enrollments.map((enrollment) => (

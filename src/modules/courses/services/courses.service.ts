@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { courses, teachers, profiles, enrollments } from "@/lib/drizzle/schema";
-import { eq, ilike, count, sql } from "drizzle-orm";
+import { eq, ilike, count, sql, and } from "drizzle-orm";
 import type { CreateCourseInput, UpdateCourseInput } from "../schemas";
 import type { CourseListItem, CourseWithTeacher } from "../types";
 
@@ -24,6 +24,32 @@ export async function getCourses(search?: string): Promise<CourseListItem[]> {
       sql`${enrollments.courseId} = ${courses.id} AND ${enrollments.status} = 'active'`
     )
     .where(search ? ilike(courses.name, `%${search}%`) : undefined)
+    .groupBy(courses.id, profiles.fullName)
+    .orderBy(courses.name);
+
+  return rows as CourseListItem[];
+}
+
+export async function getCoursesByTeacherProfile(profileId: string): Promise<CourseListItem[]> {
+  const rows = await db
+    .select({
+      id: courses.id,
+      name: courses.name,
+      level: courses.level,
+      schedule: courses.schedule,
+      status: courses.status,
+      maxCapacity: courses.maxCapacity,
+      teacherName: profiles.fullName,
+      enrollmentCount: sql<number>`cast(count(${enrollments.id}) as int)`,
+    })
+    .from(courses)
+    .innerJoin(teachers, eq(courses.teacherId, teachers.id))
+    .leftJoin(profiles, eq(teachers.profileId, profiles.id))
+    .leftJoin(
+      enrollments,
+      sql`${enrollments.courseId} = ${courses.id} AND ${enrollments.status} = 'active'`
+    )
+    .where(and(eq(teachers.profileId, profileId), eq(courses.status, "active")))
     .groupBy(courses.id, profiles.fullName)
     .orderBy(courses.name);
 

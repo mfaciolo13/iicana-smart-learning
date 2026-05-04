@@ -1,0 +1,93 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getServerUser } from "@/lib/auth/helpers";
+import { getRecentSessionsByTeacher } from "@/modules/attendance/services/attendance.service";
+import { buttonVariants } from "@/components/ui/Button";
+
+const STATUS_COLORS = {
+  high: "bg-emerald-500",
+  mid: "bg-amber-400",
+  low: "bg-red-500",
+};
+
+export default async function ProfesorAttendancePage() {
+  const user = await getServerUser();
+  if (!user) redirect("/login");
+
+  const sessions = await getRecentSessionsByTeacher(user.id);
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Asistencia</h2>
+          <p className="text-sm text-slate-400 mt-0.5">
+            {sessions.length > 0 ? `Últimas ${sessions.length} clases registradas` : "Sin registros aún"}
+          </p>
+        </div>
+        <Link href="/profesor/attendance/new" className={buttonVariants({ variant: "primary" })}>
+          + Tomar asistencia
+        </Link>
+      </div>
+
+      {sessions.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+            <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <p className="text-base font-semibold text-slate-700">Sin registros de asistencia</p>
+          <p className="text-sm text-slate-400 mt-1">Empezá tomando la asistencia de una clase.</p>
+          <Link href="/profesor/attendance/new" className={`mt-4 ${buttonVariants({ variant: "primary" })}`}>
+            Tomar asistencia
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+          <table className="w-full text-sm min-w-[520px]">
+            <thead>
+              <tr className="border-b-2 border-brand-700">
+                <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 px-6 pr-4">Fecha</th>
+                <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Curso</th>
+                <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">Presentes</th>
+                <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">Ausentes</th>
+                <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">% Asistencia</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {sessions.map((s) => {
+                const pct = s.total > 0 ? Math.round(((s.present + s.late) / s.total) * 100) : 0;
+                const barColor = pct >= 80 ? STATUS_COLORS.high : pct >= 60 ? STATUS_COLORS.mid : STATUS_COLORS.low;
+                return (
+                  <tr key={`${s.courseId}-${s.classDate}`} className="hover:bg-brand-50 transition-colors">
+                    <td className="py-3.5 pl-6 pr-4 font-medium text-slate-900">
+                      {new Date(s.classDate).toLocaleDateString("es-AR")}
+                    </td>
+                    <td className="py-3.5 pr-4 text-slate-700">{s.courseName}</td>
+                    <td className="py-3.5 pr-4 hidden sm:table-cell">
+                      <span className="text-emerald-600 font-medium">{s.present}</span>
+                      <span className="text-slate-400 text-xs"> / {s.total}</span>
+                    </td>
+                    <td className="py-3.5 pr-4 hidden sm:table-cell">
+                      <span className="text-red-500 font-medium">{s.absent}</span>
+                      {s.late > 0 && <span className="text-amber-500 text-xs ml-1">+{s.late} tarde</span>}
+                    </td>
+                    <td className="py-3.5 pr-6 hidden md:table-cell">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-xs text-slate-600">{pct}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
