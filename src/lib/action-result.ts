@@ -1,1 +1,1 @@
-export type ActionResult = { error?: string; success?: string; redirectTo?: string; inviteLink?: string } | undefined;
+export type ActionResult = { error?: string; success?: string; redirectTo?: string } | undefined;

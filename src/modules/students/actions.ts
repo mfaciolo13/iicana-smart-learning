@@ -64,7 +64,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   }).catch(() => {});
 
   revalidatePath("/admin/students");
-  return { success: "Alumno registrado correctamente", redirectTo: "/admin/students", inviteLink: safeInviteUrl };
+  return { success: "Alumno registrado correctamente", redirectTo: "/admin/students" };
 }
 
 export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

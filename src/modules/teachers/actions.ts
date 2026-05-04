@@ -62,7 +62,7 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
   }).catch(() => {});
 
   revalidatePath("/admin/teachers");
-  return { success: "Docente registrado correctamente", redirectTo: "/admin/teachers", inviteLink: safeInviteUrl };
+  return { success: "Docente registrado correctamente", redirectTo: "/admin/teachers" };
 }
 
 export async function updateTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

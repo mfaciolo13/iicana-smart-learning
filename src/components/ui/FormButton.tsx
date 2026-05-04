@@ -39,9 +39,6 @@ export function FormButton({
     if (state?.error) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
-      if (state.inviteLink) {
-        prompt("Link de acceso generado — copialo y mandáselo al usuario:", state.inviteLink);
-      }
       if (state.redirectTo) router.push(state.redirectTo);
     }
   }, [state]);
