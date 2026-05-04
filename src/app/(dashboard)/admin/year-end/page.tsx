@@ -2,6 +2,7 @@ import { getYearEndReport } from "@/modules/year-end/services/year-end.service";
 import { ATTENDANCE_THRESHOLD, GRADE_THRESHOLD } from "@/modules/promotions/services/promotions.service";
 import { consolidateYearEndAction } from "@/modules/year-end/actions";
 import { FormButton } from "@/components/ui/FormButton";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 const OUTCOME_STYLE: Record<string, string> = {
   promoted: "text-emerald-700 bg-emerald-50",
@@ -89,7 +90,7 @@ export default async function YearEndPage() {
                   </td>
                   <td className="px-5 py-3 text-slate-600">
                     <p>{r.courseName}</p>
-                    <p className="text-xs text-slate-400">{r.courseLevel}</p>
+                    <p className="text-xs text-slate-400">{LEVEL_LABELS[r.courseLevel] ?? r.courseLevel}</p>
                   </td>
                   <td className="px-5 py-3">
                     {r.attendancePct !== null ? (

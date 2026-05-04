@@ -6,15 +6,7 @@ import {
 } from "@/modules/promotions/services/promotions.service";
 import { FormButton } from "@/components/ui/FormButton";
 import { promoteStudentAction } from "@/modules/promotions/actions";
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Beginner",
-  elementary: "Elementary",
-  pre_intermediate: "Pre-Intermediate",
-  intermediate: "Intermediate",
-  upper_intermediate: "Upper-Intermediate",
-  advanced: "Advanced",
-};
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 function Pill({ ok, label }: { ok: boolean | null; label: string }) {
   if (ok === null)

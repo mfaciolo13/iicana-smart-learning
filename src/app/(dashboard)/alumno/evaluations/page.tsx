@@ -1,21 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/auth/helpers";
 import { getStudentByProfileId } from "@/modules/students/services/students.service";
 import { getEnrollmentsForSurvey } from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Beginner",
-  elementary: "Elementary",
-  pre_intermediate: "Pre-Intermediate",
-  intermediate: "Intermediate",
-  upper_intermediate: "Upper-Intermediate",
-  advanced: "Advanced",
-};
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 export default async function AlumnoEvaluationsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user) redirect("/login");
 
   const student = await getStudentByProfileId(user.id);

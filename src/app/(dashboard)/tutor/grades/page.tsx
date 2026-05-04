@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/auth/helpers";
 import { getGradesByTutor } from "@/modules/grades/services/grades.service";
 import type { GradeWithDetails } from "@/modules/grades/types";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 const EVAL_LABELS: Record<string, string> = {
   parcial: "Parcial",
@@ -31,8 +33,7 @@ function groupByStudentAndCourse(grades: GradeWithDetails[]) {
 }
 
 export default async function TutorGradesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [user, supabase] = await Promise.all([getServerUser(), createClient()]);
   if (!user) redirect("/login");
 
   const { data: tutor } = await supabase
@@ -86,7 +87,7 @@ export default async function TutorGradesPage() {
                         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50">
                           <div>
                             <p className="text-sm font-medium text-slate-700">{courseName}</p>
-                            <p className="text-xs text-slate-400">{courseGrades[0].courseLevel}</p>
+                            <p className="text-xs text-slate-400">{LEVEL_LABELS[courseGrades[0].courseLevel] ?? courseGrades[0].courseLevel}</p>
                           </div>
                           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${scoreColor(avg)}`}>
                             Promedio: {avg.toFixed(1)}

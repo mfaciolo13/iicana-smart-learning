@@ -85,10 +85,13 @@ export default async function UserDetailPage({
               <div className="flex justify-between">
                 <dt className="text-slate-400">Estado</dt>
                 <dd>
-                  {user.banned
-                    ? <span className="text-red-600 font-medium text-xs">Desactivado</span>
-                    : <span className="text-emerald-600 font-medium text-xs">Activo</span>
-                  }
+                  {user.banned ? (
+                    <span className="text-red-600 font-medium text-xs">Desactivado</span>
+                  ) : user.emailConfirmed ? (
+                    <span className="text-emerald-600 font-medium text-xs">Activo</span>
+                  ) : (
+                    <span className="text-amber-600 font-medium text-xs">Pendiente de confirmación</span>
+                  )}
                 </dd>
               </div>
             </dl>
@@ -127,18 +130,20 @@ export default async function UserDetailPage({
                 </FormButton>
               </div>
             )}
-            <div className="pt-3 mt-3 border-t border-slate-100">
-              <FormButton
-                action={resendInvitationAction}
-                fields={{ email: user.email, fullName: user.fullName, role: user.role }}
-                variant="ghost"
-                size="sm"
-                className="w-full justify-center text-slate-600"
-                confirmMessage={`¿Reenviar invitación a ${user.email}?`}
-              >
-                Reenviar invitación por email
-              </FormButton>
-            </div>
+            {!user.emailConfirmed && (
+              <div className="pt-3 mt-3 border-t border-slate-100">
+                <FormButton
+                  action={resendInvitationAction}
+                  fields={{ email: user.email, fullName: user.fullName, role: user.role }}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center text-slate-600"
+                  confirmMessage={`¿Reenviar invitación a ${user.email}?`}
+                >
+                  Reenviar invitación por email
+                </FormButton>
+              </div>
+            )}
           </Card>
         </div>
       </div>

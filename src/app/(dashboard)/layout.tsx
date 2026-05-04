@@ -15,7 +15,7 @@ export default async function DashboardLayout({
   if (!profile) redirect("/login");
 
   return (
-    <DashboardShell role={profile.role as UserRole} fullName={profile.full_name}>
+    <DashboardShell role={profile.role as UserRole} fullName={profile.full_name} avatarUrl={profile.avatar_url ?? null}>
       {children}
     </DashboardShell>
   );

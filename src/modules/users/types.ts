@@ -13,4 +13,5 @@ export interface UserDetail extends UserListItem {
   avatarUrl: string | null;
   updatedAt: Date;
   banned: boolean;
+  emailConfirmed: boolean;
 }

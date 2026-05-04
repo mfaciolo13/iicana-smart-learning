@@ -29,6 +29,7 @@ import {
   ClipboardCheck,
   Megaphone,
   Archive,
+  UserCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -57,13 +58,14 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Reportes", href: "/admin/reports", icon: BarChart2 },
     { label: "Usuarios", href: "/admin/users", icon: ShieldCheck },
     { label: "Autoevaluaciones IA", href: "/admin/assessments", icon: Sparkles },
+    { label: "Mi Perfil", href: "/admin/profile", icon: UserCircle },
   ],
   profesor: [
     { label: "Mis Cursos", href: "/profesor", icon: BookOpen },
     { label: "Asistencia", href: "/profesor/attendance", icon: CalendarCheck },
     { label: "Cargar Notas", href: "/profesor/grades", icon: PenLine },
     { label: "Mensajes", href: "/profesor/notifications", icon: MessageSquare },
-    { label: "Mi Perfil", href: "/profesor/profile", icon: UserCheck },
+    { label: "Mi Perfil", href: "/profesor/profile", icon: UserCircle },
   ],
   alumno: [
     { label: "Inicio", href: "/alumno", icon: Home },
@@ -73,12 +75,14 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Autoevaluaciones", href: "/alumno/assessments", icon: Sparkles },
     { label: "Pagos", href: "/alumno/payments", icon: CreditCard },
     { label: "Mensajes", href: "/alumno/notifications", icon: MessageSquare },
+    { label: "Mi Perfil", href: "/alumno/profile", icon: UserCircle },
   ],
   tutor: [
     { label: "Inicio", href: "/tutor", icon: Home },
     { label: "Mis Hijos/as", href: "/tutor/student", icon: Users },
     { label: "Pagos", href: "/tutor/payments", icon: CreditCard },
     { label: "Mensajes", href: "/tutor/notifications", icon: MessageSquare },
+    { label: "Mi Perfil", href: "/tutor/profile", icon: UserCircle },
   ],
 };
 
@@ -101,11 +105,12 @@ function getInitials(name: string) {
 interface SidebarProps {
   role: UserRole;
   fullName: string;
+  avatarUrl?: string | null;
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export function Sidebar({ role, fullName, isOpen = false, onClose }: SidebarProps) {
+export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const items = NAV_ITEMS[role];
 
@@ -182,18 +187,26 @@ export function Sidebar({ role, fullName, isOpen = false, onClose }: SidebarProp
 
       {/* User footer */}
       <div className="px-3 pb-4 pt-2 border-t border-white/5">
-        <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-white/5 mb-1">
+        <Link
+          href={`/${role}/profile`}
+          onClick={onClose}
+          className="flex items-center gap-3 px-3 py-3 rounded-lg bg-white/5 mb-1 hover:bg-white/10 transition-colors"
+        >
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+            className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold text-white shrink-0"
+            style={avatarUrl ? undefined : { background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
           >
-            {getInitials(fullName)}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
+            ) : (
+              getInitials(fullName)
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-white truncate">{fullName}</p>
             <p className="text-[10px] text-white/40 truncate">{ROLE_LABELS[role]}</p>
           </div>
-        </div>
+        </Link>
         <form action={logoutAction}>
           <button
             type="submit"
