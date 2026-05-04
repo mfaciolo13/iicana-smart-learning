@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getPaymentById } from "@/modules/payments/services/payments.service";
 import { PrintButton } from "./PrintButton";
 
@@ -36,8 +37,8 @@ export default async function PaymentReceiptPage({
   return (
     <div>
       <div className="flex items-center gap-4 mb-6 print:hidden">
-        <Link href={`/admin/payments/${id}`} className="text-sm text-slate-400 hover:text-slate-600">
-          ← Volver
+        <Link href={`/admin/payments/${id}`} className="text-sm text-slate-400 hover:text-slate-600 inline-flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" /> Volver
         </Link>
         <PrintButton />
       </div>

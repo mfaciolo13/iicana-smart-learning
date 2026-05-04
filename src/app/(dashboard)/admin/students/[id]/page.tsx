@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getStudentById } from "@/modules/students/services/students.service";
 import { getEnrollmentsByStudent } from "@/modules/enrollments/services/enrollments.service";
 import { getPaymentsByStudent } from "@/modules/payments/services/payments.service";
@@ -48,8 +49,8 @@ export default async function StudentDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/students" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Alumnos
+          <Link href="/admin/students" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Alumnos
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">{student.profile.fullName}</h2>
         </div>

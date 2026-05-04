@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getAttemptResult } from "@/modules/assessments/services/assessments.service";
 import type { QuizQuestion } from "@/modules/assessments/types";
@@ -54,8 +55,8 @@ export default async function AttemptResultPage({
   return (
     <div>
       <div className="mb-6">
-        <Link href="/alumno/assessments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-          ← Mis evaluaciones
+        <Link href="/alumno/assessments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" /> Mis evaluaciones
         </Link>
         <h2 className="text-2xl font-bold text-slate-900">Resultado</h2>
         <p className="text-sm text-slate-500 mt-0.5">

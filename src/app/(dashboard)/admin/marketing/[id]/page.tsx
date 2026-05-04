@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import {
   getCampaignById,
   CHANNEL_LABELS,
@@ -27,8 +28,8 @@ export default async function CampaignDetailPage({
   return (
     <div>
       <div className="mb-6">
-        <Link href="/admin/marketing" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-          ← Marketing
+        <Link href="/admin/marketing" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" /> Marketing
         </Link>
         <h2 className="text-2xl font-bold text-slate-900">{campaign.name}</h2>
         <p className="text-sm text-slate-400 mt-0.5">

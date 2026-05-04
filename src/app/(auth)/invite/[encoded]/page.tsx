@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -112,9 +113,9 @@ export default async function InvitePage({
                 <input type="hidden" name="email" value={email} />
                 <button
                   type="submit"
-                  className="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm"
+                  className="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm inline-flex items-center justify-center gap-1"
                 >
-                  Establecer mi contraseña →
+                  Establecer mi contraseña <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </form>
               <p className="text-xs text-slate-400 mt-4">

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { getServerUser } from "@/lib/auth/helpers";
 import { getStudentByProfileId } from "@/modules/students/services/students.service";
 import { getEnrollmentsForSurvey } from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
@@ -49,9 +50,9 @@ export default async function AlumnoEvaluationsPage() {
               ) : (
                 <Link
                   href={`/alumno/evaluations/${e.courseId}?enrollment=${e.enrollmentId}`}
-                  className="text-sm font-medium text-brand-700 hover:underline whitespace-nowrap"
+                  className="text-sm font-medium text-brand-700 hover:underline whitespace-nowrap inline-flex items-center gap-1"
                 >
-                  Evaluar →
+                  Evaluar <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               )}
             </div>

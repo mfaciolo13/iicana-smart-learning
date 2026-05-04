@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getUserDetail } from "@/modules/users/services/users.service";
 import { updateUserAction, banUserAction, unbanUserAction, resendInvitationAction } from "@/modules/users/actions";
 import { UserEditForm } from "@/modules/users/components/UserEditForm";
@@ -40,8 +41,8 @@ export default async function UserDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/users" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Usuarios
+          <Link href="/admin/users" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Usuarios
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">{user.fullName}</h2>
           <p className="text-sm text-slate-500 mt-0.5">{user.email}</p>

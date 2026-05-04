@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { getRecentSessions } from "@/modules/attendance/services/attendance.service";
 import { buttonVariants } from "@/components/ui/Button";
 
@@ -78,9 +79,9 @@ export default async function AttendancePage() {
                     <td className="py-3.5 pr-6 text-right">
                       <Link
                         href={`/admin/attendance/new?courseId=${s.courseId}&date=${s.classDate}&view=1`}
-                        className="text-brand-700 hover:underline text-xs font-medium"
+                        className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1"
                       >
-                        Ver →
+                        Ver <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </td>
                   </tr>

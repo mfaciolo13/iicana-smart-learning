@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getCourseById } from "@/modules/courses/services/courses.service";
 import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
 import { deleteCourseAction } from "@/modules/courses/actions";
@@ -44,8 +45,8 @@ export default async function CourseDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/courses" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Cursos
+          <Link href="/admin/courses" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Cursos
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">{course.name}</h2>
         </div>

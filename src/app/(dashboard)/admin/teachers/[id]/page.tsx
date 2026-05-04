@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getTeacherById } from "@/modules/teachers/services/teachers.service";
 import { deleteTeacherAction } from "@/modules/teachers/actions";
 import { resendInvitationAction } from "@/modules/users/actions";
@@ -21,8 +22,8 @@ export default async function TeacherDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/teachers" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Docentes
+          <Link href="/admin/teachers" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Docentes
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">{teacher.profile.fullName}</h2>
         </div>

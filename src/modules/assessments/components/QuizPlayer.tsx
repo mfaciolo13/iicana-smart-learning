@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { submitAttemptAction } from "../actions";
 import type { QuizQuestion } from "../types";
 
@@ -192,9 +193,9 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
           type="button"
           onClick={prev}
           disabled={current === 0}
-          className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1"
         >
-          ← Anterior
+          <ArrowLeft className="w-3.5 h-3.5" /> Anterior
         </button>
 
         <div className="flex items-center gap-3">
@@ -213,10 +214,10 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             <button
               type="button"
               onClick={next}
-              className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+              className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95 inline-flex items-center gap-1"
               style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
             >
-              Siguiente →
+              Siguiente <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
