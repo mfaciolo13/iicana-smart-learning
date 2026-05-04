@@ -50,13 +50,19 @@ export async function getUserDetail(id: string): Promise<UserDetail | null> {
   // Check ban and email confirmation status from Supabase auth
   try {
     const admin = createAdminClient();
-    const { data } = await admin.auth.admin.getUserById(id);
+    const { data, error } = await admin.auth.admin.getUserById(id);
+    console.log("[getUserDetail] id:", id);
+    console.log("[getUserDetail] error:", error);
+    console.log("[getUserDetail] email_confirmed_at:", data?.user?.email_confirmed_at);
+    console.log("[getUserDetail] last_sign_in_at:", data?.user?.last_sign_in_at);
     const banned =
       !!data?.user?.banned_until &&
       new Date(data.user.banned_until) > new Date();
     const emailConfirmed = !!data?.user?.email_confirmed_at || !!data?.user?.last_sign_in_at;
+    console.log("[getUserDetail] emailConfirmed:", emailConfirmed);
     return { ...rows[0], role: rows[0].role as UserRole, banned, emailConfirmed };
-  } catch {
+  } catch (e) {
+    console.log("[getUserDetail] catch:", e);
     return { ...rows[0], role: rows[0].role as UserRole, banned: false, emailConfirmed: false };
   }
 }
