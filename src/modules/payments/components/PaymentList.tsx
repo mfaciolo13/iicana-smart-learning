@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { PaymentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -59,7 +59,7 @@ export function PaymentList({ payments, showNewLink = false }: PaymentListProps)
                 : STATUS_CONFIG[p.status] ?? STATUS_CONFIG.pending;
 
             return (
-              <tr key={p.id} className={`transition-colors ${p.isOverdue && p.status !== "paid" ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-brand-50"}`}>
+              <tr key={p.id} className={`transition-colors relative group cursor-pointer ${p.isOverdue && p.status !== "paid" ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-brand-50"}`}>
                 <td className="py-3.5 pr-4">
                   <p className="font-medium text-slate-900">{p.studentName}</p>
                   <p className="text-xs text-slate-400 font-mono">{p.studentDni}</p>
@@ -78,9 +78,9 @@ export function PaymentList({ payments, showNewLink = false }: PaymentListProps)
                 <td className="py-3.5 pr-4">
                   <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                 </td>
-                <td className="py-3.5 text-right">
-                  <Link href={`/admin/payments/${p.id}`} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
-                    Ver <ArrowRight className="w-3.5 h-3.5" />
+                <td className="py-3.5 pr-4 text-right">
+                  <Link href={`/admin/payments/${p.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                   </Link>
                 </td>
               </tr>

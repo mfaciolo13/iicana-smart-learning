@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { CourseListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -74,7 +74,7 @@ export function CourseList({ courses }: CourseListProps) {
             const statusCfg = STATUS_CONFIG[course.status] ?? { label: course.status, variant: "neutral" as const };
             const isFull = course.enrollmentCount >= course.maxCapacity;
             return (
-              <tr key={course.id} className="hover:bg-brand-50 transition-colors">
+              <tr key={course.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
                 <td className="py-3.5 pr-4 font-medium text-slate-900">{course.name}</td>
                 <td className="py-3.5 pr-4 hidden sm:table-cell">
                   <Badge variant="info" dot={false}>{LEVEL_LABELS[course.level] ?? course.level}</Badge>
@@ -91,12 +91,9 @@ export function CourseList({ courses }: CourseListProps) {
                 <td className="py-3.5 pr-4">
                   <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                 </td>
-                <td className="py-3.5 text-right">
-                  <Link
-                    href={`/admin/courses/${course.id}`}
-                    className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1"
-                  >
-                    Ver <ArrowRight className="w-3.5 h-3.5" />
+                <td className="py-3.5 pr-4 text-right">
+                  <Link href={`/admin/courses/${course.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                   </Link>
                 </td>
               </tr>

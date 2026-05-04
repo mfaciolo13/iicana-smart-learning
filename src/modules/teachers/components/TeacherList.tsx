@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { TeacherListItem } from "../types";
 
 interface TeacherListProps {
@@ -49,19 +49,16 @@ export function TeacherList({ teachers }: TeacherListProps) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {teachers.map((teacher) => (
-            <tr key={teacher.id} className="hover:bg-brand-50 transition-colors">
+            <tr key={teacher.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
               <td className="py-3.5 pr-4 font-medium text-slate-900">{teacher.fullName}</td>
               <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{teacher.dni}</td>
               <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{teacher.email}</td>
               <td className="py-3.5 pr-4 text-slate-500 hidden sm:table-cell">
                 {teacher.specialization ?? <span className="text-slate-400">—</span>}
               </td>
-              <td className="py-3.5 text-right">
-                <Link
-                  href={`/admin/teachers/${teacher.id}`}
-                  className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1"
-                >
-                  Ver <ArrowRight className="w-3.5 h-3.5" />
+              <td className="py-3.5 pr-4 text-right">
+                <Link href={`/admin/teachers/${teacher.id}`} className="after:absolute after:inset-0 after:content-['']">
+                  <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                 </Link>
               </td>
             </tr>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { ComplaintItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -87,7 +87,7 @@ export function ComplaintList({ complaints, adminView = false, newLink }: Compla
               : undefined;
 
             return (
-              <tr key={c.id} className="hover:bg-brand-50 transition-colors">
+              <tr key={c.id} className={`hover:bg-brand-50 transition-colors ${detailHref ? "relative group cursor-pointer" : ""}`}>
                 {adminView && (
                   <td className="py-3.5 pr-4 hidden sm:table-cell">
                     <p className="font-medium text-slate-900">{c.authorName}</p>
@@ -108,10 +108,10 @@ export function ComplaintList({ complaints, adminView = false, newLink }: Compla
                 <td className="py-3.5 pr-4 text-slate-400 text-xs hidden sm:table-cell">
                   {new Date(c.createdAt).toLocaleDateString("es-AR")}
                 </td>
-                <td className="py-3.5 text-right">
+                <td className="py-3.5 pr-4 text-right">
                   {detailHref && (
-                    <Link href={detailHref} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
-                      Ver <ArrowRight className="w-3.5 h-3.5" />
+                    <Link href={detailHref} className="after:absolute after:inset-0 after:content-['']">
+                      <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                     </Link>
                   )}
                 </td>
