@@ -128,14 +128,16 @@ export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: 
       <div className="px-6 pt-6 pb-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black shrink-0"
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
           >
-            I
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="10,2 18,6.5 10,11 2,6.5" fill="white"/>
+              <path d="M4 8v3.5C4 14.5 7 16 10 16s6-1.5 6-4.5V8Z" fill="white" fillOpacity="0.3"/>
+            </svg>
           </div>
           <div>
-            <p className="text-sm font-bold text-white leading-none">IICANA</p>
-            <p className="text-[10px] text-white/40 mt-0.5 leading-none">Smart Learning</p>
+            <p className="text-sm font-bold text-white leading-none">Smart Learning</p>
           </div>
         </div>
         {/* Close button — only visible on mobile */}

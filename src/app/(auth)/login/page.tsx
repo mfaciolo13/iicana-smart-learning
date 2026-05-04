@@ -18,8 +18,19 @@ export default function LoginPage() {
       <div className="w-full max-w-[480px]">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-700 tracking-tight">IICANA</h1>
-          <p className="text-sm text-slate-500 mt-1">Sistema de Gestión Académica</p>
+          <div className="inline-flex items-center gap-2.5 mb-2">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
+            >
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="10,2 18,6.5 10,11 2,6.5" fill="white"/>
+                <path d="M4 8v3.5C4 14.5 7 16 10 16s6-1.5 6-4.5V8Z" fill="white" fillOpacity="0.3"/>
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Smart Learning</h1>
+          </div>
+          <p className="text-sm text-slate-500">Sistema de Gestión Académica</p>
         </div>
 
         {/* Card */}
@@ -86,7 +97,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          © IICANA Pueyrredón {new Date().getFullYear()}
+          © Smart Learning {new Date().getFullYear()}
         </p>
       </div>
     </div>

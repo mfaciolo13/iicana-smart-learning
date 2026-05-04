@@ -51,8 +51,19 @@ export default async function InvitePage({
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-120">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-700 tracking-tight">IICANA</h1>
-          <p className="text-sm text-slate-500 mt-1">Sistema de Gestión Académica</p>
+          <div className="inline-flex items-center gap-2.5 mb-2">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
+            >
+              <svg width="19" height="19" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="10,2 18,6.5 10,11 2,6.5" fill="white"/>
+                <path d="M4 8v3.5C4 14.5 7 16 10 16s6-1.5 6-4.5V8Z" fill="white" fillOpacity="0.3"/>
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Smart Learning</h1>
+          </div>
+          <p className="text-sm text-slate-500">Sistema de Gestión Académica</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-8 text-center">
@@ -92,7 +103,7 @@ export default async function InvitePage({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-2">¡Bienvenido/a a IICANA!</h2>
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">¡Bienvenido/a a Smart Learning!</h2>
               <p className="text-sm text-slate-500 mb-6">
                 Tu cuenta fue creada para <strong className="text-slate-700">{email}</strong>.<br />
                 Hacé clic para establecer tu contraseña y acceder a la plataforma.
@@ -114,7 +125,7 @@ export default async function InvitePage({
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          © IICANA Pueyrredón {new Date().getFullYear()}
+          © Smart Learning {new Date().getFullYear()}
         </p>
       </div>
     </div>

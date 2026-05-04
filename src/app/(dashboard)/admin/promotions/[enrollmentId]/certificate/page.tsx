@@ -42,7 +42,7 @@ export default async function CertificatePage({
         {/* Header */}
         <div className="text-center mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-500 mb-3">
-            Instituto IICANA
+            Smart Learning
           </p>
           <h1 className="text-3xl font-bold text-slate-900 tracking-wide">
             Certificado de Promoción
@@ -79,7 +79,7 @@ export default async function CertificatePage({
         </div>
 
         <p className="text-center text-xs text-slate-300 mt-6">
-          Documento generado por IICANA Smart Learning
+          Documento generado por Smart Learning
         </p>
       </div>
     </div>

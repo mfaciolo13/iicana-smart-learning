@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM = process.env.RESEND_FROM_EMAIL ?? "IICANA <noreply@iicana.edu.ar>";
+const FROM = process.env.RESEND_FROM_EMAIL ?? "Smart Learning <noreply@smartlearning.edu.ar>";
 const IS_DEV = process.env.NODE_ENV === "development";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -32,7 +32,7 @@ export async function sendInvitationEmail({
   await resend.emails.send({
     from: FROM,
     to,
-    subject: "Tu acceso a IICANA Smart Learning",
+    subject: "Tu acceso a Smart Learning",
     html: `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
@@ -43,7 +43,7 @@ export async function sendInvitationEmail({
         <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:32px 40px;">
-            <p style="margin:0;color:#bfdbfe;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">IICANA Smart Learning</p>
+            <p style="margin:0;color:#bfdbfe;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Smart Learning</p>
             <h1 style="margin:8px 0 0;color:#ffffff;font-size:22px;font-weight:700;">Bienvenido/a a la plataforma</h1>
           </td>
         </tr>
@@ -52,7 +52,7 @@ export async function sendInvitationEmail({
           <td style="padding:36px 40px;">
             <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
             <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
-              Tu cuenta de <strong>${roleLabel}</strong> en IICANA Smart Learning fue creada por el equipo administrativo.
+              Tu cuenta de <strong>${roleLabel}</strong> en Smart Learning fue creada por el equipo administrativo.
               Para ingresar por primera vez, establecé tu contraseña haciendo clic en el botón de abajo.
             </p>
             <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">
@@ -78,7 +78,7 @@ export async function sendInvitationEmail({
         <!-- Footer -->
         <tr>
           <td style="padding:20px 40px;border-top:1px solid #f1f5f9;">
-            <p style="margin:0;color:#cbd5e1;font-size:12px;">IICANA — Instituto de Intercambio Cultural Argentino Norteamericano</p>
+            <p style="margin:0;color:#cbd5e1;font-size:12px;">Smart Learning — Sistema de Gestión Académica</p>
           </td>
         </tr>
       </table>
