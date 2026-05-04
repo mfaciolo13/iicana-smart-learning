@@ -66,7 +66,7 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
     inviteLink: safeInviteUrl,
   }).catch(() => {});
 
-  return { success: `Invitación reenviada a ${email}`, inviteLink: safeInviteUrl };
+  return { success: `Invitación reenviada a ${email}` };
 }
 
 export async function unbanUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

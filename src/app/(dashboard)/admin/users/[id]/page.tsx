@@ -139,7 +139,6 @@ export default async function UserDetailPage({
                   variant="ghost"
                   size="sm"
                   className="w-full justify-center text-slate-600"
-                  confirmMessage={`¿Reenviar invitación a ${user.email}?`}
                 >
                   Reenviar invitación por email
                 </FormButton>
