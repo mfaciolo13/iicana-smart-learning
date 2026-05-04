@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/auth/helpers";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 export default async function AlumnoDashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [user, supabase] = await Promise.all([getServerUser(), createClient()]);
 
   const { data: student } = await supabase
     .from("students")
@@ -40,7 +41,7 @@ export default async function AlumnoDashboardPage() {
             return (
               <div key={e.id} className="text-sm text-slate-700">
                 <p className="font-medium">{course?.name}</p>
-                <p className="text-slate-400 mt-0.5">{course?.level} · {course?.schedule}</p>
+                <p className="text-slate-400 mt-0.5">{LEVEL_LABELS[course?.level ?? ""] ?? course?.level} · {course?.schedule}</p>
               </div>
             );
           })

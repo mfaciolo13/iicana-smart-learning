@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, Menu, LogOut } from "lucide-react";
+import { Bell, Menu, LogOut, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { logoutAction } from "@/modules/auth/actions";
 import type { UserRole } from "@/modules/auth/types";
@@ -18,6 +18,7 @@ function getInitials(name: string) {
 interface TopbarProps {
   fullName: string;
   role: UserRole;
+  avatarUrl?: string | null;
   onMenuClick?: () => void;
 }
 
@@ -28,7 +29,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   tutor: "Tutor",
 };
 
-export function Topbar({ fullName, role, onMenuClick }: TopbarProps) {
+export function Topbar({ fullName, role, avatarUrl, onMenuClick }: TopbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +55,6 @@ export function Topbar({ fullName, role, onMenuClick }: TopbarProps) {
         <Menu className="w-5 h-5" strokeWidth={2} />
       </button>
 
-      {/* Push everything else to the right */}
       <div className="flex-1" />
 
       {/* Notification bell */}
@@ -66,7 +66,6 @@ export function Topbar({ fullName, role, onMenuClick }: TopbarProps) {
         <Bell className="w-[18px] h-[18px]" strokeWidth={2} />
       </Link>
 
-      {/* Divider */}
       <div className="w-px h-5 bg-slate-200" />
 
       {/* User avatar + dropdown */}
@@ -83,19 +82,41 @@ export function Topbar({ fullName, role, onMenuClick }: TopbarProps) {
             <p className="text-[10px] text-slate-400 mt-0.5 leading-none">{ROLE_LABELS[role]}</p>
           </div>
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+            className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold text-white shrink-0"
+            style={avatarUrl ? undefined : { background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
           >
-            {getInitials(fullName)}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
+            ) : (
+              getInitials(fullName)
+            )}
           </div>
         </button>
 
         {dropdownOpen && (
           <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-50">
-            <div className="px-4 py-2.5 border-b border-slate-100">
+            {/* Header — clicking name/role goes to profile */}
+            <Link
+              href={`/${role}/profile`}
+              onClick={() => setDropdownOpen(false)}
+              className="block px-4 py-2.5 border-b border-slate-100 hover:bg-slate-50 transition-colors rounded-t-xl"
+            >
               <p className="text-xs font-semibold text-slate-800 truncate">{fullName}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">{ROLE_LABELS[role]}</p>
-            </div>
+            </Link>
+
+            {/* Mi Perfil */}
+            <Link
+              href={`/${role}/profile`}
+              onClick={() => setDropdownOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <UserCircle className="w-4 h-4 shrink-0 text-slate-400" />
+              Mi Perfil
+            </Link>
+
+            <div className="border-t border-slate-100 my-0.5" />
+
             <form action={logoutAction}>
               <button
                 type="submit"

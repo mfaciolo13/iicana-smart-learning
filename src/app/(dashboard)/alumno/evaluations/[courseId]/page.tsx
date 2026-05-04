@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/auth/helpers";
 import { db } from "@/lib/drizzle";
 import { courses, teachers, profiles } from "@/lib/drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -18,8 +18,7 @@ export default async function AlumnoSurveyPage({
   const { courseId } = await params;
   const { enrollment: enrollmentId } = await searchParams;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user) redirect("/login");
 
   const student = await getStudentByProfileId(user.id);

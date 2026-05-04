@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/auth/helpers";
 import { getMyNotifications } from "@/modules/notifications/services/notifications.service";
 import { NotificationList } from "@/modules/notifications/components/NotificationList";
 import { markAllAsReadAction } from "@/modules/notifications/actions";
 import { FormButton } from "@/components/ui/FormButton";
 
 export default async function TutorNotificationsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user) redirect("/login");
 
   const notificationsList = await getMyNotifications(user.id);

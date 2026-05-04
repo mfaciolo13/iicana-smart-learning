@@ -3,11 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export type UserRole = "admin" | "profesor" | "alumno" | "tutor";
 
-// Both cached per request — called N times, network round-trip happens once
+// getSession() decodes the JWT from the cookie locally — no network call.
+// proxy.ts already called getUser() to validate the token server-side, so this is safe.
 export const getServerUser = cache(async () => {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user ?? null;
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user ?? null;
 });
 
 export const getServerProfile = cache(async () => {
@@ -16,10 +17,16 @@ export const getServerProfile = cache(async () => {
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name")
+    .select("role, full_name, avatar_url, phone, email")
     .eq("id", user.id)
     .single();
-  return profile ?? null;
+  return profile as {
+    role: string;
+    full_name: string;
+    avatar_url: string | null;
+    phone: string | null;
+    email: string;
+  } | null;
 });
 
 export async function getCurrentUser() {

@@ -8,10 +8,11 @@ import type { UserRole } from "@/modules/auth/types";
 interface DashboardShellProps {
   role: UserRole;
   fullName: string;
+  avatarUrl?: string | null;
   children: React.ReactNode;
 }
 
-export function DashboardShell({ role, fullName, children }: DashboardShellProps) {
+export function DashboardShell({ role, fullName, avatarUrl, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function DashboardShell({ role, fullName, children }: DashboardShellProps
       <Sidebar
         role={role}
         fullName={fullName}
+        avatarUrl={avatarUrl}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -51,6 +53,7 @@ export function DashboardShell({ role, fullName, children }: DashboardShellProps
         <Topbar
           fullName={fullName}
           role={role}
+          avatarUrl={avatarUrl}
           onMenuClick={() => setSidebarOpen((v) => !v)}
         />
         <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>

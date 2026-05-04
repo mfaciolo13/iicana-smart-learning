@@ -2,15 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getEnrollmentForCertificate } from "@/modules/promotions/services/promotions.service";
 import { PrintButton } from "./PrintButton";
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Beginner",
-  elementary: "Elementary",
-  pre_intermediate: "Pre-Intermediate",
-  intermediate: "Intermediate",
-  upper_intermediate: "Upper-Intermediate",
-  advanced: "Advanced",
-};
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 function certNumber(enrollmentId: string) {
   return "CERT-" + enrollmentId.replace(/-/g, "").slice(0, 8).toUpperCase();

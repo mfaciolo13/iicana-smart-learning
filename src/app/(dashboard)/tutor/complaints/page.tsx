@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/auth/helpers";
 import { getMyComplaints } from "@/modules/complaints/services/complaints.service";
 import { ComplaintList } from "@/modules/complaints/components/ComplaintList";
 import { buttonVariants } from "@/components/ui/Button";
 
 export default async function TutorComplaintsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user) redirect("/login");
 
   const myComplaints = await getMyComplaints(user.id);

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getServerUser } from "@/lib/auth/helpers";
 import { getAttendanceByStudent } from "@/modules/attendance/services/attendance.service";
 import { Badge } from "@/components/ui/Badge";
 
@@ -9,8 +10,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "dange
 };
 
 export default async function AlumnoAttendancePage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [user, supabase] = await Promise.all([getServerUser(), createClient()]);
 
   const { data: student } = user
     ? await supabase.from("students").select("id").eq("profile_id", user.id).single()

@@ -47,16 +47,17 @@ export async function getUserDetail(id: string): Promise<UserDetail | null> {
 
   if (!rows[0]) return null;
 
-  // Check ban status from Supabase auth
+  // Check ban and email confirmation status from Supabase auth
   try {
     const admin = createAdminClient();
     const { data } = await admin.auth.admin.getUserById(id);
     const banned =
       !!data?.user?.banned_until &&
       new Date(data.user.banned_until) > new Date();
-    return { ...rows[0], role: rows[0].role as UserRole, banned };
+    const emailConfirmed = !!data?.user?.email_confirmed_at;
+    return { ...rows[0], role: rows[0].role as UserRole, banned, emailConfirmed };
   } catch {
-    return { ...rows[0], role: rows[0].role as UserRole, banned: false };
+    return { ...rows[0], role: rows[0].role as UserRole, banned: false, emailConfirmed: false };
   }
 }
 
