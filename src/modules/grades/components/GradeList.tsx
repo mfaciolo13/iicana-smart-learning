@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { GradeWithDetails } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -71,7 +71,7 @@ export function GradeList({ grades, showNewLink = false }: GradeListProps) {
           {grades.map((g) => {
             const score = parseFloat(g.score);
             return (
-              <tr key={g.id} className="hover:bg-brand-50 transition-colors">
+              <tr key={g.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
                 <td className="py-3.5 pr-4">
                   <p className="font-medium text-slate-900">{g.studentName}</p>
                   <p className="text-xs text-slate-400 font-mono">{g.studentDni}</p>
@@ -89,9 +89,9 @@ export function GradeList({ grades, showNewLink = false }: GradeListProps) {
                 <td className="py-3.5 pr-4 text-slate-500 text-xs hidden lg:table-cell">
                   {new Date(g.evaluatedAt).toLocaleDateString("es-AR")}
                 </td>
-                <td className="py-3.5 text-right">
-                  <Link href={`/admin/grades/${g.id}`} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
-                    Ver <ArrowRight className="w-3.5 h-3.5" />
+                <td className="py-3.5 pr-4 text-right">
+                  <Link href={`/admin/grades/${g.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                   </Link>
                 </td>
               </tr>

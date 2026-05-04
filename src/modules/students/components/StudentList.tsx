@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { StudentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 import type { VariantProps } from "class-variance-authority";
@@ -72,7 +72,7 @@ export function StudentList({ students }: StudentListProps) {
           {students.map((student) => {
             const status = STATUS_CONFIG[student.status] ?? { label: student.status, variant: "neutral" as const };
             return (
-              <tr key={student.id} className="hover:bg-brand-50 transition-colors">
+              <tr key={student.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
                 <td className="py-3.5 pr-4 font-medium text-slate-900">{student.fullName}</td>
                 <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{student.dni}</td>
                 <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{student.email}</td>
@@ -86,12 +86,9 @@ export function StudentList({ students }: StudentListProps) {
                 <td className="py-3.5 pr-4">
                   <Badge variant={status.variant}>{status.label}</Badge>
                 </td>
-                <td className="py-3.5 text-right">
-                  <Link
-                    href={`/admin/students/${student.id}`}
-                    className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1"
-                  >
-                    Ver <ArrowRight className="w-3.5 h-3.5" />
+                <td className="py-3.5 pr-4 text-right">
+                  <Link href={`/admin/students/${student.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                   </Link>
                 </td>
               </tr>

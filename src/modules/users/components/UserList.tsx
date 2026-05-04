@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { UserListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -56,7 +56,7 @@ export function UserList({ users }: UserListProps) {
           {users.map((u) => {
             const roleCfg = ROLE_CONFIG[u.role] ?? { label: u.role, variant: "neutral" as const };
             return (
-              <tr key={u.id} className="hover:bg-brand-50 transition-colors">
+              <tr key={u.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
                 <td className="py-3 pr-4">
                   <div className="flex items-center gap-3">
                     <div
@@ -75,9 +75,9 @@ export function UserList({ users }: UserListProps) {
                 <td className="py-3 pr-4 text-slate-400 text-xs hidden sm:table-cell">
                   {new Date(u.createdAt).toLocaleDateString("es-AR")}
                 </td>
-                <td className="py-3 text-right">
-                  <Link href={`/admin/users/${u.id}`} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
-                    Ver <ArrowRight className="w-3.5 h-3.5" />
+                <td className="py-3 pr-4 text-right">
+                  <Link href={`/admin/users/${u.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                   </Link>
                 </td>
               </tr>
