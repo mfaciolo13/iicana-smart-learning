@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import type { TeacherListItem } from "../types";
 
 interface TeacherListProps {
@@ -58,9 +59,9 @@ export function TeacherList({ teachers }: TeacherListProps) {
               <td className="py-3.5 text-right">
                 <Link
                   href={`/admin/teachers/${teacher.id}`}
-                  className="text-brand-700 hover:underline text-xs font-medium"
+                  className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1"
                 >
-                  Ver →
+                  Ver <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </td>
             </tr>

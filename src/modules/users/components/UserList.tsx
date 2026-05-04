@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import type { UserListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -75,8 +76,8 @@ export function UserList({ users }: UserListProps) {
                   {new Date(u.createdAt).toLocaleDateString("es-AR")}
                 </td>
                 <td className="py-3 text-right">
-                  <Link href={`/admin/users/${u.id}`} className="text-brand-700 hover:underline text-xs font-medium">
-                    Ver →
+                  <Link href={`/admin/users/${u.id}`} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
+                    Ver <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </td>
               </tr>

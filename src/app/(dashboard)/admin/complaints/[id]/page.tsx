@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getComplaintById } from "@/modules/complaints/services/complaints.service";
 import { updateComplaintStatusAction } from "@/modules/complaints/actions";
 import { ComplaintStatusForm } from "@/modules/complaints/components/ComplaintStatusForm";
@@ -43,8 +44,8 @@ export default async function ComplaintDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/complaints" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Reclamos
+          <Link href="/admin/complaints" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Reclamos
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">
             Reclamo — {TYPE_LABELS[complaint.type] ?? complaint.type}

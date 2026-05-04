@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import type { EnrollmentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -91,9 +92,9 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
                 <td className="py-3.5 text-right">
                   <Link
                     href={`/admin/enrollments/${e.id}`}
-                    className="text-brand-700 hover:underline text-xs font-medium"
+                    className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1"
                   >
-                    Ver →
+                    Ver <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </td>
               </tr>

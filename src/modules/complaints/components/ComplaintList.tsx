@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import type { ComplaintItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -109,8 +110,8 @@ export function ComplaintList({ complaints, adminView = false, newLink }: Compla
                 </td>
                 <td className="py-3.5 text-right">
                   {detailHref && (
-                    <Link href={detailHref} className="text-brand-700 hover:underline text-xs font-medium">
-                      Ver →
+                    <Link href={detailHref} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
+                      Ver <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   )}
                 </td>

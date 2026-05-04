@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getEnrollmentById } from "@/modules/enrollments/services/enrollments.service";
 import { updateEnrollmentAction, deleteEnrollmentAction } from "@/modules/enrollments/actions";
 import { FormButton } from "@/components/ui/FormButton";
@@ -38,8 +39,8 @@ export default async function EnrollmentDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/enrollments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Inscripciones
+          <Link href="/admin/enrollments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Inscripciones
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">
             {enrollment.student.fullName} — {enrollment.course.name}
@@ -69,8 +70,8 @@ export default async function EnrollmentDetailPage({
               </div>
             ))}
             <div className="pt-1">
-              <Link href={`/admin/students?q=${enrollment.student.dni}`} className="text-xs text-brand-700 hover:underline">
-                Ver perfil del alumno →
+              <Link href={`/admin/students?q=${enrollment.student.dni}`} className="text-xs text-brand-700 hover:underline inline-flex items-center gap-1">
+                Ver perfil del alumno <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           </dl>

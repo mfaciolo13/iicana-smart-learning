@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import type { PaymentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -78,8 +79,8 @@ export function PaymentList({ payments, showNewLink = false }: PaymentListProps)
                   <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                 </td>
                 <td className="py-3.5 text-right">
-                  <Link href={`/admin/payments/${p.id}`} className="text-brand-700 hover:underline text-xs font-medium">
-                    Ver →
+                  <Link href={`/admin/payments/${p.id}`} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
+                    Ver <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </td>
               </tr>

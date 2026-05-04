@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { getCourses } from "@/modules/courses/services/courses.service";
 import { generateAssessmentAction } from "@/modules/assessments/actions";
 import { GenerateAssessmentForm } from "@/modules/assessments/components/GenerateAssessmentForm";
@@ -11,8 +12,8 @@ export default async function NewAssessmentPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link href="/admin/assessments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-          ← Autoevaluaciones
+        <Link href="/admin/assessments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" /> Autoevaluaciones
         </Link>
         <h2 className="text-2xl font-bold text-slate-900">Nueva evaluación con IA</h2>
         <p className="text-sm text-slate-500 mt-0.5">

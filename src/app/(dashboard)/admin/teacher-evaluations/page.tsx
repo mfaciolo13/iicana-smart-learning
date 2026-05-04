@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { getTeacherEvalSummaries } from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
 import { buttonVariants } from "@/components/ui/Button";
 
@@ -62,9 +63,9 @@ export default async function TeacherEvaluationsPage() {
                   <td className="px-5 py-3 text-right">
                     <Link
                       href={`/admin/teacher-evaluations/${s.teacherId}`}
-                      className="text-sm text-brand-700 hover:underline"
+                      className="text-sm text-brand-700 hover:underline inline-flex items-center gap-1"
                     >
-                      Ver informe →
+                      Ver informe <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </td>
                 </tr>

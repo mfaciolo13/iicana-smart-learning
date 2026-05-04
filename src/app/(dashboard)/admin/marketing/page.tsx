@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { getCampaigns, CHANNEL_LABELS } from "@/modules/marketing/services/marketing.service";
 import { buttonVariants } from "@/components/ui/Button";
 
@@ -76,8 +77,8 @@ export default async function MarketingPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <Link href={`/admin/marketing/${c.id}`} className="text-sm text-brand-700 hover:underline">
-                      Ver →
+                    <Link href={`/admin/marketing/${c.id}`} className="text-sm text-brand-700 hover:underline inline-flex items-center gap-1">
+                      Ver <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </td>
                 </tr>

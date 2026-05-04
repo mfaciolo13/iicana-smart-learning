@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getGradeById } from "@/modules/grades/services/grades.service";
 import { updateGradeAction, deleteGradeAction } from "@/modules/grades/actions";
 import { getEnrollments } from "@/modules/enrollments/services/enrollments.service";
@@ -37,8 +38,8 @@ export default async function GradeDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/grades" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Notas
+          <Link href="/admin/grades" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Notas
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">
             {grade.studentName} — {TYPE_LABELS[grade.evaluationType] ?? grade.evaluationType}

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getTeacherById } from "@/modules/teachers/services/teachers.service";
 import {
   getTeacherSurveyAggregate,
@@ -59,8 +60,8 @@ export default async function TeacherEvalDetailPage({
   return (
     <div>
       <div className="mb-6">
-        <Link href="/admin/teacher-evaluations" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-          ← Evaluaciones
+        <Link href="/admin/teacher-evaluations" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" /> Evaluaciones
         </Link>
         <h2 className="text-2xl font-bold text-slate-900">{teacher.profile.fullName}</h2>
         <p className="text-sm text-slate-400 mt-0.5">Informe de evaluación docente</p>

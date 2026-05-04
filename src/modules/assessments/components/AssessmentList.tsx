@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { AssessmentListItem, AssessmentStatus } from "../types";
 
@@ -56,8 +57,8 @@ export function AssessmentList({ assessments }: AssessmentListProps) {
                 <td className="py-3 pr-4 text-slate-500 hidden md:table-cell">{a.questionCount}</td>
                 <td className="py-3 pr-4 text-slate-500 hidden md:table-cell">{a.attemptCount}</td>
                 <td className="py-3 text-right">
-                  <Link href={`/admin/assessments/${a.id}`} className="text-brand-700 hover:underline text-xs font-medium">
-                    Ver →
+                  <Link href={`/admin/assessments/${a.id}`} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
+                    Ver <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </td>
               </tr>

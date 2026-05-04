@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getAssessmentDetail } from "@/modules/assessments/services/assessments.service";
 import { publishAssessmentAction, archiveAssessmentAction } from "@/modules/assessments/actions";
 import { FormButton } from "@/components/ui/FormButton";
@@ -31,8 +32,8 @@ export default async function AdminAssessmentDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/assessments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Autoevaluaciones
+          <Link href="/admin/assessments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Autoevaluaciones
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">{assessment.topic}</h2>
           <p className="text-sm text-slate-500 mt-0.5">

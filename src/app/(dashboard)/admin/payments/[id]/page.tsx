@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getPaymentById } from "@/modules/payments/services/payments.service";
 import { markAsPaidAction, updatePaymentStatusAction } from "@/modules/payments/actions";
 import { MarkAsPaidForm, PaymentStatusForm } from "@/modules/payments/components/MarkAsPaidForm";
@@ -42,8 +43,8 @@ export default async function PaymentDetailPage({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
-          <Link href="/admin/payments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 block">
-            ← Pagos
+          <Link href="/admin/payments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Pagos
           </Link>
           <h2 className="text-2xl font-bold text-slate-900">{payment.studentName}</h2>
           <p className="text-sm text-slate-500 mt-0.5">DNI {payment.studentDni}</p>
@@ -52,9 +53,9 @@ export default async function PaymentDetailPage({
           {payment.status === "paid" && (
             <Link
               href={`/admin/payments/${payment.id}/receipt`}
-              className="text-sm text-brand-700 hover:underline font-medium"
+              className="text-sm text-brand-700 hover:underline font-medium inline-flex items-center gap-1"
             >
-              Ver recibo →
+              Ver recibo <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           )}
           <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
@@ -117,8 +118,8 @@ export default async function PaymentDetailPage({
           <Card title="Alumno" padding="md">
             <p className="text-sm font-semibold text-slate-900">{payment.studentName}</p>
             <p className="text-xs font-mono text-slate-400 mt-0.5">DNI {payment.studentDni}</p>
-            <Link href={`/admin/students/${payment.studentId}`} className="mt-3 inline-block text-sm text-brand-700 hover:underline">
-              Ver perfil →
+            <Link href={`/admin/students/${payment.studentId}`} className="mt-3 inline-flex items-center gap-1 text-sm text-brand-700 hover:underline">
+              Ver perfil <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </Card>
 

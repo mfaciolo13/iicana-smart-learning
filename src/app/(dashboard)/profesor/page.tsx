@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getServerUser } from "@/lib/auth/helpers";
 
@@ -33,8 +34,8 @@ export default async function ProfesorDashboardPage() {
                   <p className="text-sm font-medium text-slate-800">{course.name}</p>
                   <p className="text-xs text-slate-400">{course.level} · {course.schedule}</p>
                 </div>
-                <Link href={`/profesor/courses/${course.id}`} className="text-xs text-brand-700 hover:underline">
-                  Ver →
+                <Link href={`/profesor/courses/${course.id}`} className="text-xs text-brand-700 hover:underline inline-flex items-center gap-1">
+                  Ver <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             ))}

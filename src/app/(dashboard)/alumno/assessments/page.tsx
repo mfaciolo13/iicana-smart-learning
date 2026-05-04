@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { getPublishedAssessmentsForStudent } from "@/modules/assessments/services/assessments.service";
 import { Badge } from "@/components/ui/Badge";
@@ -93,10 +94,10 @@ export default async function AlumnoAssessmentsPage() {
                 ) : (
                   <Link
                     href={`/alumno/assessments/${item.id}`}
-                    className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+                    className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 inline-flex items-center gap-1"
                     style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
                   >
-                    Comenzar →
+                    Comenzar <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 )}
               </div>
