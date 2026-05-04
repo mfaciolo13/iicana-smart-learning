@@ -39,6 +39,10 @@ export default async function UserDetailPage({
 
   return (
     <div>
+      {/* DEBUG — borrar después */}
+      <pre className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded text-xs text-yellow-900 whitespace-pre-wrap">
+        {JSON.stringify({ emailConfirmed: user.emailConfirmed, banned: user.banned }, null, 2)}
+      </pre>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
           <Link href="/admin/users" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
