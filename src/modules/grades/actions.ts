@@ -23,7 +23,8 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
 
   revalidatePath("/admin/grades");
   revalidatePath("/profesor/grades");
-  return { success: "Nota cargada correctamente", redirectTo: "/admin/grades" };
+  const redirectTo = (formData.get("redirectTo") as string) || "/admin/grades";
+  return { success: "Nota cargada correctamente", redirectTo };
 }
 
 export async function updateGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

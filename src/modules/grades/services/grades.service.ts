@@ -1,5 +1,5 @@
 import { db } from "@/lib/drizzle";
-import { grades, enrollments, students, courses, profiles } from "@/lib/drizzle/schema";
+import { grades, enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
 import { eq, desc, avg, count, inArray } from "drizzle-orm";
 import type { CreateGradeInput, UpdateGradeInput } from "../schemas";
 import type { GradeWithDetails } from "../types";
@@ -133,6 +133,32 @@ export async function getGradesByTutor(tutorId: string): Promise<GradeWithDetail
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
     .where(eq(students.tutorId, tutorId))
     .orderBy(profiles.fullName, desc(grades.evaluatedAt));
+
+  return rows as GradeWithDetails[];
+}
+
+export async function getGradesByTeacherProfile(teacherProfileId: string): Promise<GradeWithDetails[]> {
+  const rows = await db
+    .select({
+      id: grades.id,
+      enrollmentId: grades.enrollmentId,
+      evaluationType: grades.evaluationType,
+      score: grades.score,
+      evaluatedAt: grades.evaluatedAt,
+      notes: grades.notes,
+      studentName: profiles.fullName,
+      studentDni: students.dni,
+      courseName: courses.name,
+      courseLevel: courses.level,
+    })
+    .from(grades)
+    .innerJoin(enrollments, eq(grades.enrollmentId, enrollments.id))
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .innerJoin(teachers, eq(courses.teacherId, teachers.id))
+    .where(eq(teachers.profileId, teacherProfileId))
+    .orderBy(desc(grades.evaluatedAt));
 
   return rows as GradeWithDetails[];
 }

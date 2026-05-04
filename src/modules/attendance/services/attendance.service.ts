@@ -1,5 +1,5 @@
 import { db } from "@/lib/drizzle";
-import { attendance, enrollments, students, courses, profiles, tutors } from "@/lib/drizzle/schema";
+import { attendance, enrollments, students, courses, profiles, tutors, teachers } from "@/lib/drizzle/schema";
 import { eq, and, desc, count, sql, inArray } from "drizzle-orm";
 import type { AttendanceRecord, AttendanceSession } from "../types";
 
@@ -70,6 +70,29 @@ export async function getRecentSessions(limit = 20): Promise<AttendanceSession[]
     .from(attendance)
     .innerJoin(enrollments, eq(attendance.enrollmentId, enrollments.id))
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .groupBy(attendance.classDate, courses.id, courses.name)
+    .orderBy(desc(attendance.classDate))
+    .limit(limit);
+
+  return rows as AttendanceSession[];
+}
+
+export async function getRecentSessionsByTeacher(teacherProfileId: string, limit = 30): Promise<AttendanceSession[]> {
+  const rows = await db
+    .select({
+      classDate: attendance.classDate,
+      courseName: courses.name,
+      courseId: courses.id,
+      total: sql<number>`cast(count(*) as int)`,
+      present: sql<number>`cast(sum(case when ${attendance.status} = 'present' then 1 else 0 end) as int)`,
+      absent: sql<number>`cast(sum(case when ${attendance.status} = 'absent' then 1 else 0 end) as int)`,
+      late: sql<number>`cast(sum(case when ${attendance.status} = 'late' then 1 else 0 end) as int)`,
+    })
+    .from(attendance)
+    .innerJoin(enrollments, eq(attendance.enrollmentId, enrollments.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .innerJoin(teachers, eq(courses.teacherId, teachers.id))
+    .where(eq(teachers.profileId, teacherProfileId))
     .groupBy(attendance.classDate, courses.id, courses.name)
     .orderBy(desc(attendance.classDate))
     .limit(limit);

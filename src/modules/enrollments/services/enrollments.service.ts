@@ -1,5 +1,5 @@
 import { db } from "@/lib/drizzle";
-import { enrollments, students, courses, profiles } from "@/lib/drizzle/schema";
+import { enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
 import { eq, and, ilike, or, count } from "drizzle-orm";
 import type { CreateEnrollmentInput, UpdateEnrollmentInput } from "../schemas";
 import type { EnrollmentListItem, EnrollmentWithDetails } from "../types";
@@ -114,6 +114,28 @@ export async function getEnrollmentsByStudent(studentId: string): Promise<Enroll
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
     .where(eq(enrollments.studentId, studentId))
     .orderBy(enrollments.enrolledAt);
+
+  return rows as EnrollmentListItem[];
+}
+
+export async function getEnrollmentsByTeacherProfile(teacherProfileId: string): Promise<EnrollmentListItem[]> {
+  const rows = await db
+    .select({
+      id: enrollments.id,
+      enrolledAt: enrollments.enrolledAt,
+      status: enrollments.status,
+      studentName: profiles.fullName,
+      studentDni: students.dni,
+      courseName: courses.name,
+      courseLevel: courses.level,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .innerJoin(teachers, eq(courses.teacherId, teachers.id))
+    .where(and(eq(teachers.profileId, teacherProfileId), eq(enrollments.status, "active")))
+    .orderBy(courses.name, profiles.fullName);
 
   return rows as EnrollmentListItem[];
 }

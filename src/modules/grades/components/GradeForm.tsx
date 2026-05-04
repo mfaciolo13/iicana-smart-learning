@@ -24,9 +24,11 @@ interface GradeFormProps {
   grade?: GradeWithDetails;
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
   submitLabel?: string;
+  cancelHref?: string;
+  redirectTo?: string;
 }
 
-export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" }: GradeFormProps) {
+export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar", cancelHref = "/admin/grades", redirectTo }: GradeFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!grade;
@@ -42,6 +44,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" 
   return (
     <form action={formAction} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={grade.id} />}
+      {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
 
       <Card title="Datos de la evaluación" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -76,7 +79,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar" 
       </Card>
 
       <div className="flex justify-end gap-3">
-        <Link href="/admin/grades" className={buttonVariants({ variant: "secondary" })}>
+        <Link href={cancelHref} className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
         <Button type="submit" variant="primary" loading={isPending}>
