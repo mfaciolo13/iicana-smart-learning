@@ -54,7 +54,7 @@ export async function getUserDetail(id: string): Promise<UserDetail | null> {
     const banned =
       !!data?.user?.banned_until &&
       new Date(data.user.banned_until) > new Date();
-    const emailConfirmed = !!data?.user?.email_confirmed_at;
+    const emailConfirmed = !!data?.user?.email_confirmed_at || !!data?.user?.last_sign_in_at;
     return { ...rows[0], role: rows[0].role as UserRole, banned, emailConfirmed };
   } catch {
     return { ...rows[0], role: rows[0].role as UserRole, banned: false, emailConfirmed: false };
