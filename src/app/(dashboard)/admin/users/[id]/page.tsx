@@ -68,12 +68,20 @@ export default async function UserDetailPage({
         <div className="space-y-4">
           <Card title="Perfil" padding="md">
             <div className="flex items-center gap-3 mb-4">
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                style={{ background: AVATAR_GRADIENTS[user.role] ?? "linear-gradient(135deg,#64748b,#475569)" }}
-              >
-                {getInitials(user.fullName)}
-              </div>
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.fullName}
+                  className="w-12 h-12 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                  style={{ background: AVATAR_GRADIENTS[user.role] ?? "linear-gradient(135deg,#64748b,#475569)" }}
+                >
+                  {getInitials(user.fullName)}
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-900 truncate">{user.fullName}</p>
                 <p className="text-xs text-slate-400 truncate">{user.email}</p>
