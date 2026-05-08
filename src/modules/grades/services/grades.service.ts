@@ -112,31 +112,6 @@ export async function deleteGrade(id: string) {
   await db.delete(grades).where(eq(grades.id, id));
 }
 
-export async function getGradesByTutor(tutorId: string): Promise<GradeWithDetails[]> {
-  const rows = await db
-    .select({
-      id: grades.id,
-      enrollmentId: grades.enrollmentId,
-      evaluationType: grades.evaluationType,
-      score: grades.score,
-      evaluatedAt: grades.evaluatedAt,
-      notes: grades.notes,
-      studentName: profiles.fullName,
-      studentDni: students.dni,
-      courseName: courses.name,
-      courseLevel: courses.level,
-    })
-    .from(grades)
-    .innerJoin(enrollments, eq(grades.enrollmentId, enrollments.id))
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .innerJoin(profiles, eq(students.profileId, profiles.id))
-    .innerJoin(courses, eq(enrollments.courseId, courses.id))
-    .where(eq(students.tutorId, tutorId))
-    .orderBy(profiles.fullName, desc(grades.evaluatedAt));
-
-  return rows as GradeWithDetails[];
-}
-
 export async function getGradesByTeacherProfile(teacherProfileId: string): Promise<GradeWithDetails[]> {
   const rows = await db
     .select({

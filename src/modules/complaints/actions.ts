@@ -25,25 +25,6 @@ export async function createComplaintAction(_prev: ActionResult, formData: FormD
   return { success: "Reclamo enviado correctamente", redirectTo: "/alumno/complaints" };
 }
 
-export async function createComplaintAsTutorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "No autorizado" };
-
-  const raw = {
-    type: formData.get("type") as string,
-    description: formData.get("description") as string,
-  };
-
-  const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
-
-  await createComplaint(user.id, parsed.data);
-
-  revalidatePath("/tutor/complaints");
-  revalidatePath("/admin/complaints");
-  return { success: "Reclamo enviado correctamente", redirectTo: "/tutor/complaints" };
-}
-
 export async function createComplaintAsProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!user) return { error: "No autorizado" };

@@ -77,13 +77,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Mensajes", href: "/alumno/notifications", icon: MessageSquare },
     { label: "Mi Perfil", href: "/alumno/profile", icon: UserCircle },
   ],
-  tutor: [
-    { label: "Inicio", href: "/tutor", icon: Home },
-    { label: "Mis Hijos/as", href: "/tutor/student", icon: Users },
-    { label: "Pagos", href: "/tutor/payments", icon: CreditCard },
-    { label: "Mensajes", href: "/tutor/notifications", icon: MessageSquare },
-    { label: "Mi Perfil", href: "/tutor/profile", icon: UserCircle },
-  ],
+  tutor: [],
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {

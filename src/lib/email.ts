@@ -8,7 +8,6 @@ const IS_DEV = process.env.NODE_ENV === "development";
 const ROLE_LABELS: Record<string, string> = {
   alumno: "alumno/a",
   profesor: "docente",
-  tutor: "tutor/a",
 };
 
 export async function sendInvitationEmail({

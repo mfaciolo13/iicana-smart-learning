@@ -50,7 +50,6 @@ export async function markAsReadAction(_prev: ActionResult, formData: FormData):
   await markAsRead(id, user.id);
   revalidatePath("/admin/notifications");
   revalidatePath("/alumno/notifications");
-  revalidatePath("/tutor/notifications");
   revalidatePath("/profesor/notifications");
 }
 
@@ -61,7 +60,6 @@ export async function markAllAsReadAction(_prev: ActionResult, _formData?: FormD
   await markAllAsRead(user.id);
   revalidatePath("/admin/notifications");
   revalidatePath("/alumno/notifications");
-  revalidatePath("/tutor/notifications");
   revalidatePath("/profesor/notifications");
   return { success: "Notificaciones marcadas como leídas" };
 }
