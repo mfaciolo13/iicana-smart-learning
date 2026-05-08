@@ -29,12 +29,12 @@ export async function updateProfileAction(_prev: ActionResult, formData: FormDat
       return { error: "Solo se permiten imágenes JPG, PNG o WebP." };
     }
     const path = `${user.id}/avatar.${ext}`;
-    const bytes = await avatarFile.arrayBuffer();
+    const buffer = Buffer.from(await avatarFile.arrayBuffer());
 
     const service = createServiceClient();
     const { error: uploadError } = await service.storage
       .from("avatars")
-      .upload(path, bytes, { upsert: true, contentType: avatarFile.type });
+      .upload(path, buffer, { upsert: true, contentType: avatarFile.type });
 
     if (uploadError) return { error: "Error al subir la imagen. Verificá que el bucket 'avatars' exista en Supabase Storage." };
 
