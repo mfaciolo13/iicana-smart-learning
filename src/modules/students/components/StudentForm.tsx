@@ -26,20 +26,13 @@ const STATUSES = [
   { value: "graduated", label: "Egresado" },
 ];
 
-interface TutorOption {
-  id: string;
-  fullName: string;
-  relationship: string;
-}
-
 interface StudentFormProps {
   student?: StudentWithProfile;
-  tutors?: TutorOption[];
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
   submitLabel?: string;
 }
 
-export function StudentForm({ student, tutors = [], action, submitLabel = "Guardar" }: StudentFormProps) {
+export function StudentForm({ student, action, submitLabel = "Guardar" }: StudentFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!student;
@@ -133,31 +126,6 @@ export function StudentForm({ student, tutors = [], action, submitLabel = "Guard
           </Field>
         </Card>
       )}
-
-      <Card title="Tutor responsable" padding="md">
-        <p className="text-xs text-slate-500 mb-3">
-          Requerido para alumnos menores de edad. El tutor debe estar previamente registrado en el sistema.
-        </p>
-        <Field label="Tutor" id="tutorId">
-          <Select id="tutorId" name="tutorId" defaultValue={student?.tutorId ?? ""}>
-            <option value="">Sin tutor asignado</option>
-            {tutors.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.fullName} ({t.relationship})
-              </option>
-            ))}
-          </Select>
-        </Field>
-        {tutors.length === 0 && (
-          <p className="text-xs text-amber-600 mt-2">
-            No hay tutores registrados.{" "}
-            <a href="/admin/users" className="underline hover:text-amber-700">
-              Registrá uno en Usuarios
-            </a>{" "}
-            con el rol Tutor.
-          </p>
-        )}
-      </Card>
 
       <div className="flex justify-end gap-3">
         <Link href="/admin/students" className={buttonVariants({ variant: "secondary" })}>

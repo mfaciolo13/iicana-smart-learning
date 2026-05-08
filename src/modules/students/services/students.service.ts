@@ -1,5 +1,5 @@
 import { db } from "@/lib/drizzle";
-import { students, profiles, tutors } from "@/lib/drizzle/schema";
+import { students, profiles } from "@/lib/drizzle/schema";
 import { eq, ilike, or } from "drizzle-orm";
 import type { CreateStudentInput, UpdateStudentInput } from "../schemas";
 import type { StudentListItem, StudentWithProfile } from "../types";
@@ -86,19 +86,6 @@ export async function getStudentByProfileId(
     .limit(1);
 
   return (rows[0] as StudentWithProfile) ?? null;
-}
-
-export async function getTutorsList(): Promise<{ id: string; fullName: string; relationship: string }[]> {
-  const rows = await db
-    .select({
-      id: tutors.id,
-      fullName: profiles.fullName,
-      relationship: tutors.relationship,
-    })
-    .from(tutors)
-    .innerJoin(profiles, eq(tutors.profileId, profiles.id))
-    .orderBy(profiles.fullName);
-  return rows;
 }
 
 export async function createStudent(

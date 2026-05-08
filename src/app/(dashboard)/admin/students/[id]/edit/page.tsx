@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getStudentById, getTutorsList } from "@/modules/students/services/students.service";
+import { getStudentById } from "@/modules/students/services/students.service";
 import { updateStudentAction } from "@/modules/students/actions";
 import { StudentForm } from "@/modules/students/components/StudentForm";
 
@@ -9,7 +9,7 @@ export default async function EditStudentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, tutors] = await Promise.all([getStudentById(id), getTutorsList()]);
+  const student = await getStudentById(id);
 
   if (!student) notFound();
 
@@ -26,7 +26,6 @@ export default async function EditStudentPage({
 
       <StudentForm
         student={student}
-        tutors={tutors}
         action={updateStudentAction}
         submitLabel="Guardar cambios"
       />
