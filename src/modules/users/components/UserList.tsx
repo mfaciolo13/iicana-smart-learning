@@ -41,50 +41,81 @@ export function UserList({ users }: UserListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table">
-        <thead>
-          <tr className="border-b-2 border-brand-700">
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Usuario</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Email</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Rol</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">Alta</th>
-            <th className="py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {users.map((u) => {
-            const roleCfg = ROLE_CONFIG[u.role] ?? { label: u.role, variant: "neutral" as const };
-            return (
-              <tr key={u.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
-                <td className="py-3 pr-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                      style={{ background: AVATAR_GRADIENTS[u.role] ?? "linear-gradient(135deg,#64748b,#475569)" }}
-                    >
-                      {getInitials(u.fullName)}
+    <>
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {users.map((u) => {
+          const roleCfg = ROLE_CONFIG[u.role] ?? { label: u.role, variant: "neutral" as const };
+          return (
+            <Link
+              key={u.id}
+              href={`/admin/users/${u.id}`}
+              className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
+            >
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                style={{ background: AVATAR_GRADIENTS[u.role] ?? "linear-gradient(135deg,#64748b,#475569)" }}
+              >
+                {getInitials(u.fullName)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-slate-900 truncate">{u.fullName}</p>
+                <p className="text-xs text-slate-400 truncate mt-0.5">{u.email}</p>
+              </div>
+              <div className="shrink-0">
+                <Badge variant={roleCfg.variant} dot={false}>{roleCfg.label}</Badge>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm" role="table">
+          <thead>
+            <tr className="border-b-2 border-brand-700">
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Usuario</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Email</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Rol</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alta</th>
+              <th className="py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {users.map((u) => {
+              const roleCfg = ROLE_CONFIG[u.role] ?? { label: u.role, variant: "neutral" as const };
+              return (
+                <tr key={u.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
+                  <td className="py-3 pr-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                        style={{ background: AVATAR_GRADIENTS[u.role] ?? "linear-gradient(135deg,#64748b,#475569)" }}
+                      >
+                        {getInitials(u.fullName)}
+                      </div>
+                      <span className="font-medium text-slate-900">{u.fullName}</span>
                     </div>
-                    <span className="font-medium text-slate-900">{u.fullName}</span>
-                  </div>
-                </td>
-                <td className="py-3 pr-4 text-slate-500 hidden md:table-cell">{u.email}</td>
-                <td className="py-3 pr-4">
-                  <Badge variant={roleCfg.variant} dot={false}>{roleCfg.label}</Badge>
-                </td>
-                <td className="py-3 pr-4 text-slate-400 text-xs hidden sm:table-cell">
-                  {new Date(u.createdAt).toLocaleDateString("es-AR")}
-                </td>
-                <td className="py-3 pr-4 text-right">
-                  <Link href={`/admin/users/${u.id}`} className="after:absolute after:inset-0 after:content-['']">
-                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
-                  </Link>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  </td>
+                  <td className="py-3 pr-4 text-slate-500 hidden md:table-cell">{u.email}</td>
+                  <td className="py-3 pr-4">
+                    <Badge variant={roleCfg.variant} dot={false}>{roleCfg.label}</Badge>
+                  </td>
+                  <td className="py-3 pr-4 text-slate-400 text-xs">
+                    {new Date(u.createdAt).toLocaleDateString("es-AR")}
+                  </td>
+                  <td className="py-3 pr-4 text-right">
+                    <Link href={`/admin/users/${u.id}`} className="after:absolute after:inset-0 after:content-['']">
+                      <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

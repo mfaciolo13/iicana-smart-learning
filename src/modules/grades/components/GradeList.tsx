@@ -55,50 +55,74 @@ export function GradeList({ grades, showNewLink = false }: GradeListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table">
-        <thead>
-          <tr className="border-b-2 border-brand-700">
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alumno</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Curso</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Tipo</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Nota</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden lg:table-cell">Fecha</th>
-            <th className="py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {grades.map((g) => {
-            const score = parseFloat(g.score);
-            return (
-              <tr key={g.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
-                <td className="py-3.5 pr-4">
-                  <p className="font-medium text-slate-900">{g.studentName}</p>
-                  <p className="text-xs text-slate-400 font-mono">{g.studentDni}</p>
-                </td>
-                <td className="py-3.5 pr-4 hidden md:table-cell">
-                  <p className="text-slate-700">{g.courseName}</p>
-                  <p className="text-xs text-slate-400">{LEVEL_LABELS[g.courseLevel] ?? g.courseLevel}</p>
-                </td>
-                <td className="py-3.5 pr-4 text-slate-600">{TYPE_LABELS[g.evaluationType] ?? g.evaluationType}</td>
-                <td className="py-3.5 pr-4">
-                  <Badge variant={scoreVariant(score)} dot={false}>
-                    {score.toFixed(1)}
-                  </Badge>
-                </td>
-                <td className="py-3.5 pr-4 text-slate-500 text-xs hidden lg:table-cell">
-                  {new Date(g.evaluatedAt).toLocaleDateString("es-AR")}
-                </td>
-                <td className="py-3.5 pr-4 text-right">
-                  <Link href={`/admin/grades/${g.id}`} className="after:absolute after:inset-0 after:content-['']">
-                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
-                  </Link>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {grades.map((g) => {
+          const score = parseFloat(g.score);
+          return (
+            <Link
+              key={g.id}
+              href={`/admin/grades/${g.id}`}
+              className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-slate-900 truncate">{g.studentName}</p>
+                <p className="text-xs text-slate-500 mt-0.5 truncate">{g.courseName}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{TYPE_LABELS[g.evaluationType] ?? g.evaluationType}</p>
+              </div>
+              <div className="ml-3 shrink-0">
+                <Badge variant={scoreVariant(score)} dot={false}>{score.toFixed(1)}</Badge>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm" role="table">
+          <thead>
+            <tr className="border-b-2 border-brand-700">
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alumno</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Curso</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Tipo</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Nota</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden lg:table-cell">Fecha</th>
+              <th className="py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {grades.map((g) => {
+              const score = parseFloat(g.score);
+              return (
+                <tr key={g.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
+                  <td className="py-3.5 pr-4">
+                    <p className="font-medium text-slate-900">{g.studentName}</p>
+                    <p className="text-xs text-slate-400 font-mono">{g.studentDni}</p>
+                  </td>
+                  <td className="py-3.5 pr-4 hidden md:table-cell">
+                    <p className="text-slate-700">{g.courseName}</p>
+                    <p className="text-xs text-slate-400">{LEVEL_LABELS[g.courseLevel] ?? g.courseLevel}</p>
+                  </td>
+                  <td className="py-3.5 pr-4 text-slate-600">{TYPE_LABELS[g.evaluationType] ?? g.evaluationType}</td>
+                  <td className="py-3.5 pr-4">
+                    <Badge variant={scoreVariant(score)} dot={false}>{score.toFixed(1)}</Badge>
+                  </td>
+                  <td className="py-3.5 pr-4 text-slate-500 text-xs hidden lg:table-cell">
+                    {new Date(g.evaluatedAt).toLocaleDateString("es-AR")}
+                  </td>
+                  <td className="py-3.5 pr-4 text-right">
+                    <Link href={`/admin/grades/${g.id}`} className="after:absolute after:inset-0 after:content-['']">
+                      <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
