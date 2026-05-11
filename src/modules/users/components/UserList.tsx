@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight } from "lucide-react";
 import type { UserListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -62,8 +62,9 @@ export function UserList({ users }: UserListProps) {
                 <p className="font-medium text-slate-900 truncate">{u.fullName}</p>
                 <p className="text-xs text-slate-400 truncate mt-0.5">{u.email}</p>
               </div>
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-2">
                 <Badge variant={roleCfg.variant} dot={false}>{roleCfg.label}</Badge>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
               </div>
             </Link>
           );

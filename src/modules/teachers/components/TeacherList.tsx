@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight } from "lucide-react";
 import type { TeacherListItem } from "../types";
 
 interface TeacherListProps {
@@ -44,7 +44,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
                 <p className="text-xs text-slate-500 mt-0.5">{teacher.specialization}</p>
               )}
             </div>
-            <Eye className="w-4 h-4 text-slate-300 ml-3 shrink-0" />
+            <ChevronRight className="w-4 h-4 text-slate-300 ml-3 shrink-0" />
           </Link>
         ))}
       </div>

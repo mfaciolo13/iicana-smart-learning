@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { AssessmentListItem, AssessmentStatus } from "../types";
 
@@ -29,7 +29,33 @@ export function AssessmentList({ assessments }: AssessmentListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <>
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {assessments.map((a) => {
+          const cfg = STATUS_CONFIG[a.status];
+          return (
+            <Link
+              key={a.id}
+              href={`/admin/assessments/${a.id}`}
+              className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-900 truncate">{a.topic}</p>
+                <p className="text-xs text-slate-500 mt-0.5 truncate">{a.courseName}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{a.weekLabel}</p>
+              </div>
+              <div className="shrink-0 flex items-center gap-2">
+                <Badge variant={cfg.variant} dot={false}>{cfg.label}</Badge>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
       <table className="w-full text-sm" role="table">
         <thead>
           <tr className="border-b-2 border-slate-200">
@@ -66,6 +92,7 @@ export function AssessmentList({ assessments }: AssessmentListProps) {
           })}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   );
 }

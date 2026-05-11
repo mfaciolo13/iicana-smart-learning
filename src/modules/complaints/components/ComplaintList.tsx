@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight } from "lucide-react";
 import type { ComplaintItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -70,9 +70,12 @@ export function ComplaintList({ complaints, adminView = false, newLink }: Compla
                 <p className="text-xs text-slate-500 mt-0.5 truncate">{c.description}</p>
                 <p className="text-xs text-slate-400 mt-0.5">{new Date(c.createdAt).toLocaleDateString("es-AR")}</p>
               </div>
-              <div className="shrink-0 flex flex-col items-end gap-1">
-                <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
-                <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{typeCfg.label}</span>
+              <div className="shrink-0 flex items-center gap-2">
+                <div className="flex flex-col items-end gap-1">
+                  <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                  <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{typeCfg.label}</span>
+                </div>
+                {detailHref && <ChevronRight className="w-4 h-4 text-slate-300" />}
               </div>
             </div>
           );

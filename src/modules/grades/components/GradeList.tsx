@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight } from "lucide-react";
 import type { GradeWithDetails } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -71,8 +71,9 @@ export function GradeList({ grades, showNewLink = false }: GradeListProps) {
                 <p className="text-xs text-slate-500 mt-0.5 truncate">{g.courseName}</p>
                 <p className="text-xs text-slate-400 mt-0.5">{TYPE_LABELS[g.evaluationType] ?? g.evaluationType}</p>
               </div>
-              <div className="ml-3 shrink-0">
+              <div className="ml-3 shrink-0 flex items-center gap-2">
                 <Badge variant={scoreVariant(score)} dot={false}>{score.toFixed(1)}</Badge>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
               </div>
             </Link>
           );
