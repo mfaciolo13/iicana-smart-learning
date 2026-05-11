@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight } from "lucide-react";
 import type { StudentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 import type { VariantProps } from "class-variance-authority";
@@ -64,8 +64,9 @@ export function StudentList({ students }: StudentListProps) {
                   <p className="text-xs text-slate-500 mt-0.5">{LEVEL_LABELS[student.level] ?? student.level}</p>
                 )}
               </div>
-              <div className="ml-3 shrink-0">
+              <div className="ml-3 shrink-0 flex items-center gap-2">
                 <Badge variant={status.variant}>{status.label}</Badge>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
               </div>
             </Link>
           );

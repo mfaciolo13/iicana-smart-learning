@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight } from "lucide-react";
 import type { CourseListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -69,8 +69,9 @@ export function CourseList({ courses }: CourseListProps) {
                   </span>
                 </div>
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex items-center justify-between">
                 <Badge variant="info" dot={false}>{LEVEL_LABELS[course.level] ?? course.level}</Badge>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
               </div>
             </Link>
           );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight } from "lucide-react";
 import type { PaymentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -58,11 +58,14 @@ export function PaymentList({ payments, showNewLink = false }: PaymentListProps)
                   Vence: {new Date(p.dueDate).toLocaleDateString("es-AR")}
                 </p>
               </div>
-              <div className="ml-3 shrink-0 flex flex-col items-end gap-1">
-                <span className="font-semibold text-slate-900 text-sm">
-                  ${parseFloat(p.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                </span>
-                <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+              <div className="ml-3 shrink-0 flex items-center gap-2">
+                <div className="flex flex-col items-end gap-1">
+                  <span className="font-semibold text-slate-900 text-sm">
+                    ${parseFloat(p.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  </span>
+                  <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
               </div>
             </Link>
           );

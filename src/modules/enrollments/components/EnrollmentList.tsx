@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, ChevronRight } from "lucide-react";
 import type { EnrollmentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
@@ -63,8 +63,9 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
                 <p className="text-xs text-slate-500 mt-0.5 truncate">{e.courseName}</p>
                 <p className="text-xs text-slate-400 mt-0.5">{LEVEL_LABELS[e.courseLevel] ?? e.courseLevel}</p>
               </div>
-              <div className="ml-3 shrink-0">
+              <div className="ml-3 shrink-0 flex items-center gap-2">
                 <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
               </div>
             </Link>
           );

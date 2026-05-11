@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { getRecentSessions } from "@/modules/attendance/services/attendance.service";
 import { buttonVariants } from "@/components/ui/Button";
 
@@ -57,12 +57,13 @@ export default async function AttendancePage() {
                     </div>
                     <span className="text-xs font-semibold text-slate-700 shrink-0">{pct}%</span>
                   </div>
-                  <div className="flex items-center gap-3 mt-2.5">
+                  <div className="flex items-center gap-2 mt-2.5">
                     <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-xs text-emerald-600 font-medium shrink-0">{s.present} presentes</span>
-                    {s.absent > 0 && <span className="text-xs text-red-500 font-medium shrink-0">{s.absent} ausentes</span>}
+                    <span className="text-xs text-emerald-600 font-medium shrink-0">{s.present}P</span>
+                    {s.absent > 0 && <span className="text-xs text-red-500 font-medium shrink-0">{s.absent}A</span>}
+                    <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
                   </div>
                 </Link>
               );
