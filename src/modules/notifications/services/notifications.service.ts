@@ -104,6 +104,31 @@ export async function sendToRole(role: string, payload: NotifPayload) {
   );
 }
 
+export async function getEmailsForRole(role: string): Promise<{ email: string; fullName: string }[]> {
+  return db
+    .select({ email: profiles.email, fullName: profiles.fullName })
+    .from(profiles)
+    .where(eq(profiles.role, role as never));
+}
+
+export async function getEmailsForCourse(courseId: string): Promise<{ email: string; fullName: string }[]> {
+  return db
+    .select({ email: profiles.email, fullName: profiles.fullName })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .where(and(eq(enrollments.courseId, courseId), eq(enrollments.status, "active")));
+}
+
+export async function getEmailForUser(userId: string): Promise<{ email: string; fullName: string } | null> {
+  const [row] = await db
+    .select({ email: profiles.email, fullName: profiles.fullName })
+    .from(profiles)
+    .where(eq(profiles.id, userId))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function sendToCourse(courseId: string, payload: NotifPayload) {
   // Get profile IDs of all active students in the course
   const rows = await db

@@ -9,10 +9,12 @@ interface DashboardShellProps {
   role: UserRole;
   fullName: string;
   avatarUrl?: string | null;
+  userId: string;
+  initialUnreadCount: number;
   children: React.ReactNode;
 }
 
-export function DashboardShell({ role, fullName, avatarUrl, children }: DashboardShellProps) {
+export function DashboardShell({ role, fullName, avatarUrl, userId, initialUnreadCount, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -54,6 +56,8 @@ export function DashboardShell({ role, fullName, avatarUrl, children }: Dashboar
           fullName={fullName}
           role={role}
           avatarUrl={avatarUrl}
+          userId={userId}
+          initialUnreadCount={initialUnreadCount}
           onMenuClick={() => setSidebarOpen((v) => !v)}
         />
         <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>

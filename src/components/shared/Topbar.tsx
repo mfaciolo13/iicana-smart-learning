@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, Menu, LogOut, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { logoutAction } from "@/modules/auth/actions";
+import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/modules/auth/types";
 
 function getInitials(name: string) {
@@ -19,6 +20,8 @@ interface TopbarProps {
   fullName: string;
   role: UserRole;
   avatarUrl?: string | null;
+  userId: string;
+  initialUnreadCount: number;
   onMenuClick?: () => void;
 }
 
@@ -29,9 +32,27 @@ const ROLE_LABELS: Record<UserRole, string> = {
   tutor: "Tutor",
 };
 
-export function Topbar({ fullName, role, avatarUrl, onMenuClick }: TopbarProps) {
+export function Topbar({ fullName, role, avatarUrl, userId, initialUnreadCount, onMenuClick }: TopbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setUnreadCount(initialUnreadCount);
+  }, [initialUnreadCount]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`notifs-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        () => { setUnreadCount((c) => c + 1); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -63,7 +84,12 @@ export function Topbar({ fullName, role, avatarUrl, onMenuClick }: TopbarProps) 
         className="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
         aria-label="Notificaciones"
       >
-        <Bell className="w-[18px] h-[18px]" strokeWidth={2} />
+        <Bell className="w-4.5 h-4.5" strokeWidth={2} />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
       </Link>
 
       <div className="w-px h-5 bg-slate-200" />

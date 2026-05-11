@@ -17,10 +17,11 @@ export const getServerProfile = cache(async () => {
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name, avatar_url, phone, email")
+    .select("id, role, full_name, avatar_url, phone, email")
     .eq("id", user.id)
     .single();
   return profile as {
+    id: string;
     role: string;
     full_name: string;
     avatar_url: string | null;
