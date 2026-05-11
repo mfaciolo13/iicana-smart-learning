@@ -2,8 +2,8 @@ import { db } from "@/lib/drizzle";
 import { enrollments, students, profiles, courses, attendance, grades } from "@/lib/drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 
-export const ATTENDANCE_THRESHOLD = 75;
-export const GRADE_THRESHOLD = 6.0;
+export const ATTENDANCE_THRESHOLD = 80;
+export const GRADE_THRESHOLD = 7.0;
 
 export interface PromotionRow {
   enrollmentId: string;

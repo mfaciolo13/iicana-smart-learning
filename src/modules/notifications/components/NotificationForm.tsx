@@ -64,7 +64,6 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
               <Select id="targetId" name="targetId" required defaultValue="">
                 <option value="" disabled>Seleccioná un rol</option>
                 <option value="role:alumno">Todos los alumnos</option>
-                <option value="role:tutor">Todos los tutores</option>
                 <option value="role:profesor">Todos los docentes</option>
                 <option value="role:admin">Administradores</option>
               </Select>

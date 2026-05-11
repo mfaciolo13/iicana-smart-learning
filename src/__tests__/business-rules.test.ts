@@ -34,28 +34,28 @@ function calcAttendancePct(present: number, total: number): number | null {
 }
 
 describe("Umbrales de negocio", () => {
-  it("ATTENDANCE_THRESHOLD es 75", () => {
-    expect(ATTENDANCE_THRESHOLD).toBe(75);
+  it("ATTENDANCE_THRESHOLD es 80", () => {
+    expect(ATTENDANCE_THRESHOLD).toBe(80);
   });
 
-  it("GRADE_THRESHOLD es 6.0", () => {
-    expect(GRADE_THRESHOLD).toBe(6.0);
+  it("GRADE_THRESHOLD es 7.0", () => {
+    expect(GRADE_THRESHOLD).toBe(7.0);
   });
 });
 
 describe("Elegibilidad para promoción", () => {
-  it("es elegible con asistencia ≥ 75% y nota ≥ 6", () => {
-    expect(calcEligibility(75, 6.0)).toBe(true);
+  it("es elegible con asistencia ≥ 80% y nota ≥ 7", () => {
+    expect(calcEligibility(80, 7.0)).toBe(true);
     expect(calcEligibility(100, 10)).toBe(true);
-    expect(calcEligibility(80, 7)).toBe(true);
+    expect(calcEligibility(85, 8)).toBe(true);
   });
 
-  it("no es elegible si asistencia es exactamente 74%", () => {
-    expect(calcEligibility(74, 8)).toBe(false);
+  it("no es elegible si asistencia es exactamente 79%", () => {
+    expect(calcEligibility(79, 8)).toBe(false);
   });
 
-  it("no es elegible si nota es exactamente 5.9", () => {
-    expect(calcEligibility(80, 5.9)).toBe(false);
+  it("no es elegible si nota es exactamente 6.9", () => {
+    expect(calcEligibility(85, 6.9)).toBe(false);
   });
 
   it("no es elegible si asistencia es null", () => {
