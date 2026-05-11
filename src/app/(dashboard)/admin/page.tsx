@@ -11,17 +11,33 @@ import {
   CalendarCheck,
   PenLine,
   BarChart2,
+  AlertCircle,
 } from "lucide-react";
+import {
+  getAttendanceAvgByCourse,
+  getGradeAvgByCourse,
+  getPaymentStatusCounts,
+  getActiveStudentsByLevel,
+} from "@/modules/reports/services/dashboard.service";
+import { AttendanceChart } from "./components/AttendanceChart";
+import { PaymentsDonut } from "./components/PaymentsDonut";
+import { GradesChart } from "./components/GradesChart";
+import { StudentsLevelChart } from "./components/StudentsLevelChart";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
-  const [studentsRes, coursesRes, teachersRes, paymentsRes] = await Promise.all([
-    supabase.from("students").select("id, status", { count: "exact", head: false }),
-    supabase.from("courses").select("id, status", { count: "exact", head: false }),
-    supabase.from("teachers").select("id", { count: "exact", head: false }),
-    supabase.from("payments").select("id, status", { count: "exact", head: false }),
-  ]);
+  const [studentsRes, coursesRes, teachersRes, paymentsRes, attendanceData, gradesData, paymentCounts, levelData] =
+    await Promise.all([
+      supabase.from("students").select("id, status", { count: "exact", head: false }),
+      supabase.from("courses").select("id, status", { count: "exact", head: false }),
+      supabase.from("teachers").select("id", { count: "exact", head: false }),
+      supabase.from("payments").select("id, status", { count: "exact", head: false }),
+      getAttendanceAvgByCourse(),
+      getGradeAvgByCourse(),
+      getPaymentStatusCounts(),
+      getActiveStudentsByLevel(),
+    ]);
 
   const totalStudents = studentsRes.count ?? 0;
   const activeStudents = studentsRes.data?.filter((s) => s.status === "active").length ?? 0;
@@ -37,7 +53,6 @@ export default async function AdminDashboardPage() {
       value: activeStudents,
       sub: `${totalStudents} registrados en total`,
       icon: GraduationCap,
-      gradient: "from-blue-500 to-blue-700",
       bg: "bg-blue-50",
       text: "text-blue-700",
       href: "/admin/students",
@@ -47,7 +62,6 @@ export default async function AdminDashboardPage() {
       value: activeCourses,
       sub: `${totalCourses} cursos en total`,
       icon: BookOpen,
-      gradient: "from-violet-500 to-violet-700",
       bg: "bg-violet-50",
       text: "text-violet-700",
       href: "/admin/courses",
@@ -57,7 +71,6 @@ export default async function AdminDashboardPage() {
       value: totalTeachers,
       sub: "Registrados en el sistema",
       icon: UserCheck,
-      gradient: "from-emerald-500 to-emerald-700",
       bg: "bg-emerald-50",
       text: "text-emerald-700",
       href: "/admin/teachers",
@@ -65,9 +78,8 @@ export default async function AdminDashboardPage() {
     {
       label: "Pagos pendientes",
       value: pendingPayments + overduePayments,
-      sub: `${overduePayments} vencidos, ${pendingPayments} a vencer`,
-      icon: CreditCard,
-      gradient: overduePayments > 0 ? "from-red-500 to-red-700" : "from-amber-500 to-amber-700",
+      sub: `${overduePayments} vencidos · ${pendingPayments} a vencer`,
+      icon: overduePayments > 0 ? AlertCircle : CreditCard,
       bg: overduePayments > 0 ? "bg-red-50" : "bg-amber-50",
       text: overduePayments > 0 ? "text-red-700" : "text-amber-700",
       href: "/admin/payments",
@@ -93,39 +105,35 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
             <Link
               key={kpi.label}
               href={kpi.href}
-              className="group bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
+              className="group bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
-                  <Icon className={`w-5 h-5 ${kpi.text}`} strokeWidth={2} />
+              <div className="flex items-start justify-between mb-3">
+                <div className={`w-9 h-9 rounded-xl ${kpi.bg} flex items-center justify-center`}>
+                  <Icon className={`w-4.5 h-4.5 ${kpi.text}`} strokeWidth={2} />
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
               </div>
               <div>
                 <p className="text-3xl font-bold text-slate-900">{kpi.value}</p>
-                <p className="text-sm font-medium text-slate-700 mt-0.5">{kpi.label}</p>
-                <p className="text-xs text-slate-400 mt-1">{kpi.sub}</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-700 mt-0.5">{kpi.label}</p>
+                <p className="text-[10px] sm:text-xs text-slate-400 mt-1">{kpi.sub}</p>
               </div>
             </Link>
           );
         })}
       </div>
 
-      {/* Quick actions + trend section */}
+      {/* Quick actions + cycle status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* Quick actions */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-slate-900">Accesos rápidos</h2>
-          </div>
+          <h2 className="text-sm font-semibold text-slate-900 mb-4">Accesos rápidos</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {quickActions.map((action) => {
               const Icon = action.icon;
@@ -146,7 +154,6 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Activity / status panel */}
         <div
           className="rounded-2xl p-5 text-white flex flex-col justify-between"
           style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%)" }}
@@ -161,7 +168,6 @@ export default async function AdminDashboardPage() {
             </p>
             <p className="text-sm text-white/70">de alumnos activos</p>
           </div>
-
           <div className="space-y-2.5 mt-6">
             {[
               { label: "Alumnos activos", value: activeStudents, total: totalStudents },
@@ -182,8 +188,55 @@ export default async function AdminDashboardPage() {
             ))}
           </div>
         </div>
-
       </div>
+
+      {/* Charts row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-slate-900">Asistencia por curso</h2>
+            <Link href="/admin/attendance" className="text-xs text-brand-700 hover:underline">Ver todo</Link>
+          </div>
+          <p className="text-xs text-slate-400 mb-4">% de presentes sobre el total de clases registradas</p>
+          <AttendanceChart data={attendanceData} />
+          <div className="flex items-center gap-4 mt-3 text-[10px] text-slate-400">
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> ≥ 80%</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-400 inline-block" /> 60–79%</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" /> &lt; 60%</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-slate-900">Estado de pagos</h2>
+            <Link href="/admin/payments" className="text-xs text-brand-700 hover:underline">Ver todo</Link>
+          </div>
+          <p className="text-xs text-slate-400 mb-2">Distribución de cuotas</p>
+          <PaymentsDonut data={paymentCounts} />
+        </div>
+      </div>
+
+      {/* Charts row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-slate-900">Nota promedio por curso</h2>
+            <Link href="/admin/grades" className="text-xs text-brand-700 hover:underline">Ver todo</Link>
+          </div>
+          <p className="text-xs text-slate-400 mb-4">Promedio de todas las evaluaciones · línea verde = mínimo aprobación (7)</p>
+          <GradesChart data={gradesData} />
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-slate-900">Alumnos por nivel</h2>
+            <Link href="/admin/students" className="text-xs text-brand-700 hover:underline">Ver todo</Link>
+          </div>
+          <p className="text-xs text-slate-400 mb-4">Alumnos activos agrupados por nivel de inglés</p>
+          <StudentsLevelChart data={levelData} />
+        </div>
+      </div>
+
     </div>
   );
 }
