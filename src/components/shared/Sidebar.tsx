@@ -157,6 +157,7 @@ export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: 
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               onClick={onClose}
               className={cn(
                 "group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150",
@@ -185,6 +186,7 @@ export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: 
       <div className="px-3 pb-4 pt-2 border-t border-white/5">
         <Link
           href={`/${role}/profile`}
+          prefetch={false}
           onClick={onClose}
           className="flex items-center gap-3 px-3 py-3 rounded-lg bg-white/5 mb-1 hover:bg-white/10 transition-colors"
         >
