@@ -1,33 +1,53 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { getServerUser } from "@/lib/auth/helpers";
+import { db } from "@/lib/drizzle";
+import { students, enrollments, courses, payments } from "@/lib/drizzle/schema";
+import { eq, and, inArray } from "drizzle-orm";
 import { LEVEL_LABELS } from "@/lib/level-labels";
 
 export default async function AlumnoDashboardPage() {
-  const [user, supabase] = await Promise.all([getServerUser(), createClient()]);
+  const user = await getServerUser();
+  if (!user) return null;
 
-  const { data: student } = await supabase
-    .from("students")
-    .select("id, level, status")
-    .eq("profile_id", user?.id)
-    .single();
+  // All three queries run in parallel — no sequential waterfall
+  const [studentRows, enrollmentRows, paymentRows] = await Promise.all([
+    db
+      .select({ level: students.level, status: students.status })
+      .from(students)
+      .where(eq(students.profileId, user.id))
+      .limit(1),
 
-  const { data: enrollments } = student
-    ? await supabase
-        .from("enrollments")
-        .select("id, status, courses(name, schedule, level)")
-        .eq("student_id", student.id)
-        .eq("status", "active")
-    : { data: [] };
+    db
+      .select({
+        id: enrollments.id,
+        courseName: courses.name,
+        courseSchedule: courses.schedule,
+        courseLevel: courses.level,
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(courses, eq(enrollments.courseId, courses.id))
+      .where(and(eq(students.profileId, user.id), eq(enrollments.status, "active"))),
 
-  const { data: pendingPayments } = student
-    ? await supabase
-        .from("payments")
-        .select("id, amount, due_date, status")
-        .eq("student_id", student.id)
-        .in("status", ["pending", "overdue"])
-        .order("due_date")
-    : { data: [] };
+    db
+      .select({
+        id: payments.id,
+        amount: payments.amount,
+        dueDate: payments.dueDate,
+        status: payments.status,
+      })
+      .from(payments)
+      .innerJoin(students, eq(payments.studentId, students.id))
+      .where(
+        and(
+          eq(students.profileId, user.id),
+          inArray(payments.status, ["pending", "overdue"])
+        )
+      )
+      .orderBy(payments.dueDate),
+  ]);
+
+  const student = studentRows[0] ?? null;
 
   return (
     <div>
@@ -35,27 +55,26 @@ export default async function AlumnoDashboardPage() {
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-4">
         <h3 className="text-base font-semibold text-slate-800 mb-3">Mi curso actual</h3>
-        {enrollments && enrollments.length > 0 ? (
-          enrollments.map((e) => {
-            const course = e.courses as unknown as { name: string; schedule: string; level: string } | null;
-            return (
-              <div key={e.id} className="text-sm text-slate-700">
-                <p className="font-medium">{course?.name}</p>
-                <p className="text-slate-400 mt-0.5">{LEVEL_LABELS[course?.level ?? ""] ?? course?.level} · {course?.schedule}</p>
-              </div>
-            );
-          })
+        {enrollmentRows.length > 0 ? (
+          enrollmentRows.map((e) => (
+            <div key={e.id} className="text-sm text-slate-700">
+              <p className="font-medium">{e.courseName}</p>
+              <p className="text-slate-400 mt-0.5">
+                {LEVEL_LABELS[e.courseLevel] ?? e.courseLevel} · {e.courseSchedule}
+              </p>
+            </div>
+          ))
         ) : (
           <p className="text-sm text-slate-400">No estás inscripto en ningún curso.</p>
         )}
       </div>
 
-      {pendingPayments && pendingPayments.length > 0 && (
-        <div className="bg-warning-50 rounded-xl border border-amber-200 p-5 mb-4">
+      {paymentRows.length > 0 && (
+        <div className="bg-amber-50 rounded-xl border border-amber-200 p-5 mb-4">
           <h3 className="text-sm font-semibold text-amber-800 mb-2">Pagos pendientes</h3>
-          {pendingPayments.map((p) => (
+          {paymentRows.map((p) => (
             <div key={p.id} className="flex justify-between text-xs text-amber-700">
-              <span>Vence: {p.due_date}</span>
+              <span>Vence: {p.dueDate}</span>
               <span className="font-medium">${p.amount}</span>
             </div>
           ))}

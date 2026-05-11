@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/drizzle";
+import { students, courses, teachers, payments } from "@/lib/drizzle/schema";
+import { sql } from "drizzle-orm";
 import {
   GraduationCap,
   BookOpen,
@@ -14,22 +16,29 @@ import {
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient();
-
-  const [studentsRes, coursesRes, teachersRes, paymentsRes] = await Promise.all([
-    supabase.from("students").select("id, status", { count: "exact", head: false }),
-    supabase.from("courses").select("id, status", { count: "exact", head: false }),
-    supabase.from("teachers").select("id", { count: "exact", head: false }),
-    supabase.from("payments").select("id, status", { count: "exact", head: false }),
+  const [studentStats, courseStats, teacherCount, paymentStats] = await Promise.all([
+    db.select({
+      total: sql<number>`cast(count(*) as int)`,
+      active: sql<number>`cast(sum(case when ${students.status} = 'active' then 1 else 0 end) as int)`,
+    }).from(students),
+    db.select({
+      total: sql<number>`cast(count(*) as int)`,
+      active: sql<number>`cast(sum(case when ${courses.status} = 'active' then 1 else 0 end) as int)`,
+    }).from(courses),
+    db.select({ count: sql<number>`cast(count(*) as int)` }).from(teachers),
+    db.select({
+      pending: sql<number>`cast(sum(case when ${payments.status} = 'pending' then 1 else 0 end) as int)`,
+      overdue: sql<number>`cast(sum(case when ${payments.status} = 'overdue' then 1 else 0 end) as int)`,
+    }).from(payments),
   ]);
 
-  const totalStudents = studentsRes.count ?? 0;
-  const activeStudents = studentsRes.data?.filter((s) => s.status === "active").length ?? 0;
-  const totalCourses = coursesRes.count ?? 0;
-  const activeCourses = coursesRes.data?.filter((c) => c.status === "active").length ?? 0;
-  const totalTeachers = teachersRes.count ?? 0;
-  const pendingPayments = paymentsRes.data?.filter((p) => p.status === "pending").length ?? 0;
-  const overduePayments = paymentsRes.data?.filter((p) => p.status === "overdue").length ?? 0;
+  const totalStudents = studentStats[0]?.total ?? 0;
+  const activeStudents = studentStats[0]?.active ?? 0;
+  const totalCourses = courseStats[0]?.total ?? 0;
+  const activeCourses = courseStats[0]?.active ?? 0;
+  const totalTeachers = teacherCount[0]?.count ?? 0;
+  const pendingPayments = paymentStats[0]?.pending ?? 0;
+  const overduePayments = paymentStats[0]?.overdue ?? 0;
 
   const kpis = [
     {
