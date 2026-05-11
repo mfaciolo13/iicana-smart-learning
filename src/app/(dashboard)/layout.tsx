@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import { getServerProfile } from "@/lib/auth/helpers";
+import { getServerUser, getServerProfile } from "@/lib/auth/helpers";
 import { getUnreadCount } from "@/modules/notifications/services/notifications.service";
 import { DashboardShell } from "@/components/shared/DashboardShell";
 import type { UserRole } from "@/modules/auth/types";
@@ -11,10 +11,18 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await getServerProfile();
-  if (!profile) redirect("/login");
+  // getServerUser reads the JWT cookie locally — no network call.
+  // proxy.ts already validated the token, so this is safe and instant.
+  const user = await getServerUser();
+  if (!user) redirect("/login");
 
-  const unreadCount = await getUnreadCount(profile.id);
+  // Both DB calls run in parallel: profile (Supabase REST) + unread count (Drizzle).
+  const [profile, unreadCount] = await Promise.all([
+    getServerProfile(),
+    getUnreadCount(user.id),
+  ]);
+
+  if (!profile) redirect("/login");
 
   return (
     <DashboardShell
