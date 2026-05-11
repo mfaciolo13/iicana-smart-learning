@@ -1,8 +1,5 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { db } from "@/lib/drizzle";
-import { profiles } from "@/lib/drizzle/schema";
-import { eq } from "drizzle-orm";
 
 export type UserRole = "admin" | "profesor" | "alumno" | "tutor";
 
@@ -17,27 +14,20 @@ export const getServerUser = cache(async () => {
 export const getServerProfile = cache(async () => {
   const user = await getServerUser();
   if (!user) return null;
-  const [row] = await db
-    .select({
-      id: profiles.id,
-      role: profiles.role,
-      fullName: profiles.fullName,
-      avatarUrl: profiles.avatarUrl,
-      phone: profiles.phone,
-      email: profiles.email,
-    })
-    .from(profiles)
-    .where(eq(profiles.id, user.id))
-    .limit(1);
-  if (!row) return null;
-  return {
-    id: row.id,
-    role: row.role as string,
-    full_name: row.fullName,
-    avatar_url: row.avatarUrl,
-    phone: row.phone,
-    email: row.email,
-  };
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, role, full_name, avatar_url, phone, email")
+    .eq("id", user.id)
+    .single();
+  return profile as {
+    id: string;
+    role: string;
+    full_name: string;
+    avatar_url: string | null;
+    phone: string | null;
+    email: string;
+  } | null;
 });
 
 export async function getCurrentUser() {
