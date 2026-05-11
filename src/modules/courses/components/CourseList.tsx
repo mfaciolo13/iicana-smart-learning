@@ -44,63 +44,86 @@ export function CourseList({ courses }: CourseListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table">
-        <thead>
-          <tr className="border-b-2 border-brand-700">
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Curso
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">
-              Nivel
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">
-              Horario
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden lg:table-cell">
-              Docente
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Cupo
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Estado
-            </th>
-            <th className="py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {courses.map((course) => {
-            const statusCfg = STATUS_CONFIG[course.status] ?? { label: course.status, variant: "neutral" as const };
-            const isFull = course.enrollmentCount >= course.maxCapacity;
-            return (
-              <tr key={course.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
-                <td className="py-3.5 pr-4 font-medium text-slate-900">{course.name}</td>
-                <td className="py-3.5 pr-4 hidden sm:table-cell">
-                  <Badge variant="info" dot={false}>{LEVEL_LABELS[course.level] ?? course.level}</Badge>
-                </td>
-                <td className="py-3.5 pr-4 text-slate-500 text-xs hidden md:table-cell">{course.schedule}</td>
-                <td className="py-3.5 pr-4 text-slate-500 hidden lg:table-cell">
-                  {course.teacherName ?? <span className="text-slate-400">Sin asignar</span>}
-                </td>
-                <td className="py-3.5 pr-4">
-                  <span className={`text-xs font-medium ${isFull ? "text-red-600" : "text-slate-600"}`}>
+    <>
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {courses.map((course) => {
+          const statusCfg = STATUS_CONFIG[course.status] ?? { label: course.status, variant: "neutral" as const };
+          const isFull = course.enrollmentCount >= course.maxCapacity;
+          return (
+            <Link
+              key={course.id}
+              href={`/admin/courses/${course.id}`}
+              className="block p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-900 truncate">{course.name}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{course.schedule}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{course.teacherName ?? "Sin docente"}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                  <span className={`text-xs font-medium ${isFull ? "text-red-600" : "text-slate-500"}`}>
                     {course.enrollmentCount}/{course.maxCapacity}
                   </span>
-                </td>
-                <td className="py-3.5 pr-4">
-                  <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
-                </td>
-                <td className="py-3.5 pr-4 text-right">
-                  <Link href={`/admin/courses/${course.id}`} className="after:absolute after:inset-0 after:content-['']">
-                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
-                  </Link>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                </div>
+              </div>
+              <div className="mt-2">
+                <Badge variant="info" dot={false}>{LEVEL_LABELS[course.level] ?? course.level}</Badge>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm" role="table">
+          <thead>
+            <tr className="border-b-2 border-brand-700">
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Curso</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Nivel</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Horario</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden lg:table-cell">Docente</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Cupo</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
+              <th className="py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {courses.map((course) => {
+              const statusCfg = STATUS_CONFIG[course.status] ?? { label: course.status, variant: "neutral" as const };
+              const isFull = course.enrollmentCount >= course.maxCapacity;
+              return (
+                <tr key={course.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
+                  <td className="py-3.5 pr-4 font-medium text-slate-900">{course.name}</td>
+                  <td className="py-3.5 pr-4">
+                    <Badge variant="info" dot={false}>{LEVEL_LABELS[course.level] ?? course.level}</Badge>
+                  </td>
+                  <td className="py-3.5 pr-4 text-slate-500 text-xs hidden md:table-cell">{course.schedule}</td>
+                  <td className="py-3.5 pr-4 text-slate-500 hidden lg:table-cell">
+                    {course.teacherName ?? <span className="text-slate-400">Sin asignar</span>}
+                  </td>
+                  <td className="py-3.5 pr-4">
+                    <span className={`text-xs font-medium ${isFull ? "text-red-600" : "text-slate-600"}`}>
+                      {course.enrollmentCount}/{course.maxCapacity}
+                    </span>
+                  </td>
+                  <td className="py-3.5 pr-4">
+                    <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                  </td>
+                  <td className="py-3.5 pr-4 text-right">
+                    <Link href={`/admin/courses/${course.id}`} className="after:absolute after:inset-0 after:content-['']">
+                      <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

@@ -39,55 +39,86 @@ export function PaymentList({ payments, showNewLink = false }: PaymentListProps)
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table">
-        <thead>
-          <tr className="border-b-2 border-brand-700">
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alumno</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Monto</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">Vencimiento</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Recibo</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
-            <th className="py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {payments.map((p) => {
-            const statusCfg =
-              p.isOverdue && p.status !== "paid"
-                ? STATUS_CONFIG.overdue
-                : STATUS_CONFIG[p.status] ?? STATUS_CONFIG.pending;
-
-            return (
-              <tr key={p.id} className={`transition-colors relative group cursor-pointer ${p.isOverdue && p.status !== "paid" ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-brand-50"}`}>
-                <td className="py-3.5 pr-4">
-                  <p className="font-medium text-slate-900">{p.studentName}</p>
-                  <p className="text-xs text-slate-400 font-mono">{p.studentDni}</p>
-                </td>
-                <td className="py-3.5 pr-4 font-semibold text-slate-900">
+    <>
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {payments.map((p) => {
+          const isOverdue = p.isOverdue && p.status !== "paid";
+          const statusCfg = isOverdue ? STATUS_CONFIG.overdue : STATUS_CONFIG[p.status] ?? STATUS_CONFIG.pending;
+          return (
+            <Link
+              key={p.id}
+              href={`/admin/payments/${p.id}`}
+              className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${isOverdue ? "bg-red-50/60 border-red-100 hover:border-red-200" : "bg-white border-slate-100 hover:border-brand-200"}`}
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-slate-900 truncate">{p.studentName}</p>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">{p.studentDni}</p>
+                <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-600 font-medium" : "text-slate-500"}`}>
+                  Vence: {new Date(p.dueDate).toLocaleDateString("es-AR")}
+                </p>
+              </div>
+              <div className="ml-3 shrink-0 flex flex-col items-end gap-1">
+                <span className="font-semibold text-slate-900 text-sm">
                   ${parseFloat(p.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                </td>
-                <td className="py-3.5 pr-4 hidden sm:table-cell">
-                  <span className={p.isOverdue && p.status !== "paid" ? "text-red-600 font-medium" : "text-slate-500"}>
-                    {new Date(p.dueDate).toLocaleDateString("es-AR")}
-                  </span>
-                </td>
-                <td className="py-3.5 pr-4 text-slate-500 font-mono text-xs hidden md:table-cell">
-                  {p.receiptNumber ?? "—"}
-                </td>
-                <td className="py-3.5 pr-4">
-                  <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
-                </td>
-                <td className="py-3.5 pr-4 text-right">
-                  <Link href={`/admin/payments/${p.id}`} className="after:absolute after:inset-0 after:content-['']">
-                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
-                  </Link>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                </span>
+                <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm" role="table">
+          <thead>
+            <tr className="border-b-2 border-brand-700">
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alumno</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Monto</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Vencimiento</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Recibo</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
+              <th className="py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {payments.map((p) => {
+              const statusCfg =
+                p.isOverdue && p.status !== "paid"
+                  ? STATUS_CONFIG.overdue
+                  : STATUS_CONFIG[p.status] ?? STATUS_CONFIG.pending;
+              return (
+                <tr key={p.id} className={`transition-colors relative group cursor-pointer ${p.isOverdue && p.status !== "paid" ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-brand-50"}`}>
+                  <td className="py-3.5 pr-4">
+                    <p className="font-medium text-slate-900">{p.studentName}</p>
+                    <p className="text-xs text-slate-400 font-mono">{p.studentDni}</p>
+                  </td>
+                  <td className="py-3.5 pr-4 font-semibold text-slate-900">
+                    ${parseFloat(p.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  </td>
+                  <td className="py-3.5 pr-4">
+                    <span className={p.isOverdue && p.status !== "paid" ? "text-red-600 font-medium" : "text-slate-500"}>
+                      {new Date(p.dueDate).toLocaleDateString("es-AR")}
+                    </span>
+                  </td>
+                  <td className="py-3.5 pr-4 text-slate-500 font-mono text-xs hidden md:table-cell">
+                    {p.receiptNumber ?? "—"}
+                  </td>
+                  <td className="py-3.5 pr-4">
+                    <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                  </td>
+                  <td className="py-3.5 pr-4 text-right">
+                    <Link href={`/admin/payments/${p.id}`} className="after:absolute after:inset-0 after:content-['']">
+                      <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

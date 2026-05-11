@@ -47,58 +47,72 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table">
-        <thead>
-          <tr className="border-b-2 border-brand-700">
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Alumno
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">
-              DNI
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Curso
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">
-              Nivel
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden lg:table-cell">
-              Fecha
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Estado
-            </th>
-            <th className="py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {enrollments.map((e) => {
-            const statusCfg = STATUS_CONFIG[e.status] ?? { label: e.status, variant: "neutral" as const };
-            return (
-              <tr key={e.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
-                <td className="py-3.5 pr-4 font-medium text-slate-900">{e.studentName}</td>
-                <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs hidden sm:table-cell">{e.studentDni}</td>
-                <td className="py-3.5 pr-4 text-slate-700">{e.courseName}</td>
-                <td className="py-3.5 pr-4 hidden md:table-cell">
-                  <Badge variant="info" dot={false}>{LEVEL_LABELS[e.courseLevel] ?? e.courseLevel}</Badge>
-                </td>
-                <td className="py-3.5 pr-4 text-slate-500 text-xs hidden lg:table-cell">
-                  {new Date(e.enrolledAt).toLocaleDateString("es-AR")}
-                </td>
-                <td className="py-3.5 pr-4">
-                  <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
-                </td>
-                <td className="py-3.5 pr-4 text-right">
-                  <Link href={`/admin/enrollments/${e.id}`} className="after:absolute after:inset-0 after:content-['']">
-                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
-                  </Link>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {enrollments.map((e) => {
+          const statusCfg = STATUS_CONFIG[e.status] ?? { label: e.status, variant: "neutral" as const };
+          return (
+            <Link
+              key={e.id}
+              href={`/admin/enrollments/${e.id}`}
+              className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-slate-900 truncate">{e.studentName}</p>
+                <p className="text-xs text-slate-500 mt-0.5 truncate">{e.courseName}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{LEVEL_LABELS[e.courseLevel] ?? e.courseLevel}</p>
+              </div>
+              <div className="ml-3 shrink-0">
+                <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm" role="table">
+          <thead>
+            <tr className="border-b-2 border-brand-700">
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alumno</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">DNI</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Curso</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Nivel</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden lg:table-cell">Fecha</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
+              <th className="py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {enrollments.map((e) => {
+              const statusCfg = STATUS_CONFIG[e.status] ?? { label: e.status, variant: "neutral" as const };
+              return (
+                <tr key={e.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
+                  <td className="py-3.5 pr-4 font-medium text-slate-900">{e.studentName}</td>
+                  <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{e.studentDni}</td>
+                  <td className="py-3.5 pr-4 text-slate-700">{e.courseName}</td>
+                  <td className="py-3.5 pr-4 hidden md:table-cell">
+                    <Badge variant="info" dot={false}>{LEVEL_LABELS[e.courseLevel] ?? e.courseLevel}</Badge>
+                  </td>
+                  <td className="py-3.5 pr-4 text-slate-500 text-xs hidden lg:table-cell">
+                    {new Date(e.enrolledAt).toLocaleDateString("es-AR")}
+                  </td>
+                  <td className="py-3.5 pr-4">
+                    <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                  </td>
+                  <td className="py-3.5 pr-4 text-right">
+                    <Link href={`/admin/enrollments/${e.id}`} className="after:absolute after:inset-0 after:content-['']">
+                      <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

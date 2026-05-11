@@ -46,56 +46,74 @@ export function StudentList({ students }: StudentListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table">
-        <thead>
-          <tr className="border-b-2 border-brand-700">
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Nombre
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              DNI
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">
-              Email
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">
-              Nivel
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Estado
-            </th>
-            <th className="py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {students.map((student) => {
-            const status = STATUS_CONFIG[student.status] ?? { label: student.status, variant: "neutral" as const };
-            return (
-              <tr key={student.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
-                <td className="py-3.5 pr-4 font-medium text-slate-900">{student.fullName}</td>
-                <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{student.dni}</td>
-                <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{student.email}</td>
-                <td className="py-3.5 pr-4 hidden sm:table-cell">
-                  {student.level ? (
-                    <Badge variant="info" dot={false}>{LEVEL_LABELS[student.level] ?? student.level}</Badge>
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </td>
-                <td className="py-3.5 pr-4">
-                  <Badge variant={status.variant}>{status.label}</Badge>
-                </td>
-                <td className="py-3.5 pr-4 text-right">
-                  <Link href={`/admin/students/${student.id}`} className="after:absolute after:inset-0 after:content-['']">
-                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
-                  </Link>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {students.map((student) => {
+          const status = STATUS_CONFIG[student.status] ?? { label: student.status, variant: "neutral" as const };
+          return (
+            <Link
+              key={student.id}
+              href={`/admin/students/${student.id}`}
+              className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-slate-900 truncate">{student.fullName}</p>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">{student.dni}</p>
+                {student.level && (
+                  <p className="text-xs text-slate-500 mt-0.5">{LEVEL_LABELS[student.level] ?? student.level}</p>
+                )}
+              </div>
+              <div className="ml-3 shrink-0">
+                <Badge variant={status.variant}>{status.label}</Badge>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm" role="table">
+          <thead>
+            <tr className="border-b-2 border-brand-700">
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Nombre</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">DNI</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Email</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Nivel</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
+              <th className="py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {students.map((student) => {
+              const status = STATUS_CONFIG[student.status] ?? { label: student.status, variant: "neutral" as const };
+              return (
+                <tr key={student.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
+                  <td className="py-3.5 pr-4 font-medium text-slate-900">{student.fullName}</td>
+                  <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{student.dni}</td>
+                  <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{student.email}</td>
+                  <td className="py-3.5 pr-4">
+                    {student.level ? (
+                      <Badge variant="info" dot={false}>{LEVEL_LABELS[student.level] ?? student.level}</Badge>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="py-3.5 pr-4">
+                    <Badge variant={status.variant}>{status.label}</Badge>
+                  </td>
+                  <td className="py-3.5 pr-4 text-right">
+                    <Link href={`/admin/students/${student.id}`} className="after:absolute after:inset-0 after:content-['']">
+                      <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

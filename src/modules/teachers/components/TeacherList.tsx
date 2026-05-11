@@ -28,43 +28,58 @@ export function TeacherList({ teachers }: TeacherListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table">
-        <thead>
-          <tr className="border-b-2 border-brand-700">
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              Nombre
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">
-              DNI
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">
-              Email
-            </th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">
-              Especialización
-            </th>
-            <th className="py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {teachers.map((teacher) => (
-            <tr key={teacher.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
-              <td className="py-3.5 pr-4 font-medium text-slate-900">{teacher.fullName}</td>
-              <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{teacher.dni}</td>
-              <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{teacher.email}</td>
-              <td className="py-3.5 pr-4 text-slate-500 hidden sm:table-cell">
-                {teacher.specialization ?? <span className="text-slate-400">—</span>}
-              </td>
-              <td className="py-3.5 pr-4 text-right">
-                <Link href={`/admin/teachers/${teacher.id}`} className="after:absolute after:inset-0 after:content-['']">
-                  <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
-                </Link>
-              </td>
+    <>
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-2">
+        {teachers.map((teacher) => (
+          <Link
+            key={teacher.id}
+            href={`/admin/teachers/${teacher.id}`}
+            className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
+          >
+            <div className="min-w-0">
+              <p className="font-medium text-slate-900 truncate">{teacher.fullName}</p>
+              <p className="text-xs text-slate-400 font-mono mt-0.5">{teacher.dni}</p>
+              {teacher.specialization && (
+                <p className="text-xs text-slate-500 mt-0.5">{teacher.specialization}</p>
+              )}
+            </div>
+            <Eye className="w-4 h-4 text-slate-300 ml-3 shrink-0" />
+          </Link>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm" role="table">
+          <thead>
+            <tr className="border-b-2 border-brand-700">
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Nombre</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">DNI</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Email</th>
+              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Especialización</th>
+              <th className="py-3" />
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {teachers.map((teacher) => (
+              <tr key={teacher.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
+                <td className="py-3.5 pr-4 font-medium text-slate-900">{teacher.fullName}</td>
+                <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{teacher.dni}</td>
+                <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{teacher.email}</td>
+                <td className="py-3.5 pr-4 text-slate-500">
+                  {teacher.specialization ?? <span className="text-slate-400">—</span>}
+                </td>
+                <td className="py-3.5 pr-4 text-right">
+                  <Link href={`/admin/teachers/${teacher.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
