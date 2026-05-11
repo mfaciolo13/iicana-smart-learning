@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
+import { sendInstitutionalNotificationEmail } from "@/lib/email";
 import { sendNotificationSchema } from "./schemas";
 import {
   markAsRead,
@@ -9,6 +10,9 @@ import {
   sendToUser,
   sendToRole,
   sendToCourse,
+  getEmailsForRole,
+  getEmailsForCourse,
+  getEmailForUser,
 } from "./services/notifications.service";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -29,11 +33,35 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
   const payload = { type: type as never, title, body };
 
   if (targetId.startsWith("role:")) {
-    await sendToRole(targetId.replace("role:", ""), payload);
+    const role = targetId.replace("role:", "");
+    await sendToRole(role, payload);
+    try {
+      const recipients = await getEmailsForRole(role);
+      await Promise.all(
+        recipients.map((r) => sendInstitutionalNotificationEmail({ to: r.email, fullName: r.fullName, title, body }))
+      );
+    } catch (e) {
+      console.error("[notification email role]", e);
+    }
   } else if (targetId.startsWith("course:")) {
-    await sendToCourse(targetId.replace("course:", ""), payload);
+    const courseId = targetId.replace("course:", "");
+    await sendToCourse(courseId, payload);
+    try {
+      const recipients = await getEmailsForCourse(courseId);
+      await Promise.all(
+        recipients.map((r) => sendInstitutionalNotificationEmail({ to: r.email, fullName: r.fullName, title, body }))
+      );
+    } catch (e) {
+      console.error("[notification email course]", e);
+    }
   } else {
     await sendToUser(targetId, payload);
+    try {
+      const user = await getEmailForUser(targetId);
+      if (user) await sendInstitutionalNotificationEmail({ to: user.email, fullName: user.fullName, title, body });
+    } catch (e) {
+      console.error("[notification email user]", e);
+    }
   }
 
   revalidatePath("/admin/notifications");

@@ -10,6 +10,32 @@ const ROLE_LABELS: Record<string, string> = {
   profesor: "docente",
 };
 
+function emailShell(body: string) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+        <tr>
+          <td style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:32px 40px;">
+            <p style="margin:0;color:#bfdbfe;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Smart Learning</p>
+          </td>
+        </tr>
+        <tr><td style="padding:36px 40px;">${body}</td></tr>
+        <tr>
+          <td style="padding:20px 40px;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;color:#cbd5e1;font-size:12px;">Smart Learning — Sistema de Gestión Académica</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 export async function sendInvitationEmail({
   to,
   fullName,
@@ -32,58 +58,165 @@ export async function sendInvitationEmail({
     from: FROM,
     to,
     subject: "Tu acceso a Smart Learning",
-    html: `<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
-        <!-- Header -->
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Tu cuenta de <strong>${roleLabel}</strong> en Smart Learning fue creada por el equipo administrativo.
+        Para ingresar por primera vez, establecé tu contraseña haciendo clic en el botón de abajo.
+      </p>
+      <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">El link no expira hasta que lo uses.</p>
+      <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
         <tr>
-          <td style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:32px 40px;">
-            <p style="margin:0;color:#bfdbfe;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Smart Learning</p>
-            <h1 style="margin:8px 0 0;color:#ffffff;font-size:22px;font-weight:700;">Bienvenido/a a la plataforma</h1>
-          </td>
-        </tr>
-        <!-- Body -->
-        <tr>
-          <td style="padding:36px 40px;">
-            <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
-            <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
-              Tu cuenta de <strong>${roleLabel}</strong> en Smart Learning fue creada por el equipo administrativo.
-              Para ingresar por primera vez, establecé tu contraseña haciendo clic en el botón de abajo.
-            </p>
-            <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">
-              El link no expira hasta que lo uses.
-            </p>
-            <!-- CTA -->
-            <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
-              <tr>
-                <td style="background:#1d4ed8;border-radius:8px;">
-                  <a href="${inviteLink}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
-                    Establecer mi contraseña →
-                  </a>
-                </td>
-              </tr>
-            </table>
-            <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
-              Si no esperabas este email, podés ignorarlo con seguridad.<br />
-              Si el botón no funciona, copiá este link en tu navegador:<br />
-              <a href="${inviteLink}" style="color:#3b82f6;word-break:break-all;">${inviteLink}</a>
-            </p>
-          </td>
-        </tr>
-        <!-- Footer -->
-        <tr>
-          <td style="padding:20px 40px;border-top:1px solid #f1f5f9;">
-            <p style="margin:0;color:#cbd5e1;font-size:12px;">Smart Learning — Sistema de Gestión Académica</p>
+          <td style="background:#1d4ed8;border-radius:8px;">
+            <a href="${inviteLink}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
+              Establecer mi contraseña →
+            </a>
           </td>
         </tr>
       </table>
-    </td></tr>
-  </table>
-</body>
-</html>`,
+      <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
+        Si no esperabas este email, podés ignorarlo.<br />
+        Si el botón no funciona, copiá este link: <a href="${inviteLink}" style="color:#3b82f6;word-break:break-all;">${inviteLink}</a>
+      </p>
+    `),
+  });
+}
+
+export async function sendEnrollmentEmail({
+  to,
+  fullName,
+  courseName,
+  courseSchedule,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+  courseSchedule: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Enrollment email for ${to} — curso: ${courseName}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Te inscribieron en ${courseName} — Smart Learning`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Te informamos que fuiste inscripto/a en el siguiente curso:
+      </p>
+      <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0;color:#475569;font-size:13px;">Horario: ${courseSchedule}</p>
+      </div>
+      <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+        Ingresá a Smart Learning para ver el detalle de tu inscripción.
+      </p>
+    `),
+  });
+}
+
+export async function sendTeacherAssignmentEmail({
+  to,
+  fullName,
+  courseName,
+  courseSchedule,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+  courseSchedule: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Teacher assignment email for ${to} — curso: ${courseName}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Te asignaron al curso ${courseName} — Smart Learning`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Te asignaron como docente del siguiente curso:
+      </p>
+      <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0;color:#475569;font-size:13px;">Horario: ${courseSchedule}</p>
+      </div>
+      <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+        Ingresá a Smart Learning para ver el detalle del curso.
+      </p>
+    `),
+  });
+}
+
+export async function sendInstitutionalNotificationEmail({
+  to,
+  fullName,
+  title,
+  body,
+}: {
+  to: string;
+  fullName: string;
+  title: string;
+  body: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Notification email for ${to} — "${title}"\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `${title} — Smart Learning`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 8px;color:#1e293b;font-size:15px;font-weight:600;">${title}</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">${body}</p>
+      <p style="margin:0;color:#94a3b8;font-size:12px;">Podés ver esta notificación en Smart Learning.</p>
+    `),
+  });
+}
+
+export async function sendAssessmentPublishedEmail({
+  to,
+  fullName,
+  courseName,
+  topic,
+  weekLabel,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+  topic: string;
+  weekLabel: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Assessment email for ${to} — ${topic}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Nueva autoevaluación disponible — Smart Learning`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Hay una nueva autoevaluación disponible en tu curso:
+      </p>
+      <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 4px;color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">${courseName} · ${weekLabel}</p>
+        <p style="margin:0;color:#1e293b;font-size:15px;font-weight:600;">${topic}</p>
+      </div>
+      <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+        Ingresá a Smart Learning para realizarla cuando quieras.
+      </p>
+    `),
   });
 }

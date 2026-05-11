@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
+import { db } from "@/lib/drizzle";
+import { students, profiles, courses } from "@/lib/drizzle/schema";
+import { eq } from "drizzle-orm";
+import { sendEnrollmentEmail } from "@/lib/email";
 import { createEnrollmentSchema, updateEnrollmentSchema } from "./schemas";
 import {
   validateAndCreateEnrollment,
@@ -23,6 +27,33 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
 
   const result = await validateAndCreateEnrollment(parsed.data);
   if (result.error) return { error: result.error };
+
+  // Send enrollment confirmation email (non-blocking on failure)
+  try {
+    const [[studentInfo], [courseInfo]] = await Promise.all([
+      db
+        .select({ email: profiles.email, fullName: profiles.fullName })
+        .from(students)
+        .innerJoin(profiles, eq(students.profileId, profiles.id))
+        .where(eq(students.id, parsed.data.studentId))
+        .limit(1),
+      db
+        .select({ name: courses.name, schedule: courses.schedule })
+        .from(courses)
+        .where(eq(courses.id, parsed.data.courseId))
+        .limit(1),
+    ]);
+    if (studentInfo && courseInfo) {
+      await sendEnrollmentEmail({
+        to: studentInfo.email,
+        fullName: studentInfo.fullName,
+        courseName: courseInfo.name,
+        courseSchedule: courseInfo.schedule,
+      });
+    }
+  } catch (e) {
+    console.error("[enrollment email]", e);
+  }
 
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/students");

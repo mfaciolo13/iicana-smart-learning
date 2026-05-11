@@ -2,8 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
+import { db } from "@/lib/drizzle";
+import { teachers, profiles } from "@/lib/drizzle/schema";
+import { eq } from "drizzle-orm";
+import { sendTeacherAssignmentEmail } from "@/lib/email";
 import { createCourseSchema, updateCourseSchema } from "./schemas";
-import { createCourse, updateCourse, deleteCourse } from "./services/courses.service";
+import { createCourse, updateCourse, deleteCourse, getCourseById } from "./services/courses.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -44,7 +48,32 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
   const parsed = updateCourseSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await updateCourse(parsed.data);
+  const [prevCourse, updatedCourse] = await Promise.all([
+    getCourseById(parsed.data.id),
+    updateCourse(parsed.data),
+  ]);
+
+  // Email teacher only when they are newly assigned (not already in that role)
+  if (parsed.data.teacherId && parsed.data.teacherId !== prevCourse?.teacherId) {
+    try {
+      const [teacherInfo] = await db
+        .select({ email: profiles.email, fullName: profiles.fullName })
+        .from(teachers)
+        .innerJoin(profiles, eq(teachers.profileId, profiles.id))
+        .where(eq(teachers.id, parsed.data.teacherId))
+        .limit(1);
+      if (teacherInfo) {
+        await sendTeacherAssignmentEmail({
+          to: teacherInfo.email,
+          fullName: teacherInfo.fullName,
+          courseName: updatedCourse.name,
+          courseSchedule: updatedCourse.schedule,
+        });
+      }
+    } catch (e) {
+      console.error("[teacher assignment email]", e);
+    }
+  }
 
   revalidatePath("/admin/courses");
   return { success: "Curso actualizado", redirectTo: `/admin/courses/${parsed.data.id}` };

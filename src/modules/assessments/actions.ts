@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import Anthropic from "@anthropic-ai/sdk";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
+import { sendAssessmentPublishedEmail } from "@/lib/email";
+import { getEmailsForCourse } from "@/modules/notifications/services/notifications.service";
 import {
   generateAssessmentSchema,
   publishAssessmentSchema,
@@ -91,7 +93,27 @@ export async function publishAssessmentAction(_prev: ActionResult, formData: For
   const parsed = publishAssessmentSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await publishAssessment(parsed.data.id);
+  const assessment = await publishAssessment(parsed.data.id);
+  const detail = await getAssessmentDetail(parsed.data.id);
+
+  if (detail) {
+    try {
+      const recipients = await getEmailsForCourse(assessment.courseId);
+      await Promise.all(
+        recipients.map((r) =>
+          sendAssessmentPublishedEmail({
+            to: r.email,
+            fullName: r.fullName,
+            courseName: detail.courseName,
+            topic: detail.topic,
+            weekLabel: detail.weekLabel,
+          })
+        )
+      );
+    } catch (e) {
+      console.error("[assessment published email]", e);
+    }
+  }
 
   revalidatePath("/admin/assessments");
   revalidatePath(`/admin/assessments/${parsed.data.id}`);
