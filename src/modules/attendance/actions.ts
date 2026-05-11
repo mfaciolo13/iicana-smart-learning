@@ -31,16 +31,19 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
 
   const absentIds = records.filter((r) => r.status === "absent").map((r) => r.enrollmentId);
   const alerts = await checkConsecutiveAbsences(absentIds);
-  for (const alert of alerts) {
-    const payload = {
-      type: "absence" as const,
-      title: "2 ausencias consecutivas",
-      body: `${alert.studentName} acumuló 2 ausencias seguidas en ${alert.courseName}.`,
-    };
-    await sendToRole("admin", payload);
-    if (alert.tutorProfileId) {
-      await sendToUser(alert.tutorProfileId, payload);
-    }
+  if (alerts.length > 0) {
+    await Promise.all(
+      alerts.flatMap((alert) => {
+        const payload = {
+          type: "absence" as const,
+          title: "2 ausencias consecutivas",
+          body: `${alert.studentName} acumuló 2 ausencias seguidas en ${alert.courseName}.`,
+        };
+        const tasks: Promise<void>[] = [sendToRole("admin", payload)];
+        if (alert.tutorProfileId) tasks.push(sendToUser(alert.tutorProfileId, payload));
+        return tasks;
+      })
+    );
   }
 
   revalidatePath("/admin/attendance");
