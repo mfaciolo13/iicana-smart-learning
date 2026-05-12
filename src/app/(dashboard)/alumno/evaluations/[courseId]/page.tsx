@@ -1,8 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
-import { db } from "@/lib/drizzle";
-import { courses, teachers, profiles } from "@/lib/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { createClient } from "@/lib/supabase/server";
 import { getStudentByProfileId } from "@/modules/students/services/students.service";
 import { hasSurveySubmitted } from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
 import { submitSurveyAction } from "@/modules/teacher-evaluations/actions";
@@ -28,33 +26,31 @@ export default async function AlumnoSurveyPage({
     redirect("/alumno/evaluations");
   }
 
-  const [course] = await db
-    .select({
-      id: courses.id,
-      name: courses.name,
-      teacherId: courses.teacherId,
-      teacherName: profiles.fullName,
-    })
-    .from(courses)
-    .leftJoin(teachers, eq(courses.teacherId, teachers.id))
-    .leftJoin(profiles, eq(teachers.profileId, profiles.id))
-    .where(eq(courses.id, courseId))
-    .limit(1);
+  const supabase = await createClient();
+  const { data: course } = await supabase
+    .from("courses")
+    .select("id, name, teacher_id, teachers(profiles(full_name))")
+    .eq("id", courseId)
+    .single();
 
-  if (!course || !course.teacherId) notFound();
+  if (!course || !course.teacher_id) notFound();
+
+  const teacherName =
+    (course.teachers as unknown as { profiles: { full_name: string } | null } | null)
+      ?.profiles?.full_name ?? "";
 
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-slate-900">Evaluación docente</h2>
         <p className="text-sm text-slate-400 mt-0.5">
-          {course.name} · {course.teacherName}
+          {course.name} · {teacherName}
         </p>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-xl">
         <SurveyForm
-          teacherId={course.teacherId}
+          teacherId={course.teacher_id}
           courseId={course.id}
           enrollmentId={enrollmentId ?? ""}
           action={submitSurveyAction}
