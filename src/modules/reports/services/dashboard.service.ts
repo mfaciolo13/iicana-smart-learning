@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { attendance, enrollments, courses, grades, payments, students } from "@/lib/drizzle/schema";
-import { eq, count, sql } from "drizzle-orm";
+import { eq, and, count, sql } from "drizzle-orm";
 
 export interface AttendanceByCourse {
   courseName: string;
@@ -80,14 +80,13 @@ export async function getPaymentStatusCounts(): Promise<PaymentStatusCount[]> {
 export async function getActiveStudentsByLevel(): Promise<StudentsByLevel[]> {
   const rows = await db
     .select({
-      level: students.level,
-      count: sql<number>`cast(count(*) as int)`,
+      level: courses.level,
+      count: sql<number>`cast(count(distinct ${enrollments.studentId}) as int)`,
     })
-    .from(students)
-    .where(eq(students.status, "active"))
-    .groupBy(students.level);
+    .from(enrollments)
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(and(eq(enrollments.status, "active"), eq(courses.status, "active")))
+    .groupBy(courses.level);
 
-  return rows
-    .filter((r) => r.level !== null)
-    .map((r) => ({ level: r.level as string, count: r.count }));
+  return rows.map((r) => ({ level: r.level, count: r.count }));
 }
