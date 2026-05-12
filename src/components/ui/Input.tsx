@@ -1,5 +1,6 @@
 "use client";
 
+import { forwardRef } from "react";
 import { cn } from "@/lib/cn";
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
@@ -52,14 +53,17 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
 }
 
-export function Input({ className, error, ...props }: InputProps) {
-  return (
-    <input
-      className={cn(inputBase, error && inputError, className)}
-      {...props}
-    />
-  );
-}
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  function Input({ className, error, ...props }, ref) {
+    return (
+      <input
+        ref={ref}
+        className={cn(inputBase, error && inputError, className)}
+        {...props}
+      />
+    );
+  }
+);
 
 // ─── Select ───────────────────────────────────────────────────────────────────
 
