@@ -1,9 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useEffect, useRef } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { loginAction } from "@/modules/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
+
+const REMEMBER_KEY = "sl_remember_email";
+
+const inputBase =
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-700 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
 
 type ActionState = { error?: string; needsConfirmation?: boolean } | null;
 
@@ -12,6 +18,27 @@ export default function LoginPage() {
     loginAction as never,
     null
   );
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved && emailRef.current) {
+      emailRef.current.value = saved;
+      setRememberMe(true);
+    }
+  }, []);
+
+  function handleSubmit(formData: FormData) {
+    const email = formData.get("email") as string;
+    if (rememberMe && email) {
+      localStorage.setItem(REMEMBER_KEY, email);
+    } else {
+      localStorage.removeItem(REMEMBER_KEY);
+    }
+    formAction(formData);
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
@@ -37,12 +64,9 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-8">
           <h2 className="text-xl font-semibold text-slate-900 mb-6">Iniciá sesión</h2>
 
-          {/* Email not confirmed */}
           {state?.needsConfirmation && (
             <div className="mb-5 p-4 rounded-xl bg-warning-50 border border-amber-200">
-              <p className="text-sm font-semibold text-amber-800 mb-1">
-                Confirmá tu email
-              </p>
+              <p className="text-sm font-semibold text-amber-800 mb-1">Confirmá tu email</p>
               <p className="text-xs text-amber-700">
                 Te enviamos un email de confirmación. Revisá tu bandeja de
                 entrada (y spam) y hacé clic en el link antes de ingresar.
@@ -50,16 +74,16 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Generic error */}
           {state?.error && !state.needsConfirmation && (
             <div className="mb-5 p-3 rounded-lg bg-danger-50 border border-red-200">
               <p className="text-sm text-red-700">{state.error}</p>
             </div>
           )}
 
-          <form action={formAction} className="space-y-5" aria-labelledby="login-title">
+          <form action={handleSubmit} className="space-y-5" aria-labelledby="login-title">
             <Field label="Email" required id="email">
               <Input
+                ref={emailRef}
                 id="email"
                 name="email"
                 type="email"
@@ -71,17 +95,44 @@ export default function LoginPage() {
               />
             </Field>
 
+            {/* Password with eye toggle */}
             <Field label="Contraseña" required id="password">
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                disabled={pending}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  disabled={pending}
+                  className={`${inputBase} pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword
+                    ? <EyeOff className="w-4 h-4" />
+                    : <Eye className="w-4 h-4" />
+                  }
+                </button>
+              </div>
             </Field>
+
+            {/* Remember me */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-brand-700 accent-blue-700"
+              />
+              <span className="text-sm text-slate-600">Recordarme</span>
+            </label>
 
             <Button
               type="submit"
@@ -92,7 +143,6 @@ export default function LoginPage() {
             >
               {pending ? "Ingresando..." : "Ingresar"}
             </Button>
-
           </form>
         </div>
 
