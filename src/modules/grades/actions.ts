@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
+import { createServiceClient } from "@/lib/supabase/service";
 import { createGradeSchema, updateGradeSchema } from "./schemas";
-import { createGrade, updateGrade, deleteGrade } from "./services/grades.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -19,7 +19,15 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
   const parsed = createGradeSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await createGrade(parsed.data);
+  const supabase = createServiceClient();
+  const { error } = await supabase.from("grades").insert({
+    enrollment_id: parsed.data.enrollmentId,
+    evaluation_type: parsed.data.evaluationType,
+    score: String(parsed.data.score),
+    notes: parsed.data.notes ?? null,
+  });
+
+  if (error) return { error: error.message };
 
   revalidatePath("/admin/grades");
   revalidatePath("/profesor/grades");
@@ -40,7 +48,15 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
   const parsed = updateGradeSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await updateGrade(parsed.data);
+  const updateData: Record<string, string | null | undefined> = {};
+  if (parsed.data.evaluationType) updateData.evaluation_type = parsed.data.evaluationType;
+  if (parsed.data.score !== undefined) updateData.score = String(parsed.data.score);
+  if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes ?? null;
+
+  const supabase = createServiceClient();
+  const { error } = await supabase.from("grades").update(updateData).eq("id", parsed.data.id);
+
+  if (error) return { error: error.message };
 
   revalidatePath("/admin/grades");
   revalidatePath("/profesor/grades");
@@ -53,7 +69,10 @@ export async function deleteGradeAction(_prev: ActionResult, formData: FormData)
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
 
-  await deleteGrade(id);
+  const supabase = createServiceClient();
+  const { error } = await supabase.from("grades").delete().eq("id", id);
+
+  if (error) return { error: error.message };
 
   revalidatePath("/admin/grades");
   revalidatePath("/profesor/grades");
