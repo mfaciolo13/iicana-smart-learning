@@ -44,6 +44,10 @@ export function SentNotificationList({ notifications }: SentNotificationListProp
                       {n.recipientCount} destinatario{n.recipientCount !== 1 ? "s" : ""}
                     </span>
                   </>
+                ) : n.recipientCount > 1 ? (
+                  <span className="text-xs text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">
+                    {n.recipientCount} destinatarios
+                  </span>
                 ) : (
                   <span className="text-xs text-slate-400">→ {n.recipientName}</span>
                 )}
