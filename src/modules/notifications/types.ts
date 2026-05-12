@@ -10,3 +10,15 @@ export interface NotificationItem {
   createdAt: Date;
   recipientName: string;
 }
+
+export interface SentNotificationItem {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  createdAt: Date;
+  batchId: string | null;
+  batchLabel: string | null;
+  recipientCount: number;
+  recipientName: string | null;
+}
