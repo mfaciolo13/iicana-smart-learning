@@ -2,11 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getServerUser } from "@/lib/auth/helpers";
+import { createClient } from "@/lib/supabase/server";
 import { getCourseById } from "@/modules/courses/services/courses.service";
 import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
-import { db } from "@/lib/drizzle";
-import { teachers } from "@/lib/drizzle/schema";
-import { eq } from "drizzle-orm";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LEVEL_LABELS } from "@/lib/level-labels";
@@ -26,11 +24,12 @@ export default async function ProfesorCourseDetailPage({
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const [teacher] = await db
-    .select({ id: teachers.id })
-    .from(teachers)
-    .where(eq(teachers.profileId, user.id))
-    .limit(1);
+  const supabase = await createClient();
+  const { data: teacher } = await supabase
+    .from("teachers")
+    .select("id")
+    .eq("profile_id", user.id)
+    .single();
 
   if (!teacher) notFound();
 

@@ -1,15 +1,24 @@
 import { ArrowLeft } from "lucide-react";
-import { db } from "@/lib/drizzle";
-import { profiles } from "@/lib/drizzle/schema";
-import { getCourses } from "@/modules/courses/services/courses.service";
+import { createClient } from "@/lib/supabase/server";
 import { sendNotificationAction } from "@/modules/notifications/actions";
 import { NotificationForm } from "@/modules/notifications/components/NotificationForm";
+import type { CourseListItem } from "@/modules/courses/types";
+import type { Profile } from "@/lib/drizzle/schema";
 
 export default async function NewNotificationPage() {
-  const [courses, users] = await Promise.all([
-    getCourses(),
-    db.select({ id: profiles.id, fullName: profiles.fullName, role: profiles.role }).from(profiles),
+  const supabase = await createClient();
+
+  const [coursesRes, usersRes] = await Promise.all([
+    supabase.from("courses").select("id, name").eq("status", "active").order("name"),
+    supabase.from("profiles").select("id, full_name, role").order("full_name"),
   ]);
+
+  const courses = (coursesRes.data ?? []) as unknown as CourseListItem[];
+  const users = (usersRes.data ?? []).map((u) => ({
+    id: u.id,
+    fullName: u.full_name,
+    role: u.role as Profile["role"],
+  }));
 
   return (
     <div>

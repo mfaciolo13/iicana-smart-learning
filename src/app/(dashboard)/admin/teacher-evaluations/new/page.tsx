@@ -1,17 +1,25 @@
-import { getTeachers } from "@/modules/teachers/services/teachers.service";
-import { db } from "@/lib/drizzle";
-import { courses, teachers, enrollments } from "@/lib/drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { createClient } from "@/lib/supabase/server";
 import { createObservationAction } from "@/modules/teacher-evaluations/actions";
 import { ObservationForm } from "@/modules/teacher-evaluations/components/ObservationForm";
 
 export default async function NewObservationPage() {
-  const teacherList = await getTeachers();
+  const supabase = await createClient();
 
-  const courseList = await db
-    .select({ id: courses.id, name: courses.name, teacherId: courses.teacherId })
-    .from(courses)
-    .where(eq(courses.status, "active"));
+  const [teachersRes, coursesRes] = await Promise.all([
+    supabase.from("teachers").select("id, profiles(full_name)"),
+    supabase.from("courses").select("id, name, teacher_id").eq("status", "active").order("name"),
+  ]);
+
+  const teachers = (teachersRes.data ?? []).map((t) => ({
+    id: t.id,
+    fullName: (t.profiles as unknown as { full_name: string } | null)?.full_name ?? "",
+  }));
+
+  const courses = (coursesRes.data ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    teacherId: c.teacher_id,
+  }));
 
   return (
     <div>
@@ -22,8 +30,8 @@ export default async function NewObservationPage() {
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-2xl">
         <ObservationForm
-          teachers={teacherList}
-          courses={courseList}
+          teachers={teachers}
+          courses={courses}
           action={createObservationAction}
         />
       </div>

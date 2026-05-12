@@ -1,24 +1,18 @@
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
-import { db } from "@/lib/drizzle";
-import { profiles } from "@/lib/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/modules/profile/components/ProfileForm";
 
 export default async function AdminProfilePage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const [profile] = await db
-    .select({
-      fullName: profiles.fullName,
-      email: profiles.email,
-      phone: profiles.phone,
-      avatarUrl: profiles.avatarUrl,
-    })
-    .from(profiles)
-    .where(eq(profiles.id, user.id))
-    .limit(1);
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, email, phone, avatar_url")
+    .eq("id", user.id)
+    .single();
 
   if (!profile) redirect("/login");
 
@@ -30,10 +24,10 @@ export default async function AdminProfilePage() {
       </div>
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-md">
         <ProfileForm
-          fullName={profile.fullName}
+          fullName={profile.full_name}
           email={profile.email}
           phone={profile.phone}
-          avatarUrl={profile.avatarUrl}
+          avatarUrl={profile.avatar_url}
         />
       </div>
     </div>
