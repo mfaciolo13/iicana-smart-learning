@@ -27,17 +27,25 @@ import { StudentsLevelChart } from "./components/StudentsLevelChart";
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
-  const [studentsRes, coursesRes, teachersRes, paymentsRes, attendanceData, gradesData, paymentCounts, levelData] =
-    await Promise.all([
-      supabase.from("students").select("id, status", { count: "exact", head: false }),
-      supabase.from("courses").select("id, status", { count: "exact", head: false }),
-      supabase.from("teachers").select("id", { count: "exact", head: false }),
-      supabase.from("payments").select("id, status", { count: "exact", head: false }),
-      getAttendanceAvgByCourse(),
-      getGradeAvgByCourse(),
-      getPaymentStatusCounts(),
-      getActiveStudentsByLevel(),
-    ]);
+  function withTimeout<T>(p: Promise<T>, fallback: T, ms = 6000): Promise<T> {
+    return Promise.race([p, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+  }
+
+  // REST calls first — always fast and critical for KPIs
+  const [studentsRes, coursesRes, teachersRes, paymentsRes] = await Promise.all([
+    supabase.from("students").select("id, status", { count: "exact", head: false }),
+    supabase.from("courses").select("id, status", { count: "exact", head: false }),
+    supabase.from("teachers").select("id", { count: "exact", head: false }),
+    supabase.from("payments").select("id, status", { count: "exact", head: false }),
+  ]);
+
+  // Drizzle calls for charts — isolated: if they timeout the charts show empty state
+  const [attendanceData, gradesData, paymentCounts, levelData] = await Promise.all([
+    withTimeout(getAttendanceAvgByCourse(), []),
+    withTimeout(getGradeAvgByCourse(), []),
+    withTimeout(getPaymentStatusCounts(), []),
+    withTimeout(getActiveStudentsByLevel(), []),
+  ]);
 
   const totalStudents = studentsRes.count ?? 0;
   const activeStudents = studentsRes.data?.filter((s) => s.status === "active").length ?? 0;
