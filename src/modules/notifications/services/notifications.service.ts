@@ -1,7 +1,7 @@
 import { db } from "@/lib/drizzle";
-import { notifications, profiles, enrollments, students } from "@/lib/drizzle/schema";
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
-import type { NotificationItem, NotificationType } from "../types";
+import { notifications, profiles, enrollments, students, courses } from "@/lib/drizzle/schema";
+import { eq, desc, and, sql, isNull, isNotNull } from "drizzle-orm";
+import type { NotificationItem, NotificationType, SentNotificationItem } from "../types";
 
 interface NotifPayload {
   type: NotificationType;
@@ -86,6 +86,13 @@ export async function sendToUser(userId: string, payload: NotifPayload) {
   await insertOne(userId, payload);
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Directivos",
+  profesor: "Profesores",
+  alumno: "Alumnos",
+  tutor: "Tutores",
+};
+
 export async function sendToRole(role: string, payload: NotifPayload) {
   const recipients = await db
     .select({ id: profiles.id })
@@ -94,12 +101,17 @@ export async function sendToRole(role: string, payload: NotifPayload) {
 
   if (recipients.length === 0) return;
 
+  const batchId = crypto.randomUUID();
+  const batchLabel = `Rol: ${ROLE_LABELS[role] ?? role}`;
+
   await db.insert(notifications).values(
     recipients.map((r) => ({
       userId: r.id,
       type: payload.type,
       title: payload.title,
       body: payload.body,
+      batchId,
+      batchLabel,
     }))
   );
 }
@@ -130,26 +142,94 @@ export async function getEmailForUser(userId: string): Promise<{ email: string; 
 }
 
 export async function sendToCourse(courseId: string, payload: NotifPayload) {
-  // Get profile IDs of all active students in the course
-  const rows = await db
-    .select({ profileId: students.profileId })
-    .from(enrollments)
-    .innerJoin(students, eq(enrollments.studentId, students.id))
-    .where(
-      and(
-        eq(enrollments.courseId, courseId),
-        eq(enrollments.status, "active")
-      )
-    );
+  const [enrollmentRows, courseRows] = await Promise.all([
+    db
+      .select({ profileId: students.profileId })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .where(and(eq(enrollments.courseId, courseId), eq(enrollments.status, "active"))),
+    db.select({ name: courses.name }).from(courses).where(eq(courses.id, courseId)).limit(1),
+  ]);
 
-  if (rows.length === 0) return;
+  if (enrollmentRows.length === 0) return;
+
+  const batchId = crypto.randomUUID();
+  const batchLabel = `Curso: ${courseRows[0]?.name ?? courseId}`;
 
   await db.insert(notifications).values(
-    rows.map((r) => ({
+    enrollmentRows.map((r) => ({
       userId: r.profileId,
       type: payload.type,
       title: payload.title,
       body: payload.body,
+      batchId,
+      batchLabel,
     }))
+  );
+}
+
+export async function getAdminSentNotifications(): Promise<SentNotificationItem[]> {
+  const [batchRows, individualRows] = await Promise.all([
+    db
+      .select({
+        batchId: notifications.batchId,
+        batchLabel: notifications.batchLabel,
+        type: notifications.type,
+        title: notifications.title,
+        body: notifications.body,
+        createdAt: sql<Date>`MIN(${notifications.createdAt})`,
+        recipientCount: sql<number>`cast(count(*) as int)`,
+      })
+      .from(notifications)
+      .where(isNotNull(notifications.batchId))
+      .groupBy(
+        notifications.batchId,
+        notifications.batchLabel,
+        notifications.type,
+        notifications.title,
+        notifications.body
+      ),
+    db
+      .select({
+        id: notifications.id,
+        type: notifications.type,
+        title: notifications.title,
+        body: notifications.body,
+        createdAt: notifications.createdAt,
+        recipientName: profiles.fullName,
+      })
+      .from(notifications)
+      .innerJoin(profiles, eq(notifications.userId, profiles.id))
+      .where(isNull(notifications.batchId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(100),
+  ]);
+
+  const batches: SentNotificationItem[] = batchRows.map((r) => ({
+    id: r.batchId!,
+    type: r.type as NotificationType,
+    title: r.title,
+    body: r.body,
+    createdAt: r.createdAt,
+    batchId: r.batchId,
+    batchLabel: r.batchLabel,
+    recipientCount: r.recipientCount,
+    recipientName: null,
+  }));
+
+  const individuals: SentNotificationItem[] = individualRows.map((r) => ({
+    id: r.id,
+    type: r.type as NotificationType,
+    title: r.title,
+    body: r.body,
+    createdAt: r.createdAt,
+    batchId: null,
+    batchLabel: null,
+    recipientCount: 1,
+    recipientName: r.recipientName,
+  }));
+
+  return [...batches, ...individuals].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }

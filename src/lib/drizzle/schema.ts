@@ -267,6 +267,8 @@ export const notifications = pgTable("notifications", {
   title: text("title").notNull(),
   body: text("body").notNull(),
   read: boolean("read").notNull().default(false),
+  batchId: uuid("batch_id"),
+  batchLabel: text("batch_label"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
