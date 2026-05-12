@@ -1,7 +1,7 @@
 import { db } from "@/lib/drizzle";
 import { notifications, profiles, enrollments, students, courses } from "@/lib/drizzle/schema";
-import { eq, desc, and, sql, isNull, isNotNull } from "drizzle-orm";
-import type { NotificationItem, NotificationType, SentNotificationItem } from "../types";
+import { eq, desc, and, sql } from "drizzle-orm";
+import type { NotificationItem, NotificationType } from "../types";
 
 interface NotifPayload {
   type: NotificationType;
@@ -165,79 +165,5 @@ export async function sendToCourse(courseId: string, payload: NotifPayload) {
       batchId,
       batchLabel,
     }))
-  );
-}
-
-export async function getAdminSentNotifications(): Promise<SentNotificationItem[]> {
-  const [batchRows, legacyRows] = await Promise.all([
-    // New sends: grouped by batch_id
-    db
-      .select({
-        batchId: notifications.batchId,
-        batchLabel: notifications.batchLabel,
-        type: notifications.type,
-        title: notifications.title,
-        body: notifications.body,
-        createdAt: sql<Date>`MIN(${notifications.createdAt})`,
-        recipientCount: sql<number>`cast(count(*) as int)`,
-      })
-      .from(notifications)
-      .where(isNotNull(notifications.batchId))
-      .groupBy(
-        notifications.batchId,
-        notifications.batchLabel,
-        notifications.type,
-        notifications.title,
-        notifications.body
-      ),
-    // Legacy sends (no batch_id): group retroactively by content + minute
-    db
-      .select({
-        type: notifications.type,
-        title: notifications.title,
-        body: notifications.body,
-        createdAt: sql<Date>`date_trunc('minute', MIN(${notifications.createdAt}))`,
-        recipientCount: sql<number>`cast(count(*) as int)`,
-        recipientName: sql<string | null>`CASE WHEN count(*) = 1 THEN MIN(${profiles.fullName}) ELSE NULL END`,
-      })
-      .from(notifications)
-      .innerJoin(profiles, eq(notifications.userId, profiles.id))
-      .where(isNull(notifications.batchId))
-      .groupBy(
-        notifications.type,
-        notifications.title,
-        notifications.body,
-        sql`date_trunc('minute', ${notifications.createdAt})`
-      )
-      .orderBy(desc(sql`MIN(${notifications.createdAt})`))
-      .limit(100),
-  ]);
-
-  const batches: SentNotificationItem[] = batchRows.map((r) => ({
-    id: r.batchId!,
-    type: r.type as NotificationType,
-    title: r.title,
-    body: r.body,
-    createdAt: r.createdAt,
-    batchId: r.batchId,
-    batchLabel: r.batchLabel,
-    recipientCount: r.recipientCount,
-    recipientName: null,
-  }));
-
-  const legacy: SentNotificationItem[] = legacyRows.map((r, i) => ({
-    id: `legacy-${i}-${r.type}-${new Date(r.createdAt).getTime()}`,
-    type: r.type as NotificationType,
-    title: r.title,
-    body: r.body,
-    createdAt: r.createdAt,
-    batchId: null,
-    batchLabel: null,
-    recipientCount: r.recipientCount,
-    recipientName: r.recipientName,
-  }));
-
-  return [...batches, ...legacy].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }
