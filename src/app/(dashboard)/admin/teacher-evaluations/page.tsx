@@ -20,13 +20,22 @@ function StarBar({ value }: { value: number | null }) {
 export default async function TeacherEvaluationsPage() {
   const supabase = await createClient();
 
-  const [{ data: teacherRows }, { data: surveyRows }, { data: obsRows }] = await Promise.all([
-    supabase.from("teachers").select("id, profiles(full_name)").order("full_name", { referencedTable: "profiles" }),
+  const [{ data: rawTeacherRows }, { data: surveyRows }, { data: obsRows }] = await Promise.all([
+    supabase.from("teachers").select("id, profile_id"),
     supabase.from("teacher_surveys").select("teacher_id, rating1, rating2, rating3, rating4"),
     supabase.from("class_observations").select("teacher_id, observed_at"),
   ]);
 
-  type ProfileRaw = { full_name: string } | null;
+  const teacherProfileIds = (rawTeacherRows ?? []).map((t) => t.profile_id);
+  const { data: teacherProfileRows } = teacherProfileIds.length > 0
+    ? await supabase.from("profiles").select("id, full_name").in("id", teacherProfileIds)
+    : { data: [] as { id: string; full_name: string }[] };
+
+  const teacherProfileMap = new Map((teacherProfileRows ?? []).map((p) => [p.id, p.full_name]));
+  const teacherRows = (rawTeacherRows ?? []).map((t) => ({
+    id: t.id,
+    fullName: teacherProfileMap.get(t.profile_id) ?? "",
+  }));
 
   const surveysByTeacher = new Map<string, { count: number; ratingSum: number }>();
   for (const s of surveyRows ?? []) {
@@ -44,13 +53,12 @@ export default async function TeacherEvaluationsPage() {
     obsByTeacher.set(o.teacher_id, cur);
   }
 
-  const summaries: TeacherEvalSummary[] = (teacherRows ?? []).map((t) => {
-    const profile = t.profiles as unknown as ProfileRaw;
+  const summaries: TeacherEvalSummary[] = teacherRows.map((t) => {
     const surveys = surveysByTeacher.get(t.id);
     const obs = obsByTeacher.get(t.id);
     return {
       teacherId: t.id,
-      teacherName: profile?.full_name ?? "",
+      teacherName: t.fullName,
       surveyCount: surveys?.count ?? 0,
       avgRating: surveys && surveys.count > 0 ? Math.round((surveys.ratingSum / surveys.count) * 10) / 10 : null,
       observationCount: obs?.count ?? 0,

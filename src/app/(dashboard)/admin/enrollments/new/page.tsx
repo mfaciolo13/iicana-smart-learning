@@ -12,53 +12,62 @@ export default async function NewEnrollmentPage({
   const { studentId, courseId } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: studentRows }, { data: courseRows }, { data: enrollmentRows }] = await Promise.all([
-    supabase
-      .from("students")
-      .select("id, dni, level, status, profiles(full_name, email)")
-      .order("full_name", { referencedTable: "profiles" }),
-    supabase
-      .from("courses")
-      .select("id, name, level, schedule, status, max_capacity, teachers(profiles(full_name))")
-      .order("name"),
-    supabase
-      .from("enrollments")
-      .select("course_id")
-      .eq("status", "active"),
+  const [{ data: rawStudentRows }, { data: rawCourseRows }, { data: enrollmentRows }] = await Promise.all([
+    supabase.from("students").select("id, dni, level, status, profile_id"),
+    supabase.from("courses").select("id, name, level, schedule, status, max_capacity, teacher_id").order("name"),
+    supabase.from("enrollments").select("course_id").eq("status", "active"),
   ]);
 
-  type StudentProfileRaw = { full_name: string; email: string } | null;
-  const allStudents: StudentListItem[] = (studentRows ?? []).map((s) => {
-    const profile = s.profiles as unknown as StudentProfileRaw;
-    return {
-      id: s.id,
-      fullName: profile?.full_name ?? "",
-      email: profile?.email ?? "",
-      dni: s.dni,
-      level: s.level as StudentListItem["level"],
-      status: s.status as StudentListItem["status"],
-    };
-  });
+  // Student profiles
+  const studentProfileIds = (rawStudentRows ?? []).map((s) => s.profile_id);
+  const { data: studentProfileRows } = studentProfileIds.length > 0
+    ? await supabase.from("profiles").select("id, full_name, email").in("id", studentProfileIds)
+    : { data: [] as { id: string; full_name: string; email: string }[] };
+  const studentProfileMap = new Map((studentProfileRows ?? []).map((p) => [p.id, p]));
+
+  // Teacher profiles (for course teacher names)
+  const courseTeacherIds = (rawCourseRows ?? []).filter((c) => c.teacher_id).map((c) => c.teacher_id as string);
+  const { data: courseTeacherRows } = courseTeacherIds.length > 0
+    ? await supabase.from("teachers").select("id, profile_id").in("id", courseTeacherIds)
+    : { data: [] as { id: string; profile_id: string }[] };
+  const courseTeacherProfileIds = (courseTeacherRows ?? []).map((t) => t.profile_id);
+  const { data: courseTeacherProfileRows } = courseTeacherProfileIds.length > 0
+    ? await supabase.from("profiles").select("id, full_name").in("id", courseTeacherProfileIds)
+    : { data: [] as { id: string; full_name: string }[] };
+  const teacherProfileMap = new Map((courseTeacherProfileRows ?? []).map((p) => [p.id, p.full_name]));
+  const teacherNameByTeacherId = new Map(
+    (courseTeacherRows ?? []).map((t) => [t.id, teacherProfileMap.get(t.profile_id) ?? null])
+  );
+
+  const allStudents: StudentListItem[] = (rawStudentRows ?? [])
+    .map((s) => {
+      const profile = studentProfileMap.get(s.profile_id);
+      return {
+        id: s.id,
+        fullName: profile?.full_name ?? "",
+        email: profile?.email ?? "",
+        dni: s.dni,
+        level: s.level as StudentListItem["level"],
+        status: s.status as StudentListItem["status"],
+      };
+    })
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
 
   const countByCourse = new Map<string, number>();
   for (const e of enrollmentRows ?? []) {
     countByCourse.set(e.course_id, (countByCourse.get(e.course_id) ?? 0) + 1);
   }
 
-  type CourseTeacherRaw = { profiles: { full_name: string } | null } | null;
-  const courses: CourseListItem[] = (courseRows ?? []).map((c) => {
-    const teacherRaw = c.teachers as unknown as CourseTeacherRaw;
-    return {
-      id: c.id,
-      name: c.name,
-      level: c.level as CourseListItem["level"],
-      schedule: c.schedule,
-      status: c.status as CourseListItem["status"],
-      maxCapacity: c.max_capacity,
-      teacherName: teacherRaw?.profiles?.full_name ?? null,
-      enrollmentCount: countByCourse.get(c.id) ?? 0,
-    };
-  });
+  const courses: CourseListItem[] = (rawCourseRows ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    level: c.level as CourseListItem["level"],
+    schedule: c.schedule,
+    status: c.status as CourseListItem["status"],
+    maxCapacity: c.max_capacity,
+    teacherName: c.teacher_id ? (teacherNameByTeacherId.get(c.teacher_id) ?? null) : null,
+    enrollmentCount: countByCourse.get(c.id) ?? 0,
+  }));
 
   const activeStudents = allStudents.filter((s) => s.status === "active");
 

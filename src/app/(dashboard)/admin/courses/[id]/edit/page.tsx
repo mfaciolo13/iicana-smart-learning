@@ -13,24 +13,41 @@ export default async function EditCoursePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: courseRow }, { data: teacherRows }] = await Promise.all([
+  const [{ data: courseRow }, { data: rawTeacherRows }] = await Promise.all([
     supabase
       .from("courses")
-      .select("id, name, level, schedule, classroom, max_capacity, status, created_at, updated_at, teacher_id, teachers(profiles(full_name, email))")
+      .select("id, name, level, schedule, classroom, max_capacity, status, created_at, updated_at, teacher_id")
       .eq("id", id)
       .single(),
     supabase
       .from("teachers")
-      .select("id, dni, specialization, profiles(full_name, email)")
-      .order("full_name", { referencedTable: "profiles" }),
+      .select("id, dni, specialization, profile_id"),
   ]);
 
   if (!courseRow) notFound();
 
-  type TeacherRaw = { profiles: { full_name: string; email: string } | null } | null;
-  const teacherRaw = courseRow.teachers as unknown as TeacherRaw;
-  const teacher = teacherRaw?.profiles
-    ? { fullName: teacherRaw.profiles.full_name, email: teacherRaw.profiles.email }
+  const teacherProfileIds = (rawTeacherRows ?? []).map((t) => t.profile_id);
+  const { data: teacherProfileRows } = teacherProfileIds.length > 0
+    ? await supabase.from("profiles").select("id, full_name, email").in("id", teacherProfileIds)
+    : { data: [] as { id: string; full_name: string; email: string }[] };
+
+  const teacherProfileMap = new Map((teacherProfileRows ?? []).map((p) => [p.id, p]));
+
+  const teachers: TeacherListItem[] = (rawTeacherRows ?? [])
+    .map((t) => {
+      const profile = teacherProfileMap.get(t.profile_id);
+      return {
+        id: t.id,
+        fullName: profile?.full_name ?? "",
+        email: profile?.email ?? "",
+        dni: t.dni,
+        specialization: t.specialization,
+      };
+    })
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+  const currentTeacher = courseRow.teacher_id
+    ? (teachers.find((t) => t.id === courseRow.teacher_id) ?? null)
     : null;
 
   const course: CourseWithTeacher = {
@@ -44,21 +61,9 @@ export default async function EditCoursePage({
     teacherId: courseRow.teacher_id as string | null,
     createdAt: new Date(courseRow.created_at),
     updatedAt: new Date(courseRow.updated_at),
-    teacher,
+    teacher: currentTeacher ? { fullName: currentTeacher.fullName, email: currentTeacher.email } : null,
     enrollmentCount: 0,
   };
-
-  type ProfileRaw = { full_name: string; email: string } | null;
-  const teachers: TeacherListItem[] = (teacherRows ?? []).map((t) => {
-    const profile = t.profiles as unknown as ProfileRaw;
-    return {
-      id: t.id,
-      fullName: profile?.full_name ?? "",
-      email: profile?.email ?? "",
-      dni: t.dni,
-      specialization: t.specialization,
-    };
-  });
 
   return (
     <div>

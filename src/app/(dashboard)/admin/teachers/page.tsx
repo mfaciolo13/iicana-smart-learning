@@ -12,21 +12,29 @@ export default async function TeachersPage({
   const { q } = await searchParams;
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const { data: teacherRows } = await supabase
     .from("teachers")
-    .select("id, dni, specialization, profiles(full_name, email)")
-    .order("full_name", { referencedTable: "profiles" });
+    .select("id, dni, specialization, profile_id");
 
-  let teachers = (data ?? []).map((t) => {
-    const profile = t.profiles as unknown as { full_name: string; email: string } | null;
-    return {
-      id: t.id,
-      dni: t.dni,
-      specialization: t.specialization as string | null,
-      fullName: profile?.full_name ?? "",
-      email: profile?.email ?? "",
-    };
-  });
+  const profileIds = (teacherRows ?? []).map((t) => t.profile_id);
+  const { data: profileRows } = profileIds.length > 0
+    ? await supabase.from("profiles").select("id, full_name, email").in("id", profileIds)
+    : { data: [] as { id: string; full_name: string; email: string }[] };
+
+  const profileMap = new Map((profileRows ?? []).map((p) => [p.id, p]));
+
+  let teachers = (teacherRows ?? [])
+    .map((t) => {
+      const profile = profileMap.get(t.profile_id);
+      return {
+        id: t.id,
+        dni: t.dni,
+        specialization: t.specialization as string | null,
+        fullName: profile?.full_name ?? "",
+        email: profile?.email ?? "",
+      };
+    })
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
 
   if (q) {
     const lower = q.toLowerCase();
