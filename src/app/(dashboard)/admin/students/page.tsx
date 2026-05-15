@@ -13,22 +13,30 @@ export default async function StudentsPage({
   const { q } = await searchParams;
   const supabase = await createClient();
 
-  const { data } = await supabase
+  const { data: studentRows } = await supabase
     .from("students")
-    .select("id, dni, level, status, profiles(full_name, email)")
-    .order("full_name", { referencedTable: "profiles" });
+    .select("id, dni, level, status, profile_id");
 
-  let students: StudentListItem[] = (data ?? []).map((s) => {
-    const profile = s.profiles as unknown as { full_name: string; email: string } | null;
-    return {
-      id: s.id,
-      fullName: profile?.full_name ?? "",
-      email: profile?.email ?? "",
-      dni: s.dni,
-      level: s.level as StudentListItem["level"],
-      status: s.status as StudentListItem["status"],
-    };
-  });
+  const profileIds = (studentRows ?? []).map((s) => s.profile_id);
+  const { data: profileRows } = profileIds.length > 0
+    ? await supabase.from("profiles").select("id, full_name, email").in("id", profileIds)
+    : { data: [] as { id: string; full_name: string; email: string }[] };
+
+  const profileMap = new Map((profileRows ?? []).map((p) => [p.id, p]));
+
+  let students: StudentListItem[] = (studentRows ?? [])
+    .map((s) => {
+      const profile = profileMap.get(s.profile_id);
+      return {
+        id: s.id,
+        fullName: profile?.full_name ?? "",
+        email: profile?.email ?? "",
+        dni: s.dni,
+        level: s.level as StudentListItem["level"],
+        status: s.status as StudentListItem["status"],
+      };
+    })
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
 
   if (q) {
     const lower = q.toLowerCase();
