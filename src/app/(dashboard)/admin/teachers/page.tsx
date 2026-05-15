@@ -15,7 +15,7 @@ export default async function TeachersPage({
   const { data } = await supabase
     .from("teachers")
     .select("id, dni, specialization, profiles(full_name, email)")
-    .order("profiles(full_name)");
+    .order("full_name", { referencedTable: "profiles" });
 
   let teachers = (data ?? []).map((t) => {
     const profile = t.profiles as unknown as { full_name: string; email: string } | null;

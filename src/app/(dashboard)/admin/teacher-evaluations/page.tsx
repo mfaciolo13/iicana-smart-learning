@@ -21,7 +21,7 @@ export default async function TeacherEvaluationsPage() {
   const supabase = await createClient();
 
   const [{ data: teacherRows }, { data: surveyRows }, { data: obsRows }] = await Promise.all([
-    supabase.from("teachers").select("id, profiles(full_name)").order("profiles(full_name)"),
+    supabase.from("teachers").select("id, profiles(full_name)").order("full_name", { referencedTable: "profiles" }),
     supabase.from("teacher_surveys").select("teacher_id, rating1, rating2, rating3, rating4"),
     supabase.from("class_observations").select("teacher_id, observed_at"),
   ]);

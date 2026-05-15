@@ -9,7 +9,7 @@ export default async function NewCoursePage() {
   const { data: rows } = await supabase
     .from("teachers")
     .select("id, dni, specialization, profiles(full_name, email)")
-    .order("profiles(full_name)");
+    .order("full_name", { referencedTable: "profiles" });
 
   type ProfileRaw = { full_name: string; email: string } | null;
   const teachers: TeacherListItem[] = (rows ?? []).map((t) => {

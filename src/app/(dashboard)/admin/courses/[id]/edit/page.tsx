@@ -22,7 +22,7 @@ export default async function EditCoursePage({
     supabase
       .from("teachers")
       .select("id, dni, specialization, profiles(full_name, email)")
-      .order("profiles(full_name)"),
+      .order("full_name", { referencedTable: "profiles" }),
   ]);
 
   if (!courseRow) notFound();

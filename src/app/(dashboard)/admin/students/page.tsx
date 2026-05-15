@@ -16,7 +16,7 @@ export default async function StudentsPage({
   const { data } = await supabase
     .from("students")
     .select("id, dni, level, status, profiles(full_name, email)")
-    .order("profiles(full_name)");
+    .order("full_name", { referencedTable: "profiles" });
 
   let students: StudentListItem[] = (data ?? []).map((s) => {
     const profile = s.profiles as unknown as { full_name: string; email: string } | null;
