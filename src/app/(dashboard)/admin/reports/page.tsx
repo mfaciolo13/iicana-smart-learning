@@ -1,8 +1,51 @@
-import { getReportsSummary } from "@/modules/reports/services/reports.service";
+import { createClient } from "@/lib/supabase/server";
 import { FileSpreadsheet, CalendarCheck, Star, CreditCard } from "lucide-react";
 
 export default async function ReportsPage() {
-  const { attendanceSummary, gradesSummary, paymentsSummary } = await getReportsSummary();
+  const supabase = await createClient();
+
+  const [{ data: attendanceRows }, { data: gradeRows }, { data: paymentRows }] = await Promise.all([
+    supabase.from("attendance").select("status"),
+    supabase.from("grades").select("score"),
+    supabase.from("payments").select("status, amount"),
+  ]);
+
+  const totalAttendance = attendanceRows?.length ?? 0;
+  const presentCount = (attendanceRows ?? []).filter(
+    (a) => a.status === "present" || a.status === "late"
+  ).length;
+  const attendanceSummary = {
+    totalRecords: totalAttendance,
+    avgPct:
+      totalAttendance > 0
+        ? Math.round((presentCount / totalAttendance) * 100 * 10) / 10
+        : 0,
+  };
+
+  const totalGrades = gradeRows?.length ?? 0;
+  const gradeSum = (gradeRows ?? []).reduce((s, g) => s + parseFloat(g.score), 0);
+  const passingGrades = (gradeRows ?? []).filter((g) => parseFloat(g.score) >= 7).length;
+  const gradesSummary = {
+    totalGrades,
+    avgScore:
+      totalGrades > 0
+        ? (Math.round((gradeSum / totalGrades) * 100) / 100).toFixed(2)
+        : "—",
+    passing: passingGrades,
+  };
+
+  const paidPayments = (paymentRows ?? []).filter((p) => p.status === "paid");
+  const pendingCount = (paymentRows ?? []).filter(
+    (p) => p.status === "pending" || p.status === "overdue"
+  ).length;
+  const amountCollected = paidPayments
+    .reduce((s, p) => s + parseFloat(p.amount), 0)
+    .toString();
+  const paymentsSummary = {
+    totalPaid: paidPayments.length,
+    totalPending: pendingCount,
+    amountCollected,
+  };
 
   const reports = [
     {
@@ -14,8 +57,8 @@ export default async function ReportsPage() {
       href: "/api/reports/attendance",
       filename: "reporte-asistencia.xlsx",
       stats: [
-        { label: "Registros", value: attendanceSummary?.totalRecords ?? 0 },
-        { label: "Asistencia media", value: `${attendanceSummary?.avgPct ?? 0}%` },
+        { label: "Registros", value: attendanceSummary.totalRecords },
+        { label: "Asistencia media", value: `${attendanceSummary.avgPct}%` },
       ],
     },
     {
@@ -27,9 +70,9 @@ export default async function ReportsPage() {
       href: "/api/reports/grades",
       filename: "reporte-notas.xlsx",
       stats: [
-        { label: "Evaluaciones", value: gradesSummary?.totalGrades ?? 0 },
-        { label: "Promedio general", value: gradesSummary?.avgScore ?? "—" },
-        { label: "Aprobadas", value: gradesSummary?.passing ?? 0 },
+        { label: "Evaluaciones", value: gradesSummary.totalGrades },
+        { label: "Promedio general", value: gradesSummary.avgScore },
+        { label: "Aprobadas", value: gradesSummary.passing },
       ],
     },
     {
@@ -41,11 +84,11 @@ export default async function ReportsPage() {
       href: "/api/reports/payments",
       filename: "reporte-pagos.xlsx",
       stats: [
-        { label: "Pagados", value: paymentsSummary?.totalPaid ?? 0 },
-        { label: "Pendientes", value: paymentsSummary?.totalPending ?? 0 },
+        { label: "Pagados", value: paymentsSummary.totalPaid },
+        { label: "Pendientes", value: paymentsSummary.totalPending },
         {
           label: "Recaudado",
-          value: `$${parseFloat(paymentsSummary?.amountCollected ?? "0").toLocaleString("es-AR", { minimumFractionDigits: 0 })}`,
+          value: `$${parseFloat(paymentsSummary.amountCollected).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`,
         },
       ],
     },

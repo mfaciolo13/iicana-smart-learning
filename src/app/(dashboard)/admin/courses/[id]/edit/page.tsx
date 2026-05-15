@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
-import { getCourseById } from "@/modules/courses/services/courses.service";
-import { getTeachers } from "@/modules/teachers/services/teachers.service";
+import { createClient } from "@/lib/supabase/server";
 import { updateCourseAction } from "@/modules/courses/actions";
 import { CourseForm } from "@/modules/courses/components/CourseForm";
+import type { CourseWithTeacher } from "@/modules/courses/types";
+import type { TeacherListItem } from "@/modules/teachers/types";
 
 export default async function EditCoursePage({
   params,
@@ -10,9 +11,54 @@ export default async function EditCoursePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [course, teachers] = await Promise.all([getCourseById(id), getTeachers()]);
+  const supabase = await createClient();
 
-  if (!course) notFound();
+  const [{ data: courseRow }, { data: teacherRows }] = await Promise.all([
+    supabase
+      .from("courses")
+      .select("id, name, level, schedule, classroom, max_capacity, status, created_at, updated_at, teacher_id, teachers(profiles(full_name, email))")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("teachers")
+      .select("id, dni, specialization, profiles(full_name, email)")
+      .order("profiles(full_name)"),
+  ]);
+
+  if (!courseRow) notFound();
+
+  type TeacherRaw = { profiles: { full_name: string; email: string } | null } | null;
+  const teacherRaw = courseRow.teachers as unknown as TeacherRaw;
+  const teacher = teacherRaw?.profiles
+    ? { fullName: teacherRaw.profiles.full_name, email: teacherRaw.profiles.email }
+    : null;
+
+  const course: CourseWithTeacher = {
+    id: courseRow.id,
+    name: courseRow.name,
+    level: courseRow.level as CourseWithTeacher["level"],
+    schedule: courseRow.schedule,
+    classroom: courseRow.classroom as string | null,
+    maxCapacity: courseRow.max_capacity,
+    status: courseRow.status as CourseWithTeacher["status"],
+    teacherId: courseRow.teacher_id as string | null,
+    createdAt: new Date(courseRow.created_at),
+    updatedAt: new Date(courseRow.updated_at),
+    teacher,
+    enrollmentCount: 0,
+  };
+
+  type ProfileRaw = { full_name: string; email: string } | null;
+  const teachers: TeacherListItem[] = (teacherRows ?? []).map((t) => {
+    const profile = t.profiles as unknown as ProfileRaw;
+    return {
+      id: t.id,
+      fullName: profile?.full_name ?? "",
+      email: profile?.email ?? "",
+      dni: t.dni,
+      specialization: t.specialization,
+    };
+  });
 
   return (
     <div>

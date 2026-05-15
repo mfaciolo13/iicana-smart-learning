@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getGradeById } from "@/modules/grades/services/grades.service";
+import { createClient } from "@/lib/supabase/server";
 import { updateGradeAction, deleteGradeAction } from "@/modules/grades/actions";
-import { getEnrollments } from "@/modules/enrollments/services/enrollments.service";
 import { GradeForm } from "@/modules/grades/components/GradeForm";
 import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
+import type { GradeWithDetails, EvaluationType } from "@/modules/grades/types";
+import type { EnrollmentListItem } from "@/modules/enrollments/types";
 
 function scoreVariant(score: number): "success" | "warning" | "danger" {
   if (score >= 7) return "success";
@@ -28,9 +29,59 @@ export default async function GradeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [grade, enrollments] = await Promise.all([getGradeById(id), getEnrollments()]);
+  const supabase = await createClient();
 
-  if (!grade) notFound();
+  const [{ data: gradeRow }, { data: enrollmentRows }] = await Promise.all([
+    supabase
+      .from("grades")
+      .select("id, enrollment_id, evaluation_type, score, evaluated_at, notes, enrollments(course_id, students(profiles(full_name), dni), courses(name, level))")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("enrollments")
+      .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
+      .eq("status", "active"),
+  ]);
+
+  if (!gradeRow) notFound();
+
+  type EnrRaw = {
+    course_id: string;
+    students: { profiles: { full_name: string } | null; dni: string } | null;
+    courses: { name: string; level: string } | null;
+  } | null;
+
+  const enrRaw = gradeRow.enrollments as unknown as EnrRaw;
+
+  const grade: GradeWithDetails = {
+    id: gradeRow.id,
+    enrollmentId: gradeRow.enrollment_id,
+    evaluationType: gradeRow.evaluation_type as EvaluationType,
+    score: gradeRow.score,
+    evaluatedAt: new Date(gradeRow.evaluated_at),
+    notes: gradeRow.notes as string | null,
+    studentName: enrRaw?.students?.profiles?.full_name ?? "",
+    studentDni: enrRaw?.students?.dni ?? "",
+    courseName: enrRaw?.courses?.name ?? "",
+    courseLevel: enrRaw?.courses?.level ?? "",
+  };
+
+  type EnrollmentStudentRaw = { profiles: { full_name: string } | null; dni: string } | null;
+  type EnrollmentCourseRaw = { name: string; level: string } | null;
+
+  const enrollments: EnrollmentListItem[] = (enrollmentRows ?? []).map((e) => {
+    const student = e.students as unknown as EnrollmentStudentRaw;
+    const course = e.courses as unknown as EnrollmentCourseRaw;
+    return {
+      id: e.id,
+      enrolledAt: new Date(e.enrolled_at),
+      status: e.status as EnrollmentListItem["status"],
+      studentName: student?.profiles?.full_name ?? "",
+      studentDni: student?.dni ?? "",
+      courseName: course?.name ?? "",
+      courseLevel: course?.level ?? "",
+    };
+  });
 
   const score = parseFloat(grade.score);
 
@@ -63,7 +114,7 @@ export default async function GradeDetailPage({
       </div>
 
       <GradeForm
-        enrollments={enrollments.filter((e) => e.status === "active")}
+        enrollments={enrollments}
         grade={grade}
         action={updateGradeAction}
         submitLabel="Guardar cambios"

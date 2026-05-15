@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getTeacherById } from "@/modules/teachers/services/teachers.service";
+import { createClient } from "@/lib/supabase/server";
 import { deleteTeacherAction } from "@/modules/teachers/actions";
 import { resendInvitationAction } from "@/modules/users/actions";
 import { FormButton } from "@/components/ui/FormButton";
@@ -14,9 +14,30 @@ export default async function TeacherDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const teacher = await getTeacherById(id);
+  const supabase = await createClient();
 
-  if (!teacher) notFound();
+  const { data: row } = await supabase
+    .from("teachers")
+    .select("id, dni, specialization, profile_id, created_at, profiles(full_name, email, phone)")
+    .eq("id", id)
+    .single();
+
+  if (!row) notFound();
+
+  type ProfileRaw = { full_name: string; email: string; phone: string | null } | null;
+  const profileRaw = row.profiles as unknown as ProfileRaw;
+
+  const teacher = {
+    id: row.id,
+    dni: row.dni,
+    specialization: row.specialization as string | null,
+    createdAt: row.created_at,
+    profile: {
+      fullName: profileRaw?.full_name ?? "",
+      email: profileRaw?.email ?? "",
+      phone: profileRaw?.phone ?? null,
+    },
+  };
 
   return (
     <div>

@@ -1,11 +1,9 @@
-import { getCourses } from "@/modules/courses/services/courses.service";
-import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
-import { getAttendanceByCourse, isAttendanceRecorded } from "@/modules/attendance/services/attendance.service";
+import { createClient } from "@/lib/supabase/server";
 import { recordAttendanceAction } from "@/modules/attendance/actions";
 import { AttendanceTaker } from "@/modules/attendance/components/AttendanceTaker";
 import { Input, Field, Select } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import Link from "next/link";
+import type { EnrollmentListItem } from "@/modules/enrollments/types";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "success" | "warning" | "danger" }> = {
   present: { label: "Presente", variant: "success" },
@@ -18,25 +16,67 @@ export default async function TakeAttendancePage({
 }: {
   searchParams: Promise<{ courseId?: string; date?: string; view?: string }>;
 }) {
-  const { courseId, date, view } = await searchParams;
+  const { courseId, date } = await searchParams;
   const today = new Date().toISOString().split("T")[0];
   const classDate = date ?? today;
 
-  const courses = await getCourses();
-  const activeCourses = courses.filter((c) => c.status === "active");
+  const supabase = await createClient();
 
-  let enrollments: Awaited<ReturnType<typeof getEnrollmentsByCourse>> = [];
+  const { data: courseRows } = await supabase.from("courses").select("id, name, status").order("name");
+  const activeCourses = (courseRows ?? []).filter((c) => c.status === "active");
+
+  type StudentRaw = { dni: string; profiles: { full_name: string } | null } | null;
+  type CourseRaw = { name: string; level: string } | null;
+
+  let enrollments: EnrollmentListItem[] = [];
   let alreadyRecorded = false;
-  let existingRecords: Awaited<ReturnType<typeof getAttendanceByCourse>> = [];
+  let existingRecords: Array<{ id: string; status: string; studentName: string; studentDni: string }> = [];
 
   if (courseId) {
-    [enrollments, alreadyRecorded] = await Promise.all([
-      getEnrollmentsByCourse(courseId),
-      isAttendanceRecorded(courseId, classDate),
-    ]);
+    const { data: enrollmentRows } = await supabase
+      .from("enrollments")
+      .select("id, status, enrolled_at, students(dni, profiles(full_name)), courses(name, level)")
+      .eq("course_id", courseId);
 
-    if (alreadyRecorded) {
-      existingRecords = await getAttendanceByCourse(courseId, classDate);
+    enrollments = (enrollmentRows ?? []).map((e) => {
+      const student = e.students as unknown as StudentRaw;
+      const course = e.courses as unknown as CourseRaw;
+      return {
+        id: e.id,
+        status: e.status as EnrollmentListItem["status"],
+        enrolledAt: new Date(e.enrolled_at),
+        studentName: student?.profiles?.full_name ?? "",
+        studentDni: student?.dni ?? "",
+        courseName: course?.name ?? "",
+        courseLevel: course?.level ?? "",
+      };
+    });
+
+    const enrollmentIds = enrollments.map((e) => e.id);
+
+    if (enrollmentIds.length > 0) {
+      const { count } = await supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .in("enrollment_id", enrollmentIds)
+        .eq("class_date", classDate);
+      alreadyRecorded = (count ?? 0) > 0;
+
+      if (alreadyRecorded) {
+        const enrollmentMap = new Map(
+          enrollments.map((e) => [e.id, { studentName: e.studentName, studentDni: e.studentDni }])
+        );
+        const { data: attRows } = await supabase
+          .from("attendance")
+          .select("id, enrollment_id, status")
+          .in("enrollment_id", enrollmentIds)
+          .eq("class_date", classDate);
+        existingRecords = (attRows ?? []).map((a) => ({
+          id: a.id,
+          status: a.status,
+          ...(enrollmentMap.get(a.enrollment_id) ?? { studentName: "", studentDni: "" }),
+        }));
+      }
     }
   }
 
@@ -51,7 +91,7 @@ export default async function TakeAttendancePage({
 
       {/* Filters */}
       <form method="GET" className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-4 flex flex-wrap gap-4 items-end">
-        <Field label="Curso" required id="courseId" className="min-w-[240px]">
+        <Field label="Curso" required id="courseId" className="min-w-60">
           <Select id="courseId" name="courseId" defaultValue={courseId ?? ""} required>
             <option value="" disabled>Seleccioná un curso</option>
             {activeCourses.map((c) => (

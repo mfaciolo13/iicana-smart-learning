@@ -1,6 +1,7 @@
-import { getUsers } from "@/modules/users/services/users.service";
+import { createClient } from "@/lib/supabase/server";
 import { UserList } from "@/modules/users/components/UserList";
 import { Input } from "@/components/ui/Input";
+import type { UserListItem } from "@/modules/users/types";
 
 const ROLE_TABS = [
   { value: "all", label: "Todos" },
@@ -18,9 +19,31 @@ export default async function UsersPage({
   const { q, role } = await searchParams;
   const activeRole = role ?? "all";
 
-  const allUsers = await getUsers(q);
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("profiles")
+    .select("id, email, role, full_name, phone, created_at")
+    .order("full_name");
+
+  const allUsers: UserListItem[] = (rows ?? []).map((r) => ({
+    id: r.id,
+    email: r.email,
+    role: r.role as UserListItem["role"],
+    fullName: r.full_name,
+    phone: r.phone as string | null,
+    createdAt: new Date(r.created_at),
+  }));
+
+  const searched = q
+    ? allUsers.filter(
+        (u) =>
+          u.fullName.toLowerCase().includes(q.toLowerCase()) ||
+          u.email.toLowerCase().includes(q.toLowerCase())
+      )
+    : allUsers;
+
   const filtered =
-    activeRole === "all" ? allUsers : allUsers.filter((u) => u.role === activeRole);
+    activeRole === "all" ? searched : searched.filter((u) => u.role === activeRole);
 
   const counts = {
     admin: allUsers.filter((u) => u.role === "admin").length,

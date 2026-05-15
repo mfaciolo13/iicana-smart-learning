@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getAssessmentDetail } from "@/modules/assessments/services/assessments.service";
+import { createClient } from "@/lib/supabase/server";
 import { publishAssessmentAction, archiveAssessmentAction } from "@/modules/assessments/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
@@ -22,11 +22,42 @@ export default async function AdminAssessmentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const assessment = await getAssessmentDetail(id);
-  if (!assessment) notFound();
+
+  const supabase = await createClient();
+
+  const [{ data: assessmentRow }, { data: attemptRows }] = await Promise.all([
+    supabase
+      .from("assessments")
+      .select("id, course_id, week_label, topic, status, questions, created_at, created_by, courses(name)")
+      .eq("id", id)
+      .single(),
+    supabase.from("assessment_attempts").select("id, score").eq("assessment_id", id),
+  ]);
+
+  if (!assessmentRow) notFound();
+
+  type CourseRaw = { name: string } | null;
+  const courseName = (assessmentRow.courses as unknown as CourseRaw)?.name ?? "";
+  const questions = assessmentRow.questions as unknown as QuizQuestion[];
+  const attemptCount = (attemptRows ?? []).length;
+  const avgScore =
+    attemptCount > 0
+      ? Math.round((attemptRows ?? []).reduce((s, a) => s + a.score, 0) / attemptCount * 10) / 10
+      : null;
+
+  const assessment = {
+    id: assessmentRow.id,
+    status: assessmentRow.status as AssessmentStatus,
+    topic: assessmentRow.topic,
+    weekLabel: assessmentRow.week_label,
+    courseName,
+    questions,
+    attemptCount,
+    avgScore,
+    createdAt: new Date(assessmentRow.created_at),
+  };
 
   const cfg = STATUS_CONFIG[assessment.status];
-  const questions = assessment.questions as QuizQuestion[];
 
   return (
     <div>

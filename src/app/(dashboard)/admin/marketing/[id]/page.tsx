@@ -1,14 +1,26 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import {
-  getCampaignById,
-  CHANNEL_LABELS,
-  STATUS_LABELS,
-} from "@/modules/marketing/services/marketing.service";
+import { createClient } from "@/lib/supabase/server";
 import { createInquiryAction, updateInquiryStatusAction } from "@/modules/marketing/actions";
 import { InquiryForm } from "@/modules/marketing/components/InquiryForm";
 import { FormButton } from "@/components/ui/FormButton";
+import type { CampaignDetail } from "@/modules/marketing/services/marketing.service";
+
+const CHANNEL_LABELS: Record<string, string> = {
+  social_media: "Redes sociales",
+  email: "Email",
+  flyers: "Folletos / Volantes",
+  word_of_mouth: "Boca a boca",
+  website: "Sitio web",
+  other: "Otro",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  enrolled: "Inscripto",
+  lost: "Perdido",
+};
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "text-amber-700 bg-amber-50",
@@ -22,8 +34,50 @@ export default async function CampaignDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const campaign = await getCampaignById(id);
-  if (!campaign) notFound();
+
+  const supabase = await createClient();
+
+  const [{ data: campaignRow }, { data: inquiryRows }] = await Promise.all([
+    supabase
+      .from("marketing_campaigns")
+      .select("id, name, channel, start_date, end_date, budget, description")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("inquiries")
+      .select("id, name, email, phone, status, notes, received_at")
+      .eq("campaign_id", id)
+      .order("received_at", { ascending: false }),
+  ]);
+
+  if (!campaignRow) notFound();
+
+  const inquiries = (inquiryRows ?? []).map((i) => ({
+    id: i.id,
+    name: i.name,
+    email: i.email as string | null,
+    phone: i.phone as string | null,
+    status: i.status,
+    notes: i.notes as string | null,
+    receivedAt: i.received_at,
+  }));
+
+  const totalInquiries = inquiries.length;
+  const enrolledCount = inquiries.filter((i) => i.status === "enrolled").length;
+
+  const campaign: CampaignDetail = {
+    id: campaignRow.id,
+    name: campaignRow.name,
+    channel: campaignRow.channel,
+    startDate: campaignRow.start_date,
+    endDate: campaignRow.end_date ?? null,
+    budget: campaignRow.budget ?? null,
+    description: campaignRow.description as string | null,
+    totalInquiries,
+    enrolledCount,
+    conversionRate: totalInquiries > 0 ? Math.round((enrolledCount / totalInquiries) * 100) : 0,
+    inquiries,
+  };
 
   return (
     <div>

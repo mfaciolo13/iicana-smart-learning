@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTeachers } from "@/modules/teachers/services/teachers.service";
+import { createClient } from "@/lib/supabase/server";
 import { TeacherList } from "@/modules/teachers/components/TeacherList";
 import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -10,7 +10,33 @@ export default async function TeachersPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const teachers = await getTeachers(q);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("teachers")
+    .select("id, dni, specialization, profiles(full_name, email)")
+    .order("profiles(full_name)");
+
+  let teachers = (data ?? []).map((t) => {
+    const profile = t.profiles as unknown as { full_name: string; email: string } | null;
+    return {
+      id: t.id,
+      dni: t.dni,
+      specialization: t.specialization as string | null,
+      fullName: profile?.full_name ?? "",
+      email: profile?.email ?? "",
+    };
+  });
+
+  if (q) {
+    const lower = q.toLowerCase();
+    teachers = teachers.filter(
+      (t) =>
+        t.fullName.toLowerCase().includes(lower) ||
+        t.email.toLowerCase().includes(lower) ||
+        t.dni.toLowerCase().includes(lower)
+    );
+  }
 
   return (
     <div>

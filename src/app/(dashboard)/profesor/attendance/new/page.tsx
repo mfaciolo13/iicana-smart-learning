@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
-import { getCoursesByTeacherProfile } from "@/modules/courses/services/courses.service";
-import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
-import { getAttendanceByCourse, isAttendanceRecorded } from "@/modules/attendance/services/attendance.service";
+import { createClient } from "@/lib/supabase/server";
 import { recordAttendanceAction } from "@/modules/attendance/actions";
 import { AttendanceTaker } from "@/modules/attendance/components/AttendanceTaker";
 import { Input, Field, Select } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import type { EnrollmentListItem } from "@/modules/enrollments/types";
+import type { AttendanceRecord } from "@/modules/attendance/types";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "success" | "warning" | "danger" }> = {
   present: { label: "Presente", variant: "success" },
@@ -26,23 +26,79 @@ export default async function ProfesorTakeAttendancePage({
   const today = new Date().toISOString().split("T")[0];
   const classDate = date ?? today;
 
-  const myCourses = await getCoursesByTeacherProfile(user.id);
+  const supabase = await createClient();
 
-  let enrollments: Awaited<ReturnType<typeof getEnrollmentsByCourse>> = [];
+  const { data: teacherRow } = await supabase
+    .from("teachers")
+    .select("id, courses(id, name)")
+    .eq("profile_id", user.id)
+    .single();
+
+  const myCourses = (teacherRow?.courses as unknown as { id: string; name: string }[] | null) ?? [];
+  const isOwnCourse = courseId && myCourses.some((c) => c.id === courseId);
+  if (courseId && !isOwnCourse) redirect("/profesor/attendance");
+
+  let enrollments: EnrollmentListItem[] = [];
   let alreadyRecorded = false;
-  let existingRecords: Awaited<ReturnType<typeof getAttendanceByCourse>> = [];
+  let existingRecords: AttendanceRecord[] = [];
 
-  if (courseId) {
-    const isOwnCourse = myCourses.some((c) => c.id === courseId);
-    if (!isOwnCourse) redirect("/profesor/attendance");
+  if (courseId && isOwnCourse) {
+    const { data: enrollmentRows } = await supabase
+      .from("enrollments")
+      .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
+      .eq("course_id", courseId);
 
-    [enrollments, alreadyRecorded] = await Promise.all([
-      getEnrollmentsByCourse(courseId),
-      isAttendanceRecorded(courseId, classDate),
-    ]);
+    type StudentRaw = { profiles: { full_name: string } | null; dni: string } | null;
+    type CourseRaw = { name: string; level: string } | null;
 
-    if (alreadyRecorded) {
-      existingRecords = await getAttendanceByCourse(courseId, classDate);
+    enrollments = (enrollmentRows ?? []).map((e) => {
+      const student = e.students as unknown as StudentRaw;
+      const course = e.courses as unknown as CourseRaw;
+      return {
+        id: e.id,
+        enrolledAt: new Date(e.enrolled_at),
+        status: e.status as EnrollmentListItem["status"],
+        studentName: student?.profiles?.full_name ?? "",
+        studentDni: student?.dni ?? "",
+        courseName: course?.name ?? "",
+        courseLevel: course?.level ?? "",
+      };
+    });
+
+    const enrollmentIds = enrollments.map((e) => e.id);
+
+    if (enrollmentIds.length > 0) {
+      const { data: attendanceRows } = await supabase
+        .from("attendance")
+        .select("id, enrollment_id, class_date, status, notes, created_at, enrollments(students(profiles(full_name), dni), courses(name))")
+        .in("enrollment_id", enrollmentIds)
+        .eq("class_date", classDate);
+
+      alreadyRecorded = (attendanceRows ?? []).length > 0;
+
+      if (alreadyRecorded) {
+        type AttEnrRaw = {
+          students: { profiles: { full_name: string } | null; dni: string } | null;
+          courses: { name: string } | null;
+        } | null;
+
+        existingRecords = (attendanceRows ?? [])
+          .map((r) => {
+            const enr = r.enrollments as unknown as AttEnrRaw;
+            return {
+              id: r.id,
+              enrollmentId: r.enrollment_id,
+              classDate: r.class_date,
+              status: r.status as AttendanceRecord["status"],
+              notes: r.notes as string | null,
+              createdAt: new Date(r.created_at),
+              studentName: enr?.students?.profiles?.full_name ?? "",
+              studentDni: enr?.students?.dni ?? "",
+              courseName: enr?.courses?.name ?? "",
+            };
+          })
+          .sort((a, b) => a.studentName.localeCompare(b.studentName));
+      }
     }
   }
 
@@ -56,7 +112,7 @@ export default async function ProfesorTakeAttendancePage({
       </div>
 
       <form method="GET" className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-4 flex flex-wrap gap-4 items-end">
-        <Field label="Curso" required id="courseId" className="min-w-[240px]">
+        <Field label="Curso" required id="courseId" className="min-w-60">
           <Select id="courseId" name="courseId" defaultValue={courseId ?? ""} required>
             <option value="" disabled>Seleccioná un curso</option>
             {myCourses.map((c) => (
@@ -77,7 +133,7 @@ export default async function ProfesorTakeAttendancePage({
         </button>
       </form>
 
-      {courseId && (
+      {courseId && isOwnCourse && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
           {alreadyRecorded ? (
             <div>

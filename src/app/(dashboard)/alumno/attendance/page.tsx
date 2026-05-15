@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { getServerUser } from "@/lib/auth/helpers";
-import { getAttendanceByStudent } from "@/modules/attendance/services/attendance.service";
 import { Badge } from "@/components/ui/Badge";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "danger" | "warning" }> = {
@@ -16,7 +15,35 @@ export default async function AlumnoAttendancePage() {
     ? await supabase.from("students").select("id").eq("profile_id", user.id).single()
     : { data: null };
 
-  const records = student ? await getAttendanceByStudent(student.id) : [];
+  let records: { id: string; classDate: string; status: string; courseName: string }[] = [];
+
+  if (student) {
+    const { data: enrollmentRows } = await supabase
+      .from("enrollments")
+      .select("id, courses(name)")
+      .eq("student_id", student.id);
+
+    const enrollmentIds = (enrollmentRows ?? []).map((e) => e.id);
+    type CourseRaw = { name: string } | null;
+    const courseNameMap = new Map(
+      (enrollmentRows ?? []).map((e) => [e.id, (e.courses as unknown as CourseRaw)?.name ?? ""])
+    );
+
+    if (enrollmentIds.length > 0) {
+      const { data: attendanceRows } = await supabase
+        .from("attendance")
+        .select("id, enrollment_id, class_date, status")
+        .in("enrollment_id", enrollmentIds)
+        .order("class_date", { ascending: false });
+
+      records = (attendanceRows ?? []).map((r) => ({
+        id: r.id,
+        classDate: r.class_date,
+        status: r.status,
+        courseName: courseNameMap.get(r.enrollment_id) ?? "",
+      }));
+    }
+  }
 
   const total = records.length;
   const present = records.filter((r) => r.status === "present").length;

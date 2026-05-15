@@ -1,12 +1,13 @@
-import Link from "next/link";
-import {
-  getPromotionEligibility,
-  ATTENDANCE_THRESHOLD,
-  GRADE_THRESHOLD,
-} from "@/modules/promotions/services/promotions.service";
+import { createClient } from "@/lib/supabase/server";
 import { FormButton } from "@/components/ui/FormButton";
 import { promoteStudentAction } from "@/modules/promotions/actions";
 import { LEVEL_LABELS } from "@/lib/level-labels";
+
+const ATTENDANCE_THRESHOLD = 80;
+const GRADE_THRESHOLD = 7.0;
+
+type StudentRaw = { dni: string; profiles: { full_name: string } | null } | null;
+type CourseRaw = { name: string; level: string } | null;
 
 function Pill({ ok, label }: { ok: boolean | null; label: string }) {
   if (ok === null)
@@ -19,7 +20,68 @@ function Pill({ ok, label }: { ok: boolean | null; label: string }) {
 }
 
 export default async function PromotionsPage() {
-  const rows = await getPromotionEligibility();
+  const supabase = await createClient();
+
+  const { data: enrollmentRows } = await supabase
+    .from("enrollments")
+    .select("id, students(dni, profiles(full_name)), courses(name, level)")
+    .eq("status", "active");
+
+  const enrollmentIds = (enrollmentRows ?? []).map((e) => e.id);
+
+  const [{ data: attRows }, { data: gradeRows }] = await Promise.all([
+    supabase.from("attendance").select("enrollment_id, status").in("enrollment_id", enrollmentIds),
+    supabase.from("grades").select("enrollment_id, score").in("enrollment_id", enrollmentIds),
+  ]);
+
+  const attStats = new Map<string, { total: number; present: number }>();
+  for (const a of attRows ?? []) {
+    const cur = attStats.get(a.enrollment_id) ?? { total: 0, present: 0 };
+    cur.total++;
+    if (a.status === "present" || a.status === "late") cur.present++;
+    attStats.set(a.enrollment_id, cur);
+  }
+
+  const gradeStats = new Map<string, { sum: number; count: number }>();
+  for (const g of gradeRows ?? []) {
+    const cur = gradeStats.get(g.enrollment_id) ?? { sum: 0, count: 0 };
+    cur.sum += parseFloat(g.score);
+    cur.count++;
+    gradeStats.set(g.enrollment_id, cur);
+  }
+
+  const rows = (enrollmentRows ?? [])
+    .map((e) => {
+      const student = e.students as unknown as StudentRaw;
+      const course = e.courses as unknown as CourseRaw;
+      const att = attStats.get(e.id);
+      const grades = gradeStats.get(e.id);
+
+      const total = att?.total ?? 0;
+      const present = att?.present ?? 0;
+      const attendancePct = total > 0 ? Math.round((present / total) * 100) : null;
+      const gradeAvg =
+        grades && grades.count > 0 ? Math.round((grades.sum / grades.count) * 10) / 10 : null;
+
+      const isEligible =
+        attendancePct !== null &&
+        attendancePct >= ATTENDANCE_THRESHOLD &&
+        gradeAvg !== null &&
+        gradeAvg >= GRADE_THRESHOLD;
+
+      return {
+        enrollmentId: e.id,
+        studentName: student?.profiles?.full_name ?? "",
+        studentDni: student?.dni ?? "",
+        courseName: course?.name ?? "",
+        courseLevel: course?.level ?? "",
+        attendancePct,
+        gradeAvg,
+        isEligible,
+      };
+    })
+    .sort((a, b) => a.studentName.localeCompare(b.studentName));
+
   const eligible = rows.filter((r) => r.isEligible).length;
 
   return (

@@ -1,13 +1,20 @@
 import { ArrowLeft } from "lucide-react";
-import { getCourses } from "@/modules/courses/services/courses.service";
+import { createClient } from "@/lib/supabase/server";
 import { generateAssessmentAction } from "@/modules/assessments/actions";
 import { GenerateAssessmentForm } from "@/modules/assessments/components/GenerateAssessmentForm";
 import { Card } from "@/components/ui/Card";
 import Link from "next/link";
 
 export default async function NewAssessmentPage() {
-  const courses = await getCourses();
-  const activeCourses = courses.filter((c) => c.status === "active");
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("courses")
+    .select("id, name, level, status")
+    .order("name");
+
+  const activeCourses = (rows ?? [])
+    .filter((c) => c.status === "active")
+    .map((c) => ({ id: c.id, name: c.name, level: c.level }));
 
   return (
     <div>

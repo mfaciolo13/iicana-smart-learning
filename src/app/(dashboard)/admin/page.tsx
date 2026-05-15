@@ -13,12 +13,6 @@ import {
   BarChart2,
   AlertCircle,
 } from "lucide-react";
-import {
-  getAttendanceAvgByCourse,
-  getGradeAvgByCourse,
-  getPaymentStatusCounts,
-  getActiveStudentsByLevel,
-} from "@/modules/reports/services/dashboard.service";
 import { AttendanceChart } from "./components/AttendanceChart";
 import { PaymentsDonut } from "./components/PaymentsDonut";
 import { GradesChart } from "./components/GradesChart";
@@ -27,33 +21,105 @@ import { StudentsLevelChart } from "./components/StudentsLevelChart";
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
-  function withTimeout<T>(p: Promise<T>, fallback: T, ms = 6000): Promise<T> {
-    return Promise.race([p, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
-  }
-
-  // REST calls first — always fast and critical for KPIs
+  // Phase 1: KPI counts + base data for charts (all parallel)
   const [studentsRes, coursesRes, teachersRes, paymentsRes] = await Promise.all([
-    supabase.from("students").select("id, status", { count: "exact", head: false }),
-    supabase.from("courses").select("id, status", { count: "exact", head: false }),
-    supabase.from("teachers").select("id", { count: "exact", head: false }),
-    supabase.from("payments").select("id, status", { count: "exact", head: false }),
+    supabase.from("students").select("id, status"),
+    supabase.from("courses").select("id, name, level, status"),
+    supabase.from("teachers").select("id"),
+    supabase.from("payments").select("id, status, amount"),
   ]);
 
-  // Drizzle calls for charts — isolated: if they timeout the charts show empty state
-  const [attendanceData, gradesData, paymentCounts, levelData] = await Promise.all([
-    withTimeout(getAttendanceAvgByCourse(), []),
-    withTimeout(getGradeAvgByCourse(), []),
-    withTimeout(getPaymentStatusCounts(), []),
-    withTimeout(getActiveStudentsByLevel(), []),
+  const activeStudents = (studentsRes.data ?? []).filter((s) => s.status === "active").length;
+  const totalStudents = studentsRes.data?.length ?? 0;
+  const activeCourses = (coursesRes.data ?? []).filter((c) => c.status === "active").length;
+  const totalCourses = coursesRes.data?.length ?? 0;
+  const totalTeachers = teachersRes.data?.length ?? 0;
+  const pendingPayments = (paymentsRes.data ?? []).filter((p) => p.status === "pending").length;
+  const overduePayments = (paymentsRes.data ?? []).filter((p) => p.status === "overdue").length;
+
+  // Payment status counts for donut chart — reuse existing data
+  const paymentStatusMap = new Map<string, number>();
+  for (const p of paymentsRes.data ?? []) {
+    paymentStatusMap.set(p.status, (paymentStatusMap.get(p.status) ?? 0) + 1);
+  }
+  const paymentCounts = [...paymentStatusMap.entries()].map(([status, count]) => ({ status, count }));
+
+  // Active course IDs and lookup maps for chart computation
+  const activeCourseRows = (coursesRes.data ?? []).filter((c) => c.status === "active");
+  const activeCourseIds = activeCourseRows.map((c) => c.id);
+  const activeCourseMap = new Map(activeCourseRows.map((c) => [c.id, { name: c.name, level: c.level }]));
+
+  // Phase 2: Enrollments for active courses (needed to fetch attendance/grades by enrollment IDs)
+  const { data: enrollmentRows } = await supabase
+    .from("enrollments")
+    .select("id, student_id, course_id, status")
+    .in("course_id", activeCourseIds);
+
+  const enrollmentIds = (enrollmentRows ?? []).map((e) => e.id);
+  const enrollmentToCourse = new Map((enrollmentRows ?? []).map((e) => [e.id, e.course_id]));
+
+  // Phase 3: Attendance + grades for chart computation (parallel)
+  const [{ data: attRows }, { data: gradeRows }] = await Promise.all([
+    enrollmentIds.length > 0
+      ? supabase.from("attendance").select("enrollment_id, status").in("enrollment_id", enrollmentIds)
+      : Promise.resolve({ data: [] }),
+    enrollmentIds.length > 0
+      ? supabase.from("grades").select("enrollment_id, score").in("enrollment_id", enrollmentIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
-  const totalStudents = studentsRes.count ?? 0;
-  const activeStudents = studentsRes.data?.filter((s) => s.status === "active").length ?? 0;
-  const totalCourses = coursesRes.count ?? 0;
-  const activeCourses = coursesRes.data?.filter((c) => c.status === "active").length ?? 0;
-  const totalTeachers = teachersRes.count ?? 0;
-  const pendingPayments = paymentsRes.data?.filter((p) => p.status === "pending").length ?? 0;
-  const overduePayments = paymentsRes.data?.filter((p) => p.status === "overdue").length ?? 0;
+  // Attendance chart — % present per active course
+  const courseAttStats = new Map<string, { total: number; present: number }>();
+  for (const a of attRows ?? []) {
+    const courseId = enrollmentToCourse.get(a.enrollment_id);
+    if (!courseId) continue;
+    const cur = courseAttStats.get(courseId) ?? { total: 0, present: 0 };
+    cur.total++;
+    if (a.status === "present" || a.status === "late") cur.present++;
+    courseAttStats.set(courseId, cur);
+  }
+  const attendanceData = [...courseAttStats.entries()]
+    .filter(([, s]) => s.total > 0)
+    .map(([courseId, s]) => ({
+      courseName: activeCourseMap.get(courseId)?.name ?? "",
+      pct: Math.round((s.present / s.total) * 100),
+    }))
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 8);
+
+  // Grades chart — avg score per active course
+  const courseGradeStats = new Map<string, { sum: number; count: number }>();
+  for (const g of gradeRows ?? []) {
+    const courseId = enrollmentToCourse.get(g.enrollment_id);
+    if (!courseId) continue;
+    const cur = courseGradeStats.get(courseId) ?? { sum: 0, count: 0 };
+    cur.sum += parseFloat(g.score);
+    cur.count++;
+    courseGradeStats.set(courseId, cur);
+  }
+  const gradesData = [...courseGradeStats.entries()]
+    .filter(([, s]) => s.count > 0)
+    .map(([courseId, s]) => ({
+      courseName: activeCourseMap.get(courseId)?.name ?? "",
+      avg: Math.round((s.sum / s.count) * 10) / 10,
+    }))
+    .sort((a, b) => a.courseName.localeCompare(b.courseName))
+    .slice(0, 8);
+
+  // Students by level chart — distinct active students per level in active courses
+  const levelStudents = new Map<string, Set<string>>();
+  for (const e of enrollmentRows ?? []) {
+    if (e.status !== "active") continue;
+    const course = activeCourseMap.get(e.course_id);
+    if (!course) continue;
+    const set = levelStudents.get(course.level) ?? new Set<string>();
+    set.add(e.student_id);
+    levelStudents.set(course.level, set);
+  }
+  const levelData = [...levelStudents.entries()].map(([level, students]) => ({
+    level,
+    count: students.size,
+  }));
 
   const kpis = [
     {

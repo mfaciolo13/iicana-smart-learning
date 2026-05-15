@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { getEnrollments } from "@/modules/enrollments/services/enrollments.service";
+import { createClient } from "@/lib/supabase/server";
 import { EnrollmentList } from "@/modules/enrollments/components/EnrollmentList";
 import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { EnrollmentListItem } from "@/modules/enrollments/types";
 
 export default async function EnrollmentsPage({
   searchParams,
@@ -10,7 +11,36 @@ export default async function EnrollmentsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const enrollments = await getEnrollments(q);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("enrollments")
+    .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
+    .order("enrolled_at", { ascending: true });
+
+  let enrollments: EnrollmentListItem[] = (data ?? []).map((e) => {
+    const student = e.students as unknown as { profiles: { full_name: string } | null; dni: string } | null;
+    const course = e.courses as unknown as { name: string; level: string } | null;
+    return {
+      id: e.id,
+      enrolledAt: new Date(e.enrolled_at),
+      status: e.status as EnrollmentListItem["status"],
+      studentName: student?.profiles?.full_name ?? "",
+      studentDni: student?.dni ?? "",
+      courseName: course?.name ?? "",
+      courseLevel: course?.level ?? "",
+    };
+  });
+
+  if (q) {
+    const lower = q.toLowerCase();
+    enrollments = enrollments.filter(
+      (e) =>
+        e.studentName.toLowerCase().includes(lower) ||
+        e.studentDni.toLowerCase().includes(lower) ||
+        e.courseName.toLowerCase().includes(lower)
+    );
+  }
 
   const active = enrollments.filter((e) => e.status === "active").length;
 

@@ -1,6 +1,14 @@
 import { createCampaignAction } from "@/modules/marketing/actions";
-import { CHANNEL_LABELS } from "@/modules/marketing/services/marketing.service";
 import { CampaignForm } from "@/modules/marketing/components/CampaignForm";
+
+const CHANNEL_LABELS: Record<string, string> = {
+  social_media: "Redes sociales",
+  email: "Email",
+  flyers: "Folletos / Volantes",
+  word_of_mouth: "Boca a boca",
+  website: "Sitio web",
+  other: "Otro",
+};
 
 export default function NewCampaignPage() {
   const channels = Object.entries(CHANNEL_LABELS).map(([value, label]) => ({ value, label }));

@@ -1,9 +1,27 @@
-import { getTeachers } from "@/modules/teachers/services/teachers.service";
+import { createClient } from "@/lib/supabase/server";
 import { createCourseAction } from "@/modules/courses/actions";
 import { CourseForm } from "@/modules/courses/components/CourseForm";
+import type { TeacherListItem } from "@/modules/teachers/types";
 
 export default async function NewCoursePage() {
-  const teachers = await getTeachers();
+  const supabase = await createClient();
+
+  const { data: rows } = await supabase
+    .from("teachers")
+    .select("id, dni, specialization, profiles(full_name, email)")
+    .order("profiles(full_name)");
+
+  type ProfileRaw = { full_name: string; email: string } | null;
+  const teachers: TeacherListItem[] = (rows ?? []).map((t) => {
+    const profile = t.profiles as unknown as ProfileRaw;
+    return {
+      id: t.id,
+      fullName: profile?.full_name ?? "",
+      email: profile?.email ?? "",
+      dni: t.dni,
+      specialization: t.specialization,
+    };
+  });
 
   return (
     <div>

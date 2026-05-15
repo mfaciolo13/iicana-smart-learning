@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { getCourses } from "@/modules/courses/services/courses.service";
+import { createClient } from "@/lib/supabase/server";
 import { CourseList } from "@/modules/courses/components/CourseList";
 import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { CourseListItem } from "@/modules/courses/types";
 
 export default async function CoursesPage({
   searchParams,
@@ -10,7 +11,39 @@ export default async function CoursesPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const courses = await getCourses(q);
+  const supabase = await createClient();
+
+  const [{ data: coursesData }, { data: enrollData }] = await Promise.all([
+    supabase
+      .from("courses")
+      .select("id, name, level, schedule, status, max_capacity, teachers(profiles(full_name))")
+      .order("name"),
+    supabase.from("enrollments").select("course_id").eq("status", "active"),
+  ]);
+
+  const enrollmentCounts = new Map<string, number>();
+  for (const e of enrollData ?? []) {
+    enrollmentCounts.set(e.course_id, (enrollmentCounts.get(e.course_id) ?? 0) + 1);
+  }
+
+  let courses: CourseListItem[] = (coursesData ?? []).map((c) => {
+    const teacher = c.teachers as unknown as { profiles: { full_name: string } | null } | null;
+    return {
+      id: c.id,
+      name: c.name,
+      level: c.level as CourseListItem["level"],
+      schedule: c.schedule,
+      status: c.status as CourseListItem["status"],
+      maxCapacity: c.max_capacity,
+      teacherName: teacher?.profiles?.full_name ?? null,
+      enrollmentCount: enrollmentCounts.get(c.id) ?? 0,
+    };
+  });
+
+  if (q) {
+    const lower = q.toLowerCase();
+    courses = courses.filter((c) => c.name.toLowerCase().includes(lower));
+  }
 
   const active = courses.filter((c) => c.status === "active").length;
 

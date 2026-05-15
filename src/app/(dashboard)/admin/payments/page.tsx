@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getPayments, getPaymentSummary } from "@/modules/payments/services/payments.service";
+import { createClient } from "@/lib/supabase/server";
 import { PaymentList } from "@/modules/payments/components/PaymentList";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
@@ -20,11 +20,47 @@ export default async function PaymentsPage({
 }) {
   const { status } = await searchParams;
   const activeTab = status ?? "all";
+  const supabase = await createClient();
 
-  const [paymentsList, summary] = await Promise.all([
-    getPayments(activeTab),
-    getPaymentSummary(),
-  ]);
+  const { data } = await supabase
+    .from("payments")
+    .select("id, amount, due_date, paid_at, status, receipt_number, students(profiles(full_name), dni)")
+    .order("due_date", { ascending: false });
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const allPayments = (data ?? []).map((p) => {
+    const student = p.students as unknown as { profiles: { full_name: string } | null; dni: string } | null;
+    const isOverdue =
+      (p.status === "pending" || p.status === "overdue") && p.due_date < today;
+    return {
+      id: p.id,
+      amount: p.amount,
+      dueDate: p.due_date,
+      paidAt: p.paid_at,
+      status: p.status,
+      receiptNumber: p.receipt_number,
+      studentName: student?.profiles?.full_name ?? "",
+      studentDni: student?.dni ?? "",
+      isOverdue,
+    };
+  });
+
+  const paymentsList =
+    activeTab === "all"
+      ? allPayments
+      : activeTab === "overdue"
+      ? allPayments.filter((p) => p.isOverdue)
+      : allPayments.filter((p) => p.status === activeTab);
+
+  const summary = {
+    pending: allPayments.filter((p) => p.status === "pending").length,
+    overdue: allPayments.filter((p) => p.isOverdue).length,
+    paid: allPayments.filter((p) => p.status === "paid").length,
+    totalPendingAmount: allPayments
+      .filter((p) => p.status === "pending" || p.status === "overdue")
+      .reduce((sum, p) => sum + parseFloat(p.amount), 0),
+  };
 
   return (
     <div>
@@ -51,20 +87,20 @@ export default async function PaymentsPage({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Pendientes</p>
-          <p className="text-2xl font-bold text-amber-600">{summary.pending ?? 0}</p>
+          <p className="text-2xl font-bold text-amber-600">{summary.pending}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Vencidos</p>
-          <p className="text-2xl font-bold text-red-600">{summary.overdue ?? 0}</p>
+          <p className="text-2xl font-bold text-red-600">{summary.overdue}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Pagados</p>
-          <p className="text-2xl font-bold text-emerald-600">{summary.paid ?? 0}</p>
+          <p className="text-2xl font-bold text-emerald-600">{summary.paid}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">Monto pendiente</p>
           <p className="text-xl font-bold text-slate-900">
-            ${parseFloat(summary.totalPendingAmount ?? "0").toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+            ${summary.totalPendingAmount.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
           </p>
         </div>
       </div>

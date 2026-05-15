@@ -1,9 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/helpers";
-import {
-  getAssessmentDetail,
-  getAttemptResult,
-} from "@/modules/assessments/services/assessments.service";
+import { getServerUser } from "@/lib/auth/helpers";
+import { createClient } from "@/lib/supabase/server";
 import { QuizPlayer } from "@/modules/assessments/components/QuizPlayer";
 import type { QuizQuestion } from "@/modules/assessments/types";
 
@@ -13,26 +10,41 @@ export default async function AlumnoAssessmentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getCurrentUser();
+  const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const assessment = await getAssessmentDetail(id);
-  if (!assessment || assessment.status !== "published") notFound();
+  const supabase = await createClient();
 
-  // Redirect to result if already attempted
-  const existing = await getAttemptResult(id, user.id);
-  if (existing) redirect(`/alumno/assessments/${id}/resultado`);
+  const [{ data: assessmentRow }, { data: existingRows }] = await Promise.all([
+    supabase
+      .from("assessments")
+      .select("id, week_label, topic, status, questions, courses(name)")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("assessment_attempts")
+      .select("id")
+      .eq("assessment_id", id)
+      .eq("student_id", user.id)
+      .limit(1),
+  ]);
 
-  const questions = assessment.questions as QuizQuestion[];
+  if (!assessmentRow || assessmentRow.status !== "published") notFound();
+
+  if ((existingRows ?? []).length > 0) redirect(`/alumno/assessments/${id}/resultado`);
+
+  type CourseRaw = { name: string } | null;
+  const courseName = (assessmentRow.courses as unknown as CourseRaw)?.name ?? "";
+  const questions = assessmentRow.questions as unknown as QuizQuestion[];
 
   return (
     <div>
       <QuizPlayer
-        assessmentId={assessment.id}
+        assessmentId={assessmentRow.id}
         questions={questions}
-        weekLabel={assessment.weekLabel}
-        topic={assessment.topic}
-        courseName={assessment.courseName}
+        weekLabel={assessmentRow.week_label}
+        topic={assessmentRow.topic}
+        courseName={courseName}
       />
     </div>
   );

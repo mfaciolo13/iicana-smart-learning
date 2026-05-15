@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { getEnrollmentById } from "@/modules/enrollments/services/enrollments.service";
+import { createClient } from "@/lib/supabase/server";
 import { updateEnrollmentAction, deleteEnrollmentAction } from "@/modules/enrollments/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { Card } from "@/components/ui/Card";
@@ -29,9 +29,37 @@ export default async function EnrollmentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const enrollment = await getEnrollmentById(id);
+  const supabase = await createClient();
 
-  if (!enrollment) notFound();
+  const { data: row } = await supabase
+    .from("enrollments")
+    .select("id, student_id, course_id, enrolled_at, status, students(profiles(full_name, email), dni), courses(name, level, schedule)")
+    .eq("id", id)
+    .single();
+
+  if (!row) notFound();
+
+  type StudentRaw = { profiles: { full_name: string; email: string } | null; dni: string } | null;
+  type CourseRaw = { name: string; level: string; schedule: string } | null;
+
+  const studentRaw = row.students as unknown as StudentRaw;
+  const courseRaw = row.courses as unknown as CourseRaw;
+
+  const enrollment = {
+    id: row.id,
+    enrolledAt: new Date(row.enrolled_at),
+    status: row.status as "active" | "completed" | "withdrawn",
+    student: {
+      fullName: studentRaw?.profiles?.full_name ?? "",
+      email: studentRaw?.profiles?.email ?? "",
+      dni: studentRaw?.dni ?? "",
+    },
+    course: {
+      name: courseRaw?.name ?? "",
+      level: courseRaw?.level ?? "",
+      schedule: courseRaw?.schedule ?? "",
+    },
+  };
 
   const statusCfg = STATUS_CONFIG[enrollment.status] ?? { label: enrollment.status, variant: "neutral" as const };
 

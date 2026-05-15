@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { getServerUser } from "@/lib/auth/helpers";
-import { getPaymentsByStudent } from "@/modules/payments/services/payments.service";
 import { Badge } from "@/components/ui/Badge";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
@@ -17,7 +16,24 @@ export default async function AlumnoPaymentsPage() {
     ? await supabase.from("students").select("id").eq("profile_id", user.id).single()
     : { data: null };
 
-  const payments = student ? await getPaymentsByStudent(student.id) : [];
+  const { data: paymentRows } = student
+    ? await supabase
+        .from("payments")
+        .select("id, amount, due_date, paid_at, status")
+        .eq("student_id", student.id)
+        .order("due_date", { ascending: false })
+    : { data: [] };
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const payments = (paymentRows ?? []).map((p) => ({
+    id: p.id,
+    amount: p.amount,
+    dueDate: p.due_date,
+    paidAt: p.paid_at,
+    status: p.status,
+    isOverdue: (p.status === "pending" || p.status === "overdue") && p.due_date < today,
+  }));
 
   const totalPending = payments
     .filter((p) => p.status === "pending" || p.status === "overdue")
@@ -72,7 +88,6 @@ export default async function AlumnoPaymentsPage() {
                       <td className="px-6 py-3 text-slate-400">
                         {p.paidAt ? new Date(p.paidAt).toLocaleDateString("es-AR") : "—"}
                       </td>
-
                     </tr>
                   );
                 })}

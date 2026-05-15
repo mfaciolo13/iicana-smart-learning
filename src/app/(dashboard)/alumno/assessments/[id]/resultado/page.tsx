@@ -1,8 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth/helpers";
-import { getAttemptResult } from "@/modules/assessments/services/assessments.service";
+import { getServerUser } from "@/lib/auth/helpers";
+import { createClient } from "@/lib/supabase/server";
 import type { QuizQuestion } from "@/modules/assessments/types";
 
 const OPTION_LETTERS = ["A", "B", "C", "D"];
@@ -41,16 +41,40 @@ export default async function AttemptResultPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getCurrentUser();
+  const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const result = await getAttemptResult(id, user.id);
-  if (!result) notFound();
+  const supabase = await createClient();
 
-  const questions = result.questions as QuizQuestion[];
-  const answers = result.answers as number[];
+  const { data: attemptRow } = await supabase
+    .from("assessment_attempts")
+    .select("id, assessment_id, answers, score, completed_at, assessments(id, week_label, topic, questions, courses(name))")
+    .eq("assessment_id", id)
+    .eq("student_id", user.id)
+    .single();
 
+  if (!attemptRow) notFound();
+
+  type AssessmentRaw = {
+    id: string;
+    week_label: string;
+    topic: string;
+    questions: QuizQuestion[];
+    courses: { name: string } | null;
+  } | null;
+
+  const assessment = attemptRow.assessments as unknown as AssessmentRaw;
+  const questions = (assessment?.questions ?? []) as QuizQuestion[];
+  const answers = attemptRow.answers as unknown as number[];
   const correctCount = answers.filter((ans, i) => questions[i] && ans === questions[i].correct).length;
+
+  const result = {
+    weekLabel: assessment?.week_label ?? "",
+    topic: assessment?.topic ?? "",
+    courseName: assessment?.courses?.name ?? "",
+    score: attemptRow.score,
+    completedAt: new Date(attemptRow.completed_at),
+  };
 
   return (
     <div>
@@ -72,7 +96,7 @@ export default async function AttemptResultPage({
             {correctCount} de {questions.length} respuestas correctas
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Completada el {new Date(result.completedAt).toLocaleDateString("es-AR", {
+            Completada el {result.completedAt.toLocaleDateString("es-AR", {
               day: "numeric",
               month: "long",
               year: "numeric",
