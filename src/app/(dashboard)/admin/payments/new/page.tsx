@@ -15,7 +15,7 @@ export default async function NewPaymentPage({
   const { data: rows } = await supabase
     .from("students")
     .select("id, dni, level, status, profiles(full_name, email)")
-    .order("profiles(full_name)");
+    .order("full_name", { referencedTable: "profiles" });
 
   type ProfileRaw = { full_name: string; email: string } | null;
   const students: StudentListItem[] = (rows ?? []).map((s) => {

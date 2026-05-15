@@ -16,7 +16,7 @@ export default async function NewEnrollmentPage({
     supabase
       .from("students")
       .select("id, dni, level, status, profiles(full_name, email)")
-      .order("profiles(full_name)"),
+      .order("full_name", { referencedTable: "profiles" }),
     supabase
       .from("courses")
       .select("id, name, level, schedule, status, max_capacity, teachers(profiles(full_name))")
