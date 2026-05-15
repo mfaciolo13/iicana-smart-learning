@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/helpers";
 import { promoteEnrollment } from "./services/promotions.service";
@@ -14,6 +14,8 @@ export async function promoteStudentAction(_prev: ActionResult, formData: FormDa
 
   await promoteEnrollment(enrollmentId);
 
+  updateTag("students");
+  updateTag("enrollments");
   revalidatePath("/admin/promotions");
   redirect(`/admin/promotions/${enrollmentId}/certificate`);
 }

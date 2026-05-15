@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
 import { db } from "@/lib/drizzle";
 import { teachers, profiles } from "@/lib/drizzle/schema";
@@ -27,6 +27,7 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
 
   const course = await createCourse(parsed.data);
 
+  updateTag("courses");
   revalidatePath("/admin/courses");
   return { success: "Curso creado correctamente", redirectTo: `/admin/courses/${course.id}` };
 }
@@ -75,6 +76,7 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
     }
   }
 
+  updateTag("courses");
   revalidatePath("/admin/courses");
   return { success: "Curso actualizado", redirectTo: `/admin/courses/${parsed.data.id}` };
 }
@@ -87,6 +89,7 @@ export async function deleteCourseAction(_prev: ActionResult, formData: FormData
 
   await deleteCourse(id);
 
+  updateTag("courses");
   revalidatePath("/admin/courses");
   return { success: "Curso eliminado", redirectTo: "/admin/courses" };
 }

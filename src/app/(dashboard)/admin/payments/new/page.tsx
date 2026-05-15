@@ -1,8 +1,8 @@
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 import { PaymentForm } from "@/modules/payments/components/PaymentForm";
 import { createPaymentAction } from "@/modules/payments/actions";
 import type { StudentListItem } from "@/modules/students/types";
+import { getCachedStudents } from "@/lib/query-cache";
 
 export default async function NewPaymentPage({
   searchParams,
@@ -10,32 +10,12 @@ export default async function NewPaymentPage({
   searchParams: Promise<{ studentId?: string }>;
 }) {
   const { studentId } = await searchParams;
-  const supabase = await createClient();
 
-  const { data: studentRows } = await supabase
-    .from("students")
-    .select("id, dni, level, status, profile_id");
-
-  const profileIds = (studentRows ?? []).map((s) => s.profile_id);
-  const { data: profileRows } = profileIds.length > 0
-    ? await supabase.from("profiles").select("id, full_name, email").in("id", profileIds)
-    : { data: [] as { id: string; full_name: string; email: string }[] };
-
-  const profileMap = new Map((profileRows ?? []).map((p) => [p.id, p]));
-
-  const students: StudentListItem[] = (studentRows ?? [])
-    .map((s) => {
-      const profile = profileMap.get(s.profile_id);
-      return {
-        id: s.id,
-        fullName: profile?.full_name ?? "",
-        email: profile?.email ?? "",
-        dni: s.dni,
-        level: s.level as StudentListItem["level"],
-        status: s.status as StudentListItem["status"],
-      };
-    })
-    .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  const students: StudentListItem[] = (await getCachedStudents()).map((s) => ({
+    ...s,
+    level: s.level as StudentListItem["level"],
+    status: s.status as StudentListItem["status"],
+  }));
 
   return (
     <div>

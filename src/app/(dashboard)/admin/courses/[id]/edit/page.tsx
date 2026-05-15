@@ -4,6 +4,7 @@ import { updateCourseAction } from "@/modules/courses/actions";
 import { CourseForm } from "@/modules/courses/components/CourseForm";
 import type { CourseWithTeacher } from "@/modules/courses/types";
 import type { TeacherListItem } from "@/modules/teachers/types";
+import { getCachedTeachers } from "@/lib/query-cache";
 
 export default async function EditCoursePage({
   params,
@@ -13,38 +14,16 @@ export default async function EditCoursePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: courseRow }, { data: rawTeacherRows }] = await Promise.all([
+  const [{ data: courseRow }, teachers] = await Promise.all([
     supabase
       .from("courses")
       .select("id, name, level, schedule, classroom, max_capacity, status, created_at, updated_at, teacher_id")
       .eq("id", id)
       .single(),
-    supabase
-      .from("teachers")
-      .select("id, dni, specialization, profile_id"),
+    getCachedTeachers(),
   ]);
 
   if (!courseRow) notFound();
-
-  const teacherProfileIds = (rawTeacherRows ?? []).map((t) => t.profile_id);
-  const { data: teacherProfileRows } = teacherProfileIds.length > 0
-    ? await supabase.from("profiles").select("id, full_name, email").in("id", teacherProfileIds)
-    : { data: [] as { id: string; full_name: string; email: string }[] };
-
-  const teacherProfileMap = new Map((teacherProfileRows ?? []).map((p) => [p.id, p]));
-
-  const teachers: TeacherListItem[] = (rawTeacherRows ?? [])
-    .map((t) => {
-      const profile = teacherProfileMap.get(t.profile_id);
-      return {
-        id: t.id,
-        fullName: profile?.full_name ?? "",
-        email: profile?.email ?? "",
-        dni: t.dni,
-        specialization: t.specialization,
-      };
-    })
-    .sort((a, b) => a.fullName.localeCompare(b.fullName));
 
   const currentTeacher = courseRow.teacher_id
     ? (teachers.find((t) => t.id === courseRow.teacher_id) ?? null)

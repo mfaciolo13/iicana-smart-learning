@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/Button";
 import type { TeacherEvalSummary } from "@/modules/teacher-evaluations/types";
+import { getCachedTeachers } from "@/lib/query-cache";
 
 function StarBar({ value }: { value: number | null }) {
   if (!value) return <span className="text-xs text-slate-400">Sin datos</span>;
@@ -20,22 +21,11 @@ function StarBar({ value }: { value: number | null }) {
 export default async function TeacherEvaluationsPage() {
   const supabase = await createClient();
 
-  const [{ data: rawTeacherRows }, { data: surveyRows }, { data: obsRows }] = await Promise.all([
-    supabase.from("teachers").select("id, profile_id"),
+  const [teacherRows, { data: surveyRows }, { data: obsRows }] = await Promise.all([
+    getCachedTeachers(),
     supabase.from("teacher_surveys").select("teacher_id, rating1, rating2, rating3, rating4"),
     supabase.from("class_observations").select("teacher_id, observed_at"),
   ]);
-
-  const teacherProfileIds = (rawTeacherRows ?? []).map((t) => t.profile_id);
-  const { data: teacherProfileRows } = teacherProfileIds.length > 0
-    ? await supabase.from("profiles").select("id, full_name").in("id", teacherProfileIds)
-    : { data: [] as { id: string; full_name: string }[] };
-
-  const teacherProfileMap = new Map((teacherProfileRows ?? []).map((p) => [p.id, p.full_name]));
-  const teacherRows = (rawTeacherRows ?? []).map((t) => ({
-    id: t.id,
-    fullName: teacherProfileMap.get(t.profile_id) ?? "",
-  }));
 
   const surveysByTeacher = new Map<string, { count: number; ratingSum: number }>();
   for (const s of surveyRows ?? []) {

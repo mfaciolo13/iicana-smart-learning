@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { requireRole } from "@/lib/auth/helpers";
@@ -25,6 +25,8 @@ export async function updateUserAction(_prev: ActionResult, formData: FormData):
 
   await updateUser(parsed.data);
 
+  updateTag("teachers");
+  updateTag("students");
   revalidatePath("/admin/users");
   redirect(`/admin/users/${parsed.data.id}`);
 }
@@ -37,6 +39,8 @@ export async function banUserAction(_prev: ActionResult, formData: FormData): Pr
 
   await banUser(id);
 
+  updateTag("teachers");
+  updateTag("students");
   revalidatePath("/admin/users");
   redirect(`/admin/users/${id}`);
 }
@@ -77,6 +81,8 @@ export async function unbanUserAction(_prev: ActionResult, formData: FormData): 
 
   await unbanUser(id);
 
+  updateTag("teachers");
+  updateTag("students");
   revalidatePath("/admin/users");
   redirect(`/admin/users/${id}`);
 }

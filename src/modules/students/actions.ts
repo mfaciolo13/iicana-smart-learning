@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
@@ -63,6 +63,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
     inviteLink: safeInviteUrl,
   }).catch(() => {});
 
+  updateTag("students");
   revalidatePath("/admin/students");
   return { success: "Alumno registrado correctamente", redirectTo: "/admin/students" };
 }
@@ -86,6 +87,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
 
   await updateStudent(parsed.data);
 
+  updateTag("students");
   revalidatePath("/admin/students");
   return { success: "Alumno actualizado", redirectTo: `/admin/students/${parsed.data.id}` };
 }
@@ -98,6 +100,7 @@ export async function deleteStudentAction(_prev: ActionResult, formData: FormDat
 
   await deleteStudent(id);
 
+  updateTag("students");
   revalidatePath("/admin/students");
   return { success: "Alumno eliminado", redirectTo: "/admin/students" };
 }
