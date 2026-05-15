@@ -40,24 +40,27 @@ export default async function StudentDetailPage({
   const [{ data: studentRow }, { data: enrollmentRows }, { data: paymentRows }] = await Promise.all([
     supabase
       .from("students")
-      .select("id, dni, birth_date, level, status, profile_id, created_at, profiles(full_name, email, phone)")
+      .select("id, dni, birth_date, level, status, profile_id, created_at")
       .eq("id", id)
       .single(),
     supabase
       .from("enrollments")
-      .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
+      .select("id, enrolled_at, status, courses(name, level)")
       .eq("student_id", id),
     supabase
       .from("payments")
-      .select("id, amount, due_date, paid_at, status, receipt_number, students(profiles(full_name), dni)")
+      .select("id, amount, due_date, paid_at, status, receipt_number")
       .eq("student_id", id)
       .order("due_date", { ascending: false }),
   ]);
 
   if (!studentRow) notFound();
 
-  type ProfileRaw = { full_name: string; email: string; phone: string | null } | null;
-  const profileRaw = studentRow.profiles as unknown as ProfileRaw;
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("full_name, email, phone")
+    .eq("id", studentRow.profile_id)
+    .single();
 
   const student = {
     id: studentRow.id,
@@ -67,30 +70,28 @@ export default async function StudentDetailPage({
     status: studentRow.status,
     createdAt: studentRow.created_at,
     profile: {
-      fullName: profileRaw?.full_name ?? "",
-      email: profileRaw?.email ?? "",
-      phone: profileRaw?.phone ?? null,
+      fullName: profileRow?.full_name ?? "",
+      email: profileRow?.email ?? "",
+      phone: profileRow?.phone ?? null,
     },
   };
 
   const today = new Date().toISOString().split("T")[0];
 
   const studentEnrollments: EnrollmentListItem[] = (enrollmentRows ?? []).map((e) => {
-    const enrStudent = e.students as unknown as { profiles: { full_name: string } | null; dni: string } | null;
     const course = e.courses as unknown as { name: string; level: string } | null;
     return {
       id: e.id,
       enrolledAt: new Date(e.enrolled_at),
       status: e.status as EnrollmentListItem["status"],
-      studentName: enrStudent?.profiles?.full_name ?? "",
-      studentDni: enrStudent?.dni ?? "",
+      studentName: student.profile.fullName,
+      studentDni: student.dni,
       courseName: course?.name ?? "",
       courseLevel: course?.level ?? "",
     };
   });
 
   const studentPayments: PaymentListItem[] = (paymentRows ?? []).map((p) => {
-    const pStudent = p.students as unknown as { profiles: { full_name: string } | null; dni: string } | null;
     return {
       id: p.id,
       amount: p.amount,
@@ -98,8 +99,8 @@ export default async function StudentDetailPage({
       paidAt: p.paid_at,
       status: p.status,
       receiptNumber: p.receipt_number,
-      studentName: pStudent?.profiles?.full_name ?? "",
-      studentDni: pStudent?.dni ?? "",
+      studentName: student.profile.fullName,
+      studentDni: student.dni,
       isOverdue: (p.status === "pending" || p.status === "overdue") && p.due_date < today,
     };
   });
