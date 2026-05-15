@@ -1,7 +1,8 @@
 import { ArrowLeft } from "lucide-react";
-import { getStudents } from "@/modules/students/services/students.service";
+import { createClient } from "@/lib/supabase/server";
 import { PaymentForm } from "@/modules/payments/components/PaymentForm";
 import { createPaymentAction } from "@/modules/payments/actions";
+import type { StudentListItem } from "@/modules/students/types";
 
 export default async function NewPaymentPage({
   searchParams,
@@ -9,7 +10,25 @@ export default async function NewPaymentPage({
   searchParams: Promise<{ studentId?: string }>;
 }) {
   const { studentId } = await searchParams;
-  const students = await getStudents();
+  const supabase = await createClient();
+
+  const { data: rows } = await supabase
+    .from("students")
+    .select("id, dni, level, status, profiles(full_name, email)")
+    .order("profiles(full_name)");
+
+  type ProfileRaw = { full_name: string; email: string } | null;
+  const students: StudentListItem[] = (rows ?? []).map((s) => {
+    const profile = s.profiles as unknown as ProfileRaw;
+    return {
+      id: s.id,
+      fullName: profile?.full_name ?? "",
+      email: profile?.email ?? "",
+      dni: s.dni,
+      level: s.level as StudentListItem["level"],
+      status: s.status as StudentListItem["status"],
+    };
+  });
 
   return (
     <div>

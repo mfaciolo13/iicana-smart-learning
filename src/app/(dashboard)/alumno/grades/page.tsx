@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
-import { getStudentByProfileId } from "@/modules/students/services/students.service";
-import { getGradesByStudent } from "@/modules/grades/services/grades.service";
+import { createClient } from "@/lib/supabase/server";
 import type { GradeWithDetails } from "@/modules/grades/types";
 import { LEVEL_LABELS } from "@/lib/level-labels";
 
@@ -33,10 +32,52 @@ export default async function AlumnoGradesPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const student = await getStudentByProfileId(user.id);
-  if (!student) redirect("/alumno");
+  const supabase = await createClient();
 
-  const allGrades = await getGradesByStudent(student.id);
+  const { data: studentRow } = await supabase
+    .from("students")
+    .select("id")
+    .eq("profile_id", user.id)
+    .single();
+
+  if (!studentRow) redirect("/alumno");
+
+  const { data: enrollmentRows } = await supabase
+    .from("enrollments")
+    .select("id, courses(name, level)")
+    .eq("student_id", studentRow.id);
+
+  const enrollmentIds = (enrollmentRows ?? []).map((e) => e.id);
+  type CourseRaw = { name: string; level: string } | null;
+  const courseByEnrollment = new Map(
+    (enrollmentRows ?? []).map((e) => [e.id, e.courses as unknown as CourseRaw])
+  );
+
+  let allGrades: GradeWithDetails[] = [];
+  if (enrollmentIds.length > 0) {
+    const { data: gradeRows } = await supabase
+      .from("grades")
+      .select("id, enrollment_id, evaluation_type, score, evaluated_at, notes")
+      .in("enrollment_id", enrollmentIds)
+      .order("evaluated_at", { ascending: false });
+
+    allGrades = (gradeRows ?? []).map((g) => {
+      const course = courseByEnrollment.get(g.enrollment_id);
+      return {
+        id: g.id,
+        enrollmentId: g.enrollment_id,
+        evaluationType: g.evaluation_type as GradeWithDetails["evaluationType"],
+        score: String(g.score),
+        evaluatedAt: new Date(g.evaluated_at),
+        notes: g.notes as string | null,
+        studentName: "",
+        studentDni: "",
+        courseName: course?.name ?? "",
+        courseLevel: course?.level ?? "",
+      };
+    });
+  }
+
   const byCourse = groupByCourse(allGrades);
 
   return (

@@ -1,8 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
 import { createClient } from "@/lib/supabase/server";
-import { getStudentByProfileId } from "@/modules/students/services/students.service";
-import { hasSurveySubmitted } from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
 import { submitSurveyAction } from "@/modules/teacher-evaluations/actions";
 import { SurveyForm } from "@/modules/teacher-evaluations/components/SurveyForm";
 
@@ -19,14 +17,25 @@ export default async function AlumnoSurveyPage({
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const student = await getStudentByProfileId(user.id);
-  if (!student) redirect("/alumno");
+  const supabase = await createClient();
 
-  if (enrollmentId && (await hasSurveySubmitted(enrollmentId))) {
-    redirect("/alumno/evaluations");
+  const { data: studentRow } = await supabase
+    .from("students")
+    .select("id")
+    .eq("profile_id", user.id)
+    .single();
+
+  if (!studentRow) redirect("/alumno");
+
+  if (enrollmentId) {
+    const { data: surveyRows } = await supabase
+      .from("teacher_surveys")
+      .select("id")
+      .eq("enrollment_id", enrollmentId)
+      .limit(1);
+    if ((surveyRows ?? []).length > 0) redirect("/alumno/evaluations");
   }
 
-  const supabase = await createClient();
   const { data: course } = await supabase
     .from("courses")
     .select("id, name, teacher_id, teachers(profiles(full_name))")

@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getComplaintById } from "@/modules/complaints/services/complaints.service";
+import { createClient } from "@/lib/supabase/server";
 import { updateComplaintStatusAction } from "@/modules/complaints/actions";
 import { ComplaintStatusForm } from "@/modules/complaints/components/ComplaintStatusForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import type { ComplaintItem } from "@/modules/complaints/types";
 
 const TYPE_LABELS: Record<string, string> = {
   academic: "Académico",
@@ -34,8 +35,31 @@ export default async function ComplaintDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const complaint = await getComplaintById(id);
-  if (!complaint) notFound();
+
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("complaints")
+    .select("id, user_id, type, description, status, resolved_at, created_at, updated_at, profiles!user_id(full_name, role)")
+    .eq("id", id)
+    .single();
+
+  if (!row) notFound();
+
+  type ProfileRaw = { full_name: string; role: string } | null;
+  const profile = row.profiles as unknown as ProfileRaw;
+
+  const complaint: ComplaintItem = {
+    id: row.id,
+    userId: row.user_id,
+    type: row.type as ComplaintItem["type"],
+    description: row.description,
+    status: row.status as ComplaintItem["status"],
+    resolvedAt: row.resolved_at ? new Date(row.resolved_at) : null,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    authorName: profile?.full_name ?? "",
+    authorRole: profile?.role ?? "",
+  };
 
   const statusCfg = STATUS_CONFIG[complaint.status] ?? { label: complaint.status, variant: "neutral" as const };
   const isResolvable = complaint.status === "open" || complaint.status === "in_progress";

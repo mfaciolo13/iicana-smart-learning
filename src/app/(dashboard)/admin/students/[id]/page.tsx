@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getStudentById } from "@/modules/students/services/students.service";
-import { getEnrollmentsByStudent } from "@/modules/enrollments/services/enrollments.service";
-import { getPaymentsByStudent } from "@/modules/payments/services/payments.service";
+import { createClient } from "@/lib/supabase/server";
 import { deleteStudentAction } from "@/modules/students/actions";
 import { resendInvitationAction } from "@/modules/users/actions";
 import { FormButton } from "@/components/ui/FormButton";
@@ -12,6 +10,8 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { EnrollmentList } from "@/modules/enrollments/components/EnrollmentList";
 import { PaymentList } from "@/modules/payments/components/PaymentList";
+import type { EnrollmentListItem } from "@/modules/enrollments/types";
+import type { PaymentListItem } from "@/modules/payments/types";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" | "info" }> = {
   active: { label: "Activo", variant: "success" },
@@ -35,13 +35,74 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [student, studentEnrollments, studentPayments] = await Promise.all([
-    getStudentById(id),
-    getEnrollmentsByStudent(id),
-    getPaymentsByStudent(id),
+  const supabase = await createClient();
+
+  const [{ data: studentRow }, { data: enrollmentRows }, { data: paymentRows }] = await Promise.all([
+    supabase
+      .from("students")
+      .select("id, dni, birth_date, level, status, profile_id, created_at, profiles(full_name, email, phone)")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("enrollments")
+      .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
+      .eq("student_id", id),
+    supabase
+      .from("payments")
+      .select("id, amount, due_date, paid_at, status, receipt_number, students(profiles(full_name), dni)")
+      .eq("student_id", id)
+      .order("due_date", { ascending: false }),
   ]);
 
-  if (!student) notFound();
+  if (!studentRow) notFound();
+
+  type ProfileRaw = { full_name: string; email: string; phone: string | null } | null;
+  const profileRaw = studentRow.profiles as unknown as ProfileRaw;
+
+  const student = {
+    id: studentRow.id,
+    dni: studentRow.dni,
+    birthDate: studentRow.birth_date,
+    level: studentRow.level as string | null,
+    status: studentRow.status,
+    createdAt: studentRow.created_at,
+    profile: {
+      fullName: profileRaw?.full_name ?? "",
+      email: profileRaw?.email ?? "",
+      phone: profileRaw?.phone ?? null,
+    },
+  };
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const studentEnrollments: EnrollmentListItem[] = (enrollmentRows ?? []).map((e) => {
+    const enrStudent = e.students as unknown as { profiles: { full_name: string } | null; dni: string } | null;
+    const course = e.courses as unknown as { name: string; level: string } | null;
+    return {
+      id: e.id,
+      enrolledAt: new Date(e.enrolled_at),
+      status: e.status as EnrollmentListItem["status"],
+      studentName: enrStudent?.profiles?.full_name ?? "",
+      studentDni: enrStudent?.dni ?? "",
+      courseName: course?.name ?? "",
+      courseLevel: course?.level ?? "",
+    };
+  });
+
+  const studentPayments: PaymentListItem[] = (paymentRows ?? []).map((p) => {
+    const pStudent = p.students as unknown as { profiles: { full_name: string } | null; dni: string } | null;
+    return {
+      id: p.id,
+      amount: p.amount,
+      dueDate: p.due_date,
+      paidAt: p.paid_at,
+      status: p.status,
+      receiptNumber: p.receipt_number,
+      studentName: pStudent?.profiles?.full_name ?? "",
+      studentDni: pStudent?.dni ?? "",
+      isOverdue: (p.status === "pending" || p.status === "overdue") && p.due_date < today,
+    };
+  });
 
   const status = STATUS_CONFIG[student.status] ?? { label: student.status, variant: "neutral" as const };
 

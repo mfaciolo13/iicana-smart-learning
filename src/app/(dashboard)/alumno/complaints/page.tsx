@@ -1,15 +1,38 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerUser } from "@/lib/auth/helpers";
-import { getMyComplaints } from "@/modules/complaints/services/complaints.service";
+import { createClient } from "@/lib/supabase/server";
 import { ComplaintList } from "@/modules/complaints/components/ComplaintList";
 import { buttonVariants } from "@/components/ui/Button";
+import type { ComplaintItem } from "@/modules/complaints/types";
 
 export default async function AlumnoComplaintsPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const myComplaints = await getMyComplaints(user.id);
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("complaints")
+    .select("id, user_id, type, description, status, resolved_at, created_at, updated_at, profiles!user_id(full_name, role)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  type ProfileRaw = { full_name: string; role: string } | null;
+  const myComplaints: ComplaintItem[] = (rows ?? []).map((c) => {
+    const profile = c.profiles as unknown as ProfileRaw;
+    return {
+      id: c.id,
+      userId: c.user_id,
+      type: c.type as ComplaintItem["type"],
+      description: c.description,
+      status: c.status as ComplaintItem["status"],
+      resolvedAt: c.resolved_at ? new Date(c.resolved_at) : null,
+      createdAt: new Date(c.created_at),
+      updatedAt: new Date(c.updated_at),
+      authorName: profile?.full_name ?? "",
+      authorRole: profile?.role ?? "",
+    };
+  });
 
   return (
     <div>

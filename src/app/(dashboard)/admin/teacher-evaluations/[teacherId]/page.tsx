@@ -1,11 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getTeacherById } from "@/modules/teachers/services/teachers.service";
-import {
-  getTeacherSurveyAggregate,
-  getTeacherObservations,
-} from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
+import { createClient } from "@/lib/supabase/server";
 
 const QUESTIONS = [
   "Claridad al explicar",
@@ -45,17 +41,60 @@ export default async function TeacherEvalDetailPage({
   params: Promise<{ teacherId: string }>;
 }) {
   const { teacherId } = await params;
-  const [teacher, surveys, observations] = await Promise.all([
-    getTeacherById(teacherId),
-    getTeacherSurveyAggregate(teacherId),
-    getTeacherObservations(teacherId),
+
+  const supabase = await createClient();
+
+  const [{ data: teacherRow }, { data: surveyRows }, { data: obsRows }] = await Promise.all([
+    supabase
+      .from("teachers")
+      .select("id, profiles(full_name)")
+      .eq("id", teacherId)
+      .single(),
+    supabase
+      .from("teacher_surveys")
+      .select("id, rating1, rating2, rating3, rating4, comment")
+      .eq("teacher_id", teacherId),
+    supabase
+      .from("class_observations")
+      .select("id, observed_at, overall_rating, observations, strengths, improvements, courses(name), profiles!observed_by(full_name)")
+      .eq("teacher_id", teacherId)
+      .order("observed_at"),
   ]);
 
-  if (!teacher) notFound();
+  if (!teacherRow) notFound();
 
-  const surveyAvgs = surveys
-    ? [surveys.avg1, surveys.avg2, surveys.avg3, surveys.avg4]
-    : null;
+  type ProfileRaw = { full_name: string } | null;
+  const teacherName = (teacherRow.profiles as unknown as ProfileRaw)?.full_name ?? "";
+
+  const surveys = surveyRows ?? [];
+  const surveyAggregate =
+    surveys.length > 0
+      ? {
+          avg1: Math.round((surveys.reduce((s, r) => s + r.rating1, 0) / surveys.length) * 10) / 10,
+          avg2: Math.round((surveys.reduce((s, r) => s + r.rating2, 0) / surveys.length) * 10) / 10,
+          avg3: Math.round((surveys.reduce((s, r) => s + r.rating3, 0) / surveys.length) * 10) / 10,
+          avg4: Math.round((surveys.reduce((s, r) => s + r.rating4, 0) / surveys.length) * 10) / 10,
+          total: surveys.length,
+          recentComments: surveys
+            .filter((s) => s.comment)
+            .slice(-5)
+            .map((s) => s.comment as string),
+        }
+      : null;
+
+  type ObsCourseRaw = { name: string } | null;
+  type ObsProfileRaw = { full_name: string } | null;
+
+  const observations = (obsRows ?? []).map((o) => ({
+    id: o.id,
+    observedAt: o.observed_at,
+    overallRating: o.overall_rating,
+    observations: o.observations,
+    strengths: o.strengths as string | null,
+    improvements: o.improvements as string | null,
+    courseName: (o.courses as unknown as ObsCourseRaw)?.name ?? "",
+    observerName: (o.profiles as unknown as ObsProfileRaw)?.full_name ?? "—",
+  }));
 
   return (
     <div>
@@ -63,7 +102,7 @@ export default async function TeacherEvalDetailPage({
         <Link href="/admin/teacher-evaluations" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
           <ArrowLeft className="w-3.5 h-3.5" /> Evaluaciones
         </Link>
-        <h2 className="text-2xl font-bold text-slate-900">{teacher.profile.fullName}</h2>
+        <h2 className="text-2xl font-bold text-slate-900">{teacherName}</h2>
         <p className="text-sm text-slate-400 mt-0.5">Informe de evaluación docente</p>
       </div>
 
@@ -72,24 +111,24 @@ export default async function TeacherEvalDetailPage({
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <h3 className="text-sm font-semibold text-slate-800 mb-4">
             Encuestas anónimas
-            {surveys && (
-              <span className="ml-2 text-xs font-normal text-slate-400">({surveys.total} respuesta{surveys.total !== 1 ? "s" : ""})</span>
+            {surveyAggregate && (
+              <span className="ml-2 text-xs font-normal text-slate-400">({surveyAggregate.total} respuesta{surveyAggregate.total !== 1 ? "s" : ""})</span>
             )}
           </h3>
 
-          {!surveys ? (
+          {!surveyAggregate ? (
             <p className="text-sm text-slate-400">Sin encuestas registradas aún.</p>
           ) : (
             <div className="space-y-4">
               {QUESTIONS.map((q, i) => (
-                <RatingBar key={q} label={q} value={surveyAvgs![i]} />
+                <RatingBar key={q} label={q} value={[surveyAggregate.avg1, surveyAggregate.avg2, surveyAggregate.avg3, surveyAggregate.avg4][i]} />
               ))}
 
-              {surveys.recentComments.length > 0 && (
+              {surveyAggregate.recentComments.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Comentarios recientes</p>
                   <ul className="space-y-2">
-                    {surveys.recentComments.map((c, i) => (
+                    {surveyAggregate.recentComments.map((c, i) => (
                       <li key={i} className="text-sm text-slate-600 italic">"{c}"</li>
                     ))}
                   </ul>

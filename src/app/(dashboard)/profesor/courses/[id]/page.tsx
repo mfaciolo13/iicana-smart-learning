@@ -3,11 +3,10 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getServerUser } from "@/lib/auth/helpers";
 import { createClient } from "@/lib/supabase/server";
-import { getCourseById } from "@/modules/courses/services/courses.service";
-import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LEVEL_LABELS } from "@/lib/level-labels";
+import type { EnrollmentListItem } from "@/modules/enrollments/types";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "info" }> = {
   active: { label: "Activo", variant: "success" },
@@ -33,15 +32,47 @@ export default async function ProfesorCourseDetailPage({
 
   if (!teacher) notFound();
 
-  const [course, courseEnrollments] = await Promise.all([
-    getCourseById(id),
-    getEnrollmentsByCourse(id),
+  const [{ data: courseRow }, { data: enrollmentRows }] = await Promise.all([
+    supabase
+      .from("courses")
+      .select("id, name, level, schedule, classroom, max_capacity, status, teacher_id")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("enrollments")
+      .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
+      .eq("course_id", id),
   ]);
 
-  if (!course) notFound();
+  if (!courseRow) notFound();
+  if (courseRow.teacher_id !== teacher.id) notFound();
 
-  // Only allow the assigned teacher to view this course
-  if (course.teacherId !== teacher.id) notFound();
+  const course = {
+    id: courseRow.id,
+    name: courseRow.name,
+    level: courseRow.level,
+    schedule: courseRow.schedule,
+    classroom: courseRow.classroom as string | null,
+    maxCapacity: courseRow.max_capacity,
+    status: courseRow.status,
+  };
+
+  type StudentRaw = { profiles: { full_name: string } | null; dni: string } | null;
+  type CourseRaw = { name: string; level: string } | null;
+
+  const courseEnrollments: EnrollmentListItem[] = (enrollmentRows ?? []).map((e) => {
+    const student = e.students as unknown as StudentRaw;
+    const enrCourse = e.courses as unknown as CourseRaw;
+    return {
+      id: e.id,
+      enrolledAt: new Date(e.enrolled_at),
+      status: e.status as EnrollmentListItem["status"],
+      studentName: student?.profiles?.full_name ?? "",
+      studentDni: student?.dni ?? "",
+      courseName: enrCourse?.name ?? "",
+      courseLevel: enrCourse?.level ?? "",
+    };
+  });
 
   const status = STATUS_CONFIG[course.status] ?? { label: course.status, variant: "neutral" as const };
   const activeEnrollments = courseEnrollments.filter((e) => e.status === "active");

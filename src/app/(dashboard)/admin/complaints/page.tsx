@@ -1,4 +1,5 @@
-import { getAllComplaints } from "@/modules/complaints/services/complaints.service";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { ComplaintList } from "@/modules/complaints/components/ComplaintList";
 
 const STATUS_TABS = [
@@ -17,10 +18,29 @@ export default async function AdminComplaintsPage({
   const { status } = await searchParams;
   const activeTab = status ?? "all";
 
-  const all = await getAllComplaints();
-  const filtered =
-    activeTab === "all" ? all : all.filter((c) => c.status === activeTab);
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("complaints")
+    .select("id, user_id, type, description, status, resolved_at, created_at, updated_at, profiles!user_id(full_name, role)")
+    .order("created_at", { ascending: false });
 
+  const all = (data ?? []).map((c) => {
+    const profile = c.profiles as unknown as { full_name: string; role: string } | null;
+    return {
+      id: c.id,
+      userId: c.user_id,
+      type: c.type,
+      description: c.description,
+      status: c.status,
+      resolvedAt: c.resolved_at ? new Date(c.resolved_at) : null,
+      createdAt: new Date(c.created_at),
+      updatedAt: new Date(c.updated_at),
+      authorName: profile?.full_name ?? "",
+      authorRole: profile?.role ?? "",
+    };
+  });
+
+  const filtered = activeTab === "all" ? all : all.filter((c) => c.status === activeTab);
   const openCount = all.filter((c) => c.status === "open").length;
   const inProgressCount = all.filter((c) => c.status === "in_progress").length;
 
@@ -36,7 +56,6 @@ export default async function AdminComplaintsPage({
         </div>
       </div>
 
-      {/* Summary mini-cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           { label: "Abiertos", value: openCount, color: "text-amber-600" },
@@ -51,7 +70,6 @@ export default async function AdminComplaintsPage({
         ))}
       </div>
 
-      {/* Filter tabs */}
       <div className="flex flex-wrap gap-1 mb-4 bg-slate-100 rounded-lg p-1 w-fit max-w-full">
         {STATUS_TABS.map((tab) => (
           <a

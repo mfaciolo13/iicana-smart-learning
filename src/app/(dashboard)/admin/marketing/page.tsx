@@ -1,10 +1,52 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getCampaigns, CHANNEL_LABELS } from "@/modules/marketing/services/marketing.service";
+import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/Button";
+import type { CampaignListItem } from "@/modules/marketing/services/marketing.service";
+
+const CHANNEL_LABELS: Record<string, string> = {
+  social_media: "Redes sociales",
+  email: "Email",
+  flyers: "Folletos / Volantes",
+  word_of_mouth: "Boca a boca",
+  website: "Sitio web",
+  other: "Otro",
+};
 
 export default async function MarketingPage() {
-  const campaigns = await getCampaigns();
+  const supabase = await createClient();
+
+  const [{ data: campaignRows }, { data: inquiryRows }] = await Promise.all([
+    supabase
+      .from("marketing_campaigns")
+      .select("id, name, channel, start_date, end_date, budget")
+      .order("start_date", { ascending: false }),
+    supabase.from("inquiries").select("campaign_id, status"),
+  ]);
+
+  const inquiriesByCampaign = new Map<string, { total: number; enrolled: number }>();
+  for (const inq of inquiryRows ?? []) {
+    const cur = inquiriesByCampaign.get(inq.campaign_id) ?? { total: 0, enrolled: 0 };
+    cur.total++;
+    if (inq.status === "enrolled") cur.enrolled++;
+    inquiriesByCampaign.set(inq.campaign_id, cur);
+  }
+
+  const campaigns: CampaignListItem[] = (campaignRows ?? []).map((c) => {
+    const inq = inquiriesByCampaign.get(c.id) ?? { total: 0, enrolled: 0 };
+    return {
+      id: c.id,
+      name: c.name,
+      channel: c.channel,
+      startDate: c.start_date,
+      endDate: c.end_date ?? null,
+      budget: c.budget ?? null,
+      totalInquiries: inq.total,
+      enrolledCount: inq.enrolled,
+      conversionRate: inq.total > 0 ? Math.round((inq.enrolled / inq.total) * 100) : 0,
+    };
+  });
+
   const totalInquiries = campaigns.reduce((s, c) => s + c.totalInquiries, 0);
   const totalEnrolled = campaigns.reduce((s, c) => s + c.enrolledCount, 0);
   const globalRate = totalInquiries > 0 ? Math.round((totalEnrolled / totalInquiries) * 100) : 0;

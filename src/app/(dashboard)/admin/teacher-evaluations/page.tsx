@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getTeacherEvalSummaries } from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
+import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/Button";
+import type { TeacherEvalSummary } from "@/modules/teacher-evaluations/types";
 
 function StarBar({ value }: { value: number | null }) {
   if (!value) return <span className="text-xs text-slate-400">Sin datos</span>;
@@ -17,7 +18,45 @@ function StarBar({ value }: { value: number | null }) {
 }
 
 export default async function TeacherEvaluationsPage() {
-  const summaries = await getTeacherEvalSummaries();
+  const supabase = await createClient();
+
+  const [{ data: teacherRows }, { data: surveyRows }, { data: obsRows }] = await Promise.all([
+    supabase.from("teachers").select("id, profiles(full_name)").order("profiles(full_name)"),
+    supabase.from("teacher_surveys").select("teacher_id, rating1, rating2, rating3, rating4"),
+    supabase.from("class_observations").select("teacher_id, observed_at"),
+  ]);
+
+  type ProfileRaw = { full_name: string } | null;
+
+  const surveysByTeacher = new Map<string, { count: number; ratingSum: number }>();
+  for (const s of surveyRows ?? []) {
+    const cur = surveysByTeacher.get(s.teacher_id) ?? { count: 0, ratingSum: 0 };
+    cur.count++;
+    cur.ratingSum += (s.rating1 + s.rating2 + s.rating3 + s.rating4) / 4;
+    surveysByTeacher.set(s.teacher_id, cur);
+  }
+
+  const obsByTeacher = new Map<string, { count: number; lastDate: string | null }>();
+  for (const o of obsRows ?? []) {
+    const cur = obsByTeacher.get(o.teacher_id) ?? { count: 0, lastDate: null };
+    cur.count++;
+    if (!cur.lastDate || o.observed_at > cur.lastDate) cur.lastDate = o.observed_at;
+    obsByTeacher.set(o.teacher_id, cur);
+  }
+
+  const summaries: TeacherEvalSummary[] = (teacherRows ?? []).map((t) => {
+    const profile = t.profiles as unknown as ProfileRaw;
+    const surveys = surveysByTeacher.get(t.id);
+    const obs = obsByTeacher.get(t.id);
+    return {
+      teacherId: t.id,
+      teacherName: profile?.full_name ?? "",
+      surveyCount: surveys?.count ?? 0,
+      avgRating: surveys && surveys.count > 0 ? Math.round((surveys.ratingSum / surveys.count) * 10) / 10 : null,
+      observationCount: obs?.count ?? 0,
+      lastObservedAt: obs?.lastDate ?? null,
+    };
+  });
 
   return (
     <div>

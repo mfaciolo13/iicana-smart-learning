@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { getStudents } from "@/modules/students/services/students.service";
+import { createClient } from "@/lib/supabase/server";
 import { StudentList } from "@/modules/students/components/StudentList";
 import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { StudentListItem } from "@/modules/students/types";
 
 export default async function StudentsPage({
   searchParams,
@@ -10,7 +11,34 @@ export default async function StudentsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const students = await getStudents(q);
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("students")
+    .select("id, dni, level, status, profiles(full_name, email)")
+    .order("profiles(full_name)");
+
+  let students: StudentListItem[] = (data ?? []).map((s) => {
+    const profile = s.profiles as unknown as { full_name: string; email: string } | null;
+    return {
+      id: s.id,
+      fullName: profile?.full_name ?? "",
+      email: profile?.email ?? "",
+      dni: s.dni,
+      level: s.level as StudentListItem["level"],
+      status: s.status as StudentListItem["status"],
+    };
+  });
+
+  if (q) {
+    const lower = q.toLowerCase();
+    students = students.filter(
+      (s) =>
+        s.fullName.toLowerCase().includes(lower) ||
+        s.email.toLowerCase().includes(lower) ||
+        s.dni.toLowerCase().includes(lower)
+    );
+  }
 
   return (
     <div>

@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getUserDetail } from "@/modules/users/services/users.service";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { updateUserAction, banUserAction, unbanUserAction, resendInvitationAction } from "@/modules/users/actions";
 import { UserEditForm } from "@/modules/users/components/UserEditForm";
 import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import type { UserDetail } from "@/modules/users/types";
 
 const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" | "warning" | "neutral" }> = {
   admin: { label: "Admin", variant: "warning" },
@@ -32,8 +34,37 @@ export default async function UserDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getUserDetail(id);
-  if (!user) notFound();
+
+  const supabase = await createClient();
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("id, email, role, full_name, phone, avatar_url, created_at, updated_at")
+    .eq("id", id)
+    .single();
+
+  if (!profileRow) notFound();
+
+  let banned = false;
+  let emailConfirmed = false;
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.auth.admin.getUserById(id);
+    banned = !!data?.user?.banned_until && new Date(data.user.banned_until) > new Date();
+    emailConfirmed = !!data?.user?.email_confirmed_at || !!data?.user?.last_sign_in_at;
+  } catch {}
+
+  const user: UserDetail = {
+    id: profileRow.id,
+    email: profileRow.email,
+    role: profileRow.role as UserDetail["role"],
+    fullName: profileRow.full_name,
+    phone: profileRow.phone as string | null,
+    avatarUrl: profileRow.avatar_url as string | null,
+    createdAt: new Date(profileRow.created_at),
+    updatedAt: new Date(profileRow.updated_at),
+    banned,
+    emailConfirmed,
+  };
 
   const roleCfg = ROLE_CONFIG[user.role] ?? { label: user.role, variant: "neutral" as const };
 

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
-import { getRecentSessionsByTeacher } from "@/modules/attendance/services/attendance.service";
+import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/Button";
+import type { AttendanceSession } from "@/modules/attendance/types";
 
 const STATUS_COLORS = {
   high: "bg-emerald-500",
@@ -14,7 +15,65 @@ export default async function ProfesorAttendancePage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const sessions = await getRecentSessionsByTeacher(user.id);
+  const supabase = await createClient();
+
+  const { data: teacherRow } = await supabase
+    .from("teachers")
+    .select("id, courses(id, name)")
+    .eq("profile_id", user.id)
+    .single();
+
+  const rawCourses = (teacherRow?.courses as unknown as { id: string; name: string }[] | null) ?? [];
+  const courseIds = rawCourses.map((c) => c.id);
+  const courseNameMap = new Map(rawCourses.map((c) => [c.id, c.name]));
+
+  let sessions: AttendanceSession[] = [];
+
+  if (courseIds.length > 0) {
+    const { data: enrollmentRows } = await supabase
+      .from("enrollments")
+      .select("id, course_id")
+      .in("course_id", courseIds);
+
+    const enrollmentIds = (enrollmentRows ?? []).map((e) => e.id);
+    const enrollmentCourseMap = new Map((enrollmentRows ?? []).map((e) => [e.id, e.course_id]));
+
+    if (enrollmentIds.length > 0) {
+      const { data: attendanceRows } = await supabase
+        .from("attendance")
+        .select("class_date, status, enrollment_id")
+        .in("enrollment_id", enrollmentIds)
+        .order("class_date", { ascending: false })
+        .limit(1500);
+
+      const sessionMap = new Map<string, AttendanceSession>();
+      for (const row of attendanceRows ?? []) {
+        const courseId = enrollmentCourseMap.get(row.enrollment_id);
+        if (!courseId) continue;
+        const key = `${row.class_date}__${courseId}`;
+        if (!sessionMap.has(key)) {
+          sessionMap.set(key, {
+            classDate: row.class_date,
+            courseId,
+            courseName: courseNameMap.get(courseId) ?? "",
+            total: 0,
+            present: 0,
+            absent: 0,
+            late: 0,
+          });
+        }
+        const s = sessionMap.get(key)!;
+        s.total++;
+        if (row.status === "present") s.present++;
+        else if (row.status === "absent") s.absent++;
+        else if (row.status === "late") s.late++;
+      }
+
+      sessions = [...sessionMap.values()]
+        .sort((a, b) => b.classDate.localeCompare(a.classDate))
+        .slice(0, 30);
+    }
+  }
 
   return (
     <div>
@@ -45,7 +104,7 @@ export default async function ProfesorAttendancePage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
-          <table className="w-full text-sm min-w-[520px]">
+          <table className="w-full text-sm min-w-130">
             <thead>
               <tr className="border-b-2 border-brand-700">
                 <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 px-6 pr-4">Fecha</th>

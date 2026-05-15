@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getPaymentById } from "@/modules/payments/services/payments.service";
+import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "./PrintButton";
 
 const METHOD_LABELS: Record<string, string> = {
@@ -16,9 +16,29 @@ export default async function PaymentReceiptPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const payment = await getPaymentById(id);
 
-  if (!payment || payment.status !== "paid") notFound();
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("payments")
+    .select("id, amount, paid_at, method, status, receipt_number, notes, students(dni, profiles(full_name))")
+    .eq("id", id)
+    .single();
+
+  if (!row || row.status !== "paid") notFound();
+
+  type StudentRaw = { dni: string; profiles: { full_name: string } | null } | null;
+  const student = row.students as unknown as StudentRaw;
+
+  const payment = {
+    status: row.status,
+    amount: row.amount as string,
+    paidAt: row.paid_at as string | null,
+    method: row.method as string | null,
+    notes: row.notes as string | null,
+    receiptNumber: row.receipt_number as string | null,
+    studentName: student?.profiles?.full_name ?? "",
+    studentDni: student?.dni ?? "",
+  };
 
   const paidAt = payment.paidAt
     ? new Date(payment.paidAt).toLocaleDateString("es-AR", {

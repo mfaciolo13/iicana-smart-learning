@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getCourseById } from "@/modules/courses/services/courses.service";
-import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
+import { createClient } from "@/lib/supabase/server";
 import { deleteCourseAction } from "@/modules/courses/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { EnrollmentList } from "@/modules/enrollments/components/EnrollmentList";
+import type { EnrollmentListItem } from "@/modules/enrollments/types";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "info" }> = {
   active: { label: "Activo", variant: "success" },
@@ -31,15 +31,57 @@ export default async function CourseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [course, courseEnrollments] = await Promise.all([
-    getCourseById(id),
-    getEnrollmentsByCourse(id),
+  const supabase = await createClient();
+
+  const [{ data: courseRow }, { data: enrollmentRows }] = await Promise.all([
+    supabase
+      .from("courses")
+      .select("id, name, level, schedule, classroom, max_capacity, status, created_at, teacher_id, teachers(profiles(full_name, email))")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("enrollments")
+      .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
+      .eq("course_id", id),
   ]);
 
-  if (!course) notFound();
+  if (!courseRow) notFound();
 
+  type TeacherRaw = { profiles: { full_name: string; email: string } | null } | null;
+  const teacherRaw = courseRow.teachers as unknown as TeacherRaw;
+  const teacher = teacherRaw?.profiles
+    ? { fullName: teacherRaw.profiles.full_name, email: teacherRaw.profiles.email }
+    : null;
+
+  const course = {
+    id: courseRow.id,
+    name: courseRow.name,
+    level: courseRow.level,
+    schedule: courseRow.schedule,
+    classroom: courseRow.classroom as string | null,
+    maxCapacity: courseRow.max_capacity,
+    status: courseRow.status,
+    createdAt: courseRow.created_at,
+    teacher,
+  };
+
+  const courseEnrollments: EnrollmentListItem[] = (enrollmentRows ?? []).map((e) => {
+    const student = e.students as unknown as { profiles: { full_name: string } | null; dni: string } | null;
+    const enrCourse = e.courses as unknown as { name: string; level: string } | null;
+    return {
+      id: e.id,
+      enrolledAt: new Date(e.enrolled_at),
+      status: e.status as EnrollmentListItem["status"],
+      studentName: student?.profiles?.full_name ?? "",
+      studentDni: student?.dni ?? "",
+      courseName: enrCourse?.name ?? "",
+      courseLevel: enrCourse?.level ?? "",
+    };
+  });
+
+  const enrollmentCount = courseEnrollments.filter((e) => e.status === "active").length;
+  const occupancy = Math.round((enrollmentCount / course.maxCapacity) * 100);
   const status = STATUS_CONFIG[course.status] ?? { label: course.status, variant: "neutral" as const };
-  const occupancy = Math.round((course.enrollmentCount / course.maxCapacity) * 100);
 
   return (
     <div>
@@ -94,7 +136,7 @@ export default async function CourseDetailPage({
             <div>
               <div className="flex justify-between text-sm mb-1.5">
                 <dt className="text-slate-500">Inscriptos</dt>
-                <dd className="font-medium text-slate-800">{course.enrollmentCount} / {course.maxCapacity}</dd>
+                <dd className="font-medium text-slate-800">{enrollmentCount} / {course.maxCapacity}</dd>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div

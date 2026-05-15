@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { ArrowRight, ChevronRight } from "lucide-react";
-import { getRecentSessions } from "@/modules/attendance/services/attendance.service";
 import { buttonVariants } from "@/components/ui/Button";
 
 const STATUS_COLORS = {
@@ -10,7 +10,51 @@ const STATUS_COLORS = {
 };
 
 export default async function AttendancePage() {
-  const sessions = await getRecentSessions(30);
+  const supabase = await createClient();
+
+  const { data: rawAttendance } = await supabase
+    .from("attendance")
+    .select("class_date, status, enrollments(courses(id, name))")
+    .order("class_date", { ascending: false })
+    .limit(1500);
+
+  type SessionAcc = {
+    classDate: string;
+    courseId: string;
+    courseName: string;
+    total: number;
+    present: number;
+    absent: number;
+    late: number;
+  };
+
+  const sessionMap = new Map<string, SessionAcc>();
+  for (const record of rawAttendance ?? []) {
+    const enr = record.enrollments as unknown as { courses: { id: string; name: string } | null } | null;
+    const course = enr?.courses;
+    if (!course) continue;
+    const key = `${record.class_date}__${course.id}`;
+    if (!sessionMap.has(key)) {
+      sessionMap.set(key, {
+        classDate: record.class_date,
+        courseId: course.id,
+        courseName: course.name,
+        total: 0,
+        present: 0,
+        absent: 0,
+        late: 0,
+      });
+    }
+    const s = sessionMap.get(key)!;
+    s.total++;
+    if (record.status === "present") s.present++;
+    else if (record.status === "absent") s.absent++;
+    else if (record.status === "late") s.late++;
+  }
+
+  const sessions = [...sessionMap.values()]
+    .sort((a, b) => b.classDate.localeCompare(a.classDate))
+    .slice(0, 30);
 
   return (
     <div>
@@ -39,7 +83,6 @@ export default async function AttendancePage() {
         </div>
       ) : (
         <>
-          {/* Mobile cards */}
           <div className="sm:hidden space-y-2">
             {sessions.map((s) => {
               const pct = s.total > 0 ? Math.round(((s.present + s.late) / s.total) * 100) : 0;
@@ -70,9 +113,8 @@ export default async function AttendancePage() {
             })}
           </div>
 
-          {/* Desktop table */}
           <div className="hidden sm:block bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
-            <table className="w-full text-sm min-w-[520px]">
+            <table className="w-full text-sm min-w-130">
               <thead>
                 <tr className="border-b-2 border-brand-700">
                   <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 px-6 pr-4">Fecha</th>

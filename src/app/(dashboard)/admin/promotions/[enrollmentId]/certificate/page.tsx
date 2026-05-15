@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getEnrollmentForCertificate } from "@/modules/promotions/services/promotions.service";
+import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "./PrintButton";
 import { LEVEL_LABELS } from "@/lib/level-labels";
 
@@ -15,9 +15,31 @@ export default async function CertificatePage({
   params: Promise<{ enrollmentId: string }>;
 }) {
   const { enrollmentId } = await params;
-  const data = await getEnrollmentForCertificate(enrollmentId);
 
-  if (!data) notFound();
+  const supabase = await createClient();
+  const { data: row } = await supabase
+    .from("enrollments")
+    .select("id, completed_at, students(dni, profiles(full_name)), courses(name, level)")
+    .eq("id", enrollmentId)
+    .eq("status", "completed")
+    .single();
+
+  if (!row) notFound();
+
+  type StudentRaw = { dni: string; profiles: { full_name: string } | null } | null;
+  type CourseRaw = { name: string; level: string } | null;
+
+  const student = row.students as unknown as StudentRaw;
+  const course = row.courses as unknown as CourseRaw;
+
+  const data = {
+    enrollmentId: row.id,
+    completedAt: row.completed_at as string | null,
+    studentName: student?.profiles?.full_name ?? "",
+    studentDni: student?.dni ?? "",
+    courseName: course?.name ?? "",
+    courseLevel: course?.level ?? "",
+  };
 
   const completedDate = data.completedAt
     ? new Date(data.completedAt).toLocaleDateString("es-AR", {
