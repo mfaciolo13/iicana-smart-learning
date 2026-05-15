@@ -18,14 +18,17 @@ export default async function TeacherDetailPage({
 
   const { data: row } = await supabase
     .from("teachers")
-    .select("id, dni, specialization, profile_id, created_at, profiles(full_name, email, phone)")
+    .select("id, dni, specialization, profile_id, created_at")
     .eq("id", id)
     .single();
 
   if (!row) notFound();
 
-  type ProfileRaw = { full_name: string; email: string; phone: string | null } | null;
-  const profileRaw = row.profiles as unknown as ProfileRaw;
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("full_name, email, phone")
+    .eq("id", row.profile_id)
+    .single();
 
   const teacher = {
     id: row.id,
@@ -33,9 +36,9 @@ export default async function TeacherDetailPage({
     specialization: row.specialization as string | null,
     createdAt: row.created_at,
     profile: {
-      fullName: profileRaw?.full_name ?? "",
-      email: profileRaw?.email ?? "",
-      phone: profileRaw?.phone ?? null,
+      fullName: profileRow?.full_name ?? "",
+      email: profileRow?.email ?? "",
+      phone: profileRow?.phone ?? null,
     },
   };
 
