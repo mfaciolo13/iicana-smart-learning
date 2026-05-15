@@ -3,6 +3,7 @@ import { createEnrollmentAction } from "@/modules/enrollments/actions";
 import { EnrollmentForm } from "@/modules/enrollments/components/EnrollmentForm";
 import type { StudentListItem } from "@/modules/students/types";
 import type { CourseListItem } from "@/modules/courses/types";
+import { getCachedStudents } from "@/lib/query-cache";
 
 export default async function NewEnrollmentPage({
   searchParams,
@@ -12,20 +13,13 @@ export default async function NewEnrollmentPage({
   const { studentId, courseId } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: rawStudentRows }, { data: rawCourseRows }, { data: enrollmentRows }] = await Promise.all([
-    supabase.from("students").select("id, dni, level, status, profile_id"),
+  const [cachedStudents, { data: rawCourseRows }, { data: enrollmentRows }] = await Promise.all([
+    getCachedStudents(),
     supabase.from("courses").select("id, name, level, schedule, status, max_capacity, teacher_id").order("name"),
     supabase.from("enrollments").select("course_id").eq("status", "active"),
   ]);
 
-  // Student profiles
-  const studentProfileIds = (rawStudentRows ?? []).map((s) => s.profile_id);
-  const { data: studentProfileRows } = studentProfileIds.length > 0
-    ? await supabase.from("profiles").select("id, full_name, email").in("id", studentProfileIds)
-    : { data: [] as { id: string; full_name: string; email: string }[] };
-  const studentProfileMap = new Map((studentProfileRows ?? []).map((p) => [p.id, p]));
-
-  // Teacher profiles (for course teacher names)
+  // Teacher names for courses
   const courseTeacherIds = (rawCourseRows ?? []).filter((c) => c.teacher_id).map((c) => c.teacher_id as string);
   const { data: courseTeacherRows } = courseTeacherIds.length > 0
     ? await supabase.from("teachers").select("id, profile_id").in("id", courseTeacherIds)
@@ -39,19 +33,11 @@ export default async function NewEnrollmentPage({
     (courseTeacherRows ?? []).map((t) => [t.id, teacherProfileMap.get(t.profile_id) ?? null])
   );
 
-  const allStudents: StudentListItem[] = (rawStudentRows ?? [])
-    .map((s) => {
-      const profile = studentProfileMap.get(s.profile_id);
-      return {
-        id: s.id,
-        fullName: profile?.full_name ?? "",
-        email: profile?.email ?? "",
-        dni: s.dni,
-        level: s.level as StudentListItem["level"],
-        status: s.status as StudentListItem["status"],
-      };
-    })
-    .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  const allStudents: StudentListItem[] = cachedStudents.map((s) => ({
+    ...s,
+    level: s.level as StudentListItem["level"],
+    status: s.status as StudentListItem["status"],
+  }));
 
   const countByCourse = new Map<string, number>();
   for (const e of enrollmentRows ?? []) {

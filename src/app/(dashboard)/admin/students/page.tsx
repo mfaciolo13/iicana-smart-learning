@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { StudentList } from "@/modules/students/components/StudentList";
 import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { StudentListItem } from "@/modules/students/types";
+import { getCachedStudents } from "@/lib/query-cache";
 
 export default async function StudentsPage({
   searchParams,
@@ -11,32 +11,12 @@ export default async function StudentsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const supabase = await createClient();
 
-  const { data: studentRows } = await supabase
-    .from("students")
-    .select("id, dni, level, status, profile_id");
-
-  const profileIds = (studentRows ?? []).map((s) => s.profile_id);
-  const { data: profileRows } = profileIds.length > 0
-    ? await supabase.from("profiles").select("id, full_name, email").in("id", profileIds)
-    : { data: [] as { id: string; full_name: string; email: string }[] };
-
-  const profileMap = new Map((profileRows ?? []).map((p) => [p.id, p]));
-
-  let students: StudentListItem[] = (studentRows ?? [])
-    .map((s) => {
-      const profile = profileMap.get(s.profile_id);
-      return {
-        id: s.id,
-        fullName: profile?.full_name ?? "",
-        email: profile?.email ?? "",
-        dni: s.dni,
-        level: s.level as StudentListItem["level"],
-        status: s.status as StudentListItem["status"],
-      };
-    })
-    .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  let students: StudentListItem[] = (await getCachedStudents()).map((s) => ({
+    ...s,
+    level: s.level as StudentListItem["level"],
+    status: s.status as StudentListItem["status"],
+  }));
 
   if (q) {
     const lower = q.toLowerCase();

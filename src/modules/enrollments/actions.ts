@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
 import { db } from "@/lib/drizzle";
 import { students, profiles, courses } from "@/lib/drizzle/schema";
@@ -55,6 +55,8 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
     console.error("[enrollment email]", e);
   }
 
+  updateTag("enrollments");
+  updateTag("students");
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/students");
   revalidatePath("/admin/courses");
@@ -74,6 +76,8 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
 
   await updateEnrollment(parsed.data);
 
+  updateTag("enrollments");
+  updateTag("students");
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/students");
   revalidatePath("/admin/courses");
@@ -88,6 +92,8 @@ export async function deleteEnrollmentAction(_prev: ActionResult, formData: Form
 
   await deleteEnrollment(id);
 
+  updateTag("enrollments");
+  updateTag("students");
   revalidatePath("/admin/enrollments");
   revalidatePath("/admin/students");
   revalidatePath("/admin/courses");

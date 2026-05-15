@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
 import { consolidateYearEnd } from "./services/year-end.service";
 import type { ActionResult } from "@/lib/action-result";
@@ -10,6 +10,8 @@ export async function consolidateYearEndAction(_prev: ActionResult, _formData?: 
 
   const { promoted, graduated } = await consolidateYearEnd();
 
+  updateTag("students");
+  updateTag("enrollments");
   revalidatePath("/admin/year-end");
   const parts: string[] = [];
   if (promoted > 0) parts.push(`${promoted} inscripción(es) marcada(s) como completada(s)`);
