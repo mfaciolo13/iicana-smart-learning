@@ -6,6 +6,7 @@ test.describe("Gestión de Cursos", () => {
   test("crear curso con SchedulePicker muestra toast de éxito y aparece en listado", async ({
     page,
   }) => {
+    test.skip(!!process.env.CI, "Escribe datos en producción — solo correr localmente");
     const name = `Inglés Test ${slug()}`;
 
     await page.goto("/admin/courses/new");

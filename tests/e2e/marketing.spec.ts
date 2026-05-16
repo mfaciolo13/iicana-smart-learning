@@ -12,14 +12,15 @@ test.describe("Marketing — Campañas", () => {
   });
 
   test("crear campaña muestra toast de éxito y aparece en listado", async ({ page }) => {
+    test.skip(!!process.env.CI, "Escribe datos en producción — solo correr localmente");
     const name = `Campaña E2E ${slug()}`;
 
     await page.goto("/admin/marketing/new");
     await page.getByLabel("Nombre de la campaña").fill(name);
-    await page.getByLabel("Canal").selectOption("instagram");
+    await page.getByLabel("Canal").selectOption("social_media");
     await page.getByRole("button", { name: /registrar campaña/i }).click();
 
-    await expect(page.getByText("Curso creado correctamente").or(page.getByText("campaña")).first()).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/campaña/i).first()).toBeVisible({ timeout: 8000 });
     await expect(page).toHaveURL(/\/admin\/marketing$/);
     await expect(page.getByText(name)).toBeVisible();
   });
@@ -50,6 +51,7 @@ test.describe("Marketing — Campañas", () => {
   });
 
   test("formulario de consulta se resetea tras éxito", async ({ page }) => {
+    test.skip(!!process.env.CI, "Escribe datos en producción — solo correr localmente");
     await page.goto("/admin/marketing");
 
     const verLink = page.getByText("Ver →").first();
