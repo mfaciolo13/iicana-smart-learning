@@ -36,6 +36,7 @@ export default function UpdatePasswordPage() {
     const hashParams = new URLSearchParams(hash);
     if (hashParams.get("error")) {
       window.history.replaceState({}, "", url.pathname);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStage("invalid");
       return;
     }

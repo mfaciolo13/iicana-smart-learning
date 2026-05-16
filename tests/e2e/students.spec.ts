@@ -1,7 +1,5 @@
 import { test, expect } from "@playwright/test";
 
-const slug = () => Date.now().toString().slice(-6);
-
 test.describe("Gestión de Alumnos", () => {
   test("listado de alumnos carga correctamente", async ({ page }) => {
     await page.goto("/admin/students");

@@ -18,7 +18,6 @@ test.describe("Inscripciones", () => {
     const courseSelect = page.getByLabel("Curso");
     await expect(courseSelect).toBeVisible();
     // Cursos sin cupo aparecen como disabled options
-    const disabledOptions = courseSelect.locator("option[disabled]:not([value=''])");
     // No fallar si no hay cursos sin cupo, solo verificar que el select existe
     await expect(courseSelect).toBeEnabled();
   });

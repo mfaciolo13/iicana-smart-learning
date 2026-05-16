@@ -98,6 +98,7 @@ export default async function UserDetailPage({
           <Card title="Perfil" padding="md">
             <div className="flex items-center gap-3 mb-4">
               {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={user.avatarUrl}
                   alt={user.fullName}

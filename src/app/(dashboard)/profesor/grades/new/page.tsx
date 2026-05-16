@@ -13,7 +13,7 @@ export default async function ProfesorNewGradePage({
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const { courseId } = await searchParams;
+  await searchParams;
   const supabase = await createClient();
 
   const { data: teacherRow } = await supabase
