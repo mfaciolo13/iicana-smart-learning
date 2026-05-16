@@ -1,0 +1,44 @@
+name: E2E Daily
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: Playwright E2E (producción)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - name: Ejecutar tests E2E
+        run: pnpm exec playwright test
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: https://cervantes-smart-learning.com.ar
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_ALUMNO_EMAIL: ${{ secrets.E2E_ALUMNO_EMAIL }}
+          E2E_ALUMNO_PASSWORD: ${{ secrets.E2E_ALUMNO_PASSWORD }}
+
+      - name: Subir reporte Playwright
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
