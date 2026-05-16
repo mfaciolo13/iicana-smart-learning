@@ -19,7 +19,6 @@ export const createStudentSchema = z.object({
     ])
     .optional(),
   placementTestScore: z.coerce.number().int().min(0).max(100).optional(),
-  tutorId: z.string().uuid().optional(),
 });
 
 export const updateStudentSchema = createStudentSchema.partial().extend({

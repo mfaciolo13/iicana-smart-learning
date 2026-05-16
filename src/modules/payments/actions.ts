@@ -13,7 +13,7 @@ import {
   getSuspensionTargets,
   suspendStudentAndPayments,
 } from "./services/payments.service";
-import { sendToRole, sendToUser } from "@/modules/notifications/services/notifications.service";
+import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -90,7 +90,6 @@ export async function runOverdueChecksAction(_prev: ActionResult, _formData?: Fo
       body: `${t.studentName} tiene un pago vencido hace más de 15 días.`,
     };
     await sendToRole("admin", payload);
-    if (t.tutorProfileId) await sendToUser(t.tutorProfileId, payload);
   }
   if (alertTargets.length > 0) {
     await markOverdueAlertSent(alertTargets.map((t) => t.paymentId));
@@ -106,14 +105,13 @@ export async function runOverdueChecksAction(_prev: ActionResult, _formData?: Fo
   let suspended = 0;
   for (const [studentId, items] of byStudent.entries()) {
     await suspendStudentAndPayments(studentId, items.map((i) => i.paymentId));
-    const { studentName, tutorProfileId } = items[0];
+    const { studentName } = items[0];
     const payload = {
       type: "payment" as const,
       title: "Alumno suspendido por mora",
       body: `${studentName} fue suspendido por tener pagos vencidos hace más de 30 días.`,
     };
     await sendToRole("admin", payload);
-    if (tutorProfileId) await sendToUser(tutorProfileId, payload);
     suspended++;
   }
 

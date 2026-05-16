@@ -15,7 +15,6 @@ export interface StudentWithProfile {
   placementTestScore: number | null;
   status: StudentStatus;
   profileId: string;
-  tutorId: string | null;
   createdAt: Date;
   updatedAt: Date;
   profile: {

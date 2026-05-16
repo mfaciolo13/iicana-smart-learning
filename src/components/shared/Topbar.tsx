@@ -29,7 +29,6 @@ const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrador",
   profesor: "Docente",
   alumno: "Alumno",
-  tutor: "Tutor",
 };
 
 export function Topbar({ fullName, role, avatarUrl, userId, initialUnreadCount, onMenuClick }: TopbarProps) {

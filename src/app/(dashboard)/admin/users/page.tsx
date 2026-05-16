@@ -8,7 +8,6 @@ const ROLE_TABS = [
   { value: "admin", label: "Admins" },
   { value: "profesor", label: "Docentes" },
   { value: "alumno", label: "Alumnos" },
-  { value: "tutor", label: "Tutores" },
 ];
 
 export default async function UsersPage({
@@ -49,7 +48,6 @@ export default async function UsersPage({
     admin: allUsers.filter((u) => u.role === "admin").length,
     profesor: allUsers.filter((u) => u.role === "profesor").length,
     alumno: allUsers.filter((u) => u.role === "alumno").length,
-    tutor: allUsers.filter((u) => u.role === "tutor").length,
   };
 
   return (
@@ -62,12 +60,11 @@ export default async function UsersPage({
       </div>
 
       {/* Role summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           { label: "Admins", value: counts.admin, color: "text-amber-600" },
           { label: "Docentes", value: counts.profesor, color: "text-blue-600" },
           { label: "Alumnos", value: counts.alumno, color: "text-emerald-600" },
-          { label: "Tutores", value: counts.tutor, color: "text-violet-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">{s.label}</p>

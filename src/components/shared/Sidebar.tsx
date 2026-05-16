@@ -77,14 +77,12 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Mensajes", href: "/alumno/notifications", icon: MessageSquare },
     { label: "Mi Perfil", href: "/alumno/profile", icon: UserCircle },
   ],
-  tutor: [],
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrador",
   profesor: "Docente",
   alumno: "Alumno",
-  tutor: "Tutor",
 };
 
 function getInitials(name: string) {

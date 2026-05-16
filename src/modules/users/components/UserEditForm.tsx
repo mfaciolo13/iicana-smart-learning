@@ -41,7 +41,6 @@ export function UserEditForm({ userId, fullName, phone, role, action }: UserEdit
               <option value="admin">Administrador</option>
               <option value="profesor">Docente</option>
               <option value="alumno">Alumno</option>
-              <option value="tutor">Tutor</option>
             </Select>
           </Field>
         </div>

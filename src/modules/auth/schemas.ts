@@ -11,7 +11,7 @@ export const registerSchema = z
     password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
     confirmPassword: z.string(),
     fullName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-    role: z.enum(["admin", "profesor", "alumno", "tutor"]),
+    role: z.enum(["admin", "profesor", "alumno"]),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Las contraseñas no coinciden",

@@ -71,7 +71,7 @@ export async function registerAction(_prev: ActionResult, formData: FormData): P
   const parsed = registerSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const allowedSelfRegisterRoles = ["alumno", "tutor"] as const;
+  const allowedSelfRegisterRoles = ["alumno"] as const;
   type AllowedRole = (typeof allowedSelfRegisterRoles)[number];
   if (!(allowedSelfRegisterRoles as readonly string[]).includes(parsed.data.role)) {
     return { error: "Rol no permitido para el registro público." };

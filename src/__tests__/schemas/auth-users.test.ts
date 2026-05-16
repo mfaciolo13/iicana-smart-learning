@@ -56,7 +56,7 @@ describe("registerSchema", () => {
   });
 
   it("acepta todos los roles válidos", () => {
-    const roles = ["admin", "profesor", "alumno", "tutor"] as const;
+    const roles = ["admin", "profesor", "alumno"] as const;
     for (const role of roles) {
       expect(registerSchema.safeParse({ ...valid, role }).success).toBe(true);
     }

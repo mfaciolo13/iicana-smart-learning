@@ -1,5 +1,5 @@
 import { db } from "@/lib/drizzle";
-import { payments, students, profiles, tutors } from "@/lib/drizzle/schema";
+import { payments, students, profiles } from "@/lib/drizzle/schema";
 import { eq, desc, and, lt, sql, inArray, isNull } from "drizzle-orm";
 import type { CreatePaymentInput, MarkAsPaidInput } from "../schemas";
 import type { PaymentListItem, PaymentWithStudent } from "../types";
@@ -146,7 +146,6 @@ export async function markOverduePayments() {
 export interface OverdueAlertTarget {
   paymentId: string;
   studentName: string;
-  tutorProfileId: string | null;
 }
 
 export async function getOverdueAlertTargets(): Promise<OverdueAlertTarget[]> {
@@ -154,16 +153,14 @@ export async function getOverdueAlertTargets(): Promise<OverdueAlertTarget[]> {
   cutoff.setDate(cutoff.getDate() - 15);
   const cutoffStr = cutoff.toISOString().split("T")[0];
 
-  const rows = await db
+  return db
     .select({
       paymentId: payments.id,
       studentName: profiles.fullName,
-      tutorProfileId: tutors.profileId,
     })
     .from(payments)
     .innerJoin(students, eq(payments.studentId, students.id))
     .innerJoin(profiles, eq(students.profileId, profiles.id))
-    .leftJoin(tutors, eq(students.tutorId, tutors.id))
     .where(
       and(
         inArray(payments.status, ["pending", "overdue"]),
@@ -171,8 +168,6 @@ export async function getOverdueAlertTargets(): Promise<OverdueAlertTarget[]> {
         isNull(payments.overdueAlertSentAt)
       )
     );
-
-  return rows.map((r) => ({ ...r, tutorProfileId: r.tutorProfileId ?? null }));
 }
 
 export async function markOverdueAlertSent(paymentIds: string[]) {
@@ -184,7 +179,6 @@ export interface SuspensionTarget {
   paymentId: string;
   studentId: string;
   studentName: string;
-  tutorProfileId: string | null;
 }
 
 export async function getSuspensionTargets(): Promise<SuspensionTarget[]> {
@@ -192,25 +186,21 @@ export async function getSuspensionTargets(): Promise<SuspensionTarget[]> {
   cutoff.setDate(cutoff.getDate() - 30);
   const cutoffStr = cutoff.toISOString().split("T")[0];
 
-  const rows = await db
+  return db
     .select({
       paymentId: payments.id,
       studentId: students.id,
       studentName: profiles.fullName,
-      tutorProfileId: tutors.profileId,
     })
     .from(payments)
     .innerJoin(students, eq(payments.studentId, students.id))
     .innerJoin(profiles, eq(students.profileId, profiles.id))
-    .leftJoin(tutors, eq(students.tutorId, tutors.id))
     .where(
       and(
         inArray(payments.status, ["pending", "overdue"]),
         lt(payments.dueDate, cutoffStr)
       )
     );
-
-  return rows.map((r) => ({ ...r, tutorProfileId: r.tutorProfileId ?? null }));
 }
 
 export async function suspendStudentAndPayments(studentId: string, paymentIds: string[]) {

@@ -42,7 +42,6 @@ export async function getStudentById(
       placementTestScore: students.placementTestScore,
       status: students.status,
       profileId: students.profileId,
-      tutorId: students.tutorId,
       createdAt: students.createdAt,
       updatedAt: students.updatedAt,
       profile: {
@@ -71,7 +70,6 @@ export async function getStudentByProfileId(
       placementTestScore: students.placementTestScore,
       status: students.status,
       profileId: students.profileId,
-      tutorId: students.tutorId,
       createdAt: students.createdAt,
       updatedAt: students.updatedAt,
       profile: {
@@ -100,7 +98,6 @@ export async function createStudent(
       birthDate: input.birthDate,
       level: input.level,
       placementTestScore: input.placementTestScore ?? null,
-      tutorId: input.tutorId ?? null,
       status: "active",
     })
     .returning();
@@ -108,12 +105,11 @@ export async function createStudent(
 }
 
 export async function updateStudent(input: UpdateStudentInput) {
-  const { id, tutorId, ...data } = input;
+  const { id, ...data } = input;
   const [updated] = await db
     .update(students)
     .set({
       ...data,
-      tutorId: tutorId ?? null,
       updatedAt: new Date(),
     })
     .where(eq(students.id, id))

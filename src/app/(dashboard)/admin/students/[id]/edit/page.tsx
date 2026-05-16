@@ -14,7 +14,7 @@ export default async function EditStudentPage({
 
   const { data: row } = await supabase
     .from("students")
-    .select("id, dni, birth_date, level, placement_test_score, status, profile_id, tutor_id, created_at, updated_at, profiles(full_name, email, phone)")
+    .select("id, dni, birth_date, level, placement_test_score, status, profile_id, created_at, updated_at, profiles(full_name, email, phone)")
     .eq("id", id)
     .single();
 
@@ -31,7 +31,6 @@ export default async function EditStudentPage({
     placementTestScore: row.placement_test_score as number | null,
     status: row.status as StudentWithProfile["status"],
     profileId: row.profile_id,
-    tutorId: row.tutor_id as string | null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
     profile: {
