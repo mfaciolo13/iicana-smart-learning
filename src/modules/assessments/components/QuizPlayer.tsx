@@ -26,7 +26,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
   const chosenIndex = selected[current];
   const isConfirmed = confirmed[current];
   const isCorrect = isConfirmed && chosenIndex === q.correct;
-  const isWrong = isConfirmed && chosenIndex !== null && chosenIndex !== q.correct;
+  const _isWrong = isConfirmed && chosenIndex !== null && chosenIndex !== q.correct;
 
   const answeredCount = confirmed.filter(Boolean).length;
   const allAnswered = answeredCount === questions.length;

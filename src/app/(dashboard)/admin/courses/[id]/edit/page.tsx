@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { updateCourseAction } from "@/modules/courses/actions";
 import { CourseForm } from "@/modules/courses/components/CourseForm";
 import type { CourseWithTeacher } from "@/modules/courses/types";
-import type { TeacherListItem } from "@/modules/teachers/types";
 import { getCachedTeachers } from "@/lib/query-cache";
 
 export default async function EditCoursePage({

@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
-import { attendance, enrollments, courses, grades, payments, students } from "@/lib/drizzle/schema";
-import { eq, and, count, sql } from "drizzle-orm";
+import { attendance, enrollments, courses, grades, payments } from "@/lib/drizzle/schema";
+import { eq, and, sql } from "drizzle-orm";
 
 export interface AttendanceByCourse {
   courseName: string;

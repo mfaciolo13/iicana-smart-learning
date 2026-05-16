@@ -129,7 +129,7 @@ export default async function TeacherEvalDetailPage({
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Comentarios recientes</p>
                   <ul className="space-y-2">
                     {surveyAggregate.recentComments.map((c, i) => (
-                      <li key={i} className="text-sm text-slate-600 italic">"{c}"</li>
+                      <li key={i} className="text-sm text-slate-600 italic">&ldquo;{c}&rdquo;</li>
                     ))}
                   </ul>
                 </div>

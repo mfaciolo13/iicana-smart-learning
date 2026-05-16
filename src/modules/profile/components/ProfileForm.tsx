@@ -51,6 +51,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
             aria-label="Cambiar foto de perfil"
           >
             {preview ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={preview} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               <div

@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { requireRole } from "@/lib/auth/helpers";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 import { updateUserSchema } from "./schemas";
 import { updateUser, banUser, unbanUser } from "./services/users.service";
 import { sendInvitationEmail } from "@/lib/email";
@@ -54,7 +54,6 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
 
   if (!email) return { error: "Email requerido" };
 
-  const adminSupabase = createAdminClient();
   const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
   const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");

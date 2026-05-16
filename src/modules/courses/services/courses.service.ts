@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { courses, teachers, profiles, enrollments } from "@/lib/drizzle/schema";
-import { eq, ilike, count, sql, and } from "drizzle-orm";
+import { eq, ilike, sql, and } from "drizzle-orm";
 import type { CreateCourseInput, UpdateCourseInput } from "../schemas";
 import type { CourseListItem, CourseWithTeacher } from "../types";
 

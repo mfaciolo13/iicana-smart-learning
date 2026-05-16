@@ -33,7 +33,7 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
     }
-  }, [state]);
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-6">

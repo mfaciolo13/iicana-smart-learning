@@ -18,10 +18,6 @@ export function DashboardShell({ role, fullName, avatarUrl, userId, initialUnrea
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    setSidebarOpen(false);
-  }, []);
-
-  useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = "hidden";
     } else {

@@ -41,7 +41,7 @@ export function FormButton({
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
     }
-  }, [state]);
+  }, [state, router]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     if (confirmMessage) {

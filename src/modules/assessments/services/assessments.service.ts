@@ -5,7 +5,6 @@ import {
   courses,
   enrollments,
   students,
-  profiles,
 } from "@/lib/drizzle/schema";
 import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import type {

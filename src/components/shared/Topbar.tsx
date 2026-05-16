@@ -37,6 +37,7 @@ export function Topbar({ fullName, role, avatarUrl, userId, initialUnreadCount, 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUnreadCount(initialUnreadCount);
   }, [initialUnreadCount]);
 
@@ -111,6 +112,7 @@ export function Topbar({ fullName, role, avatarUrl, userId, initialUnreadCount, 
             style={avatarUrl ? undefined : { background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
           >
             {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
             ) : (
               getInitials(fullName)

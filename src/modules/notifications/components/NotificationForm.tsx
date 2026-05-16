@@ -36,7 +36,7 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
     }
-  }, [state]);
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-6">

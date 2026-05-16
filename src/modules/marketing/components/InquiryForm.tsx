@@ -19,6 +19,7 @@ export function InquiryForm({ campaignId, action }: Props) {
     if (state?.error) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormKey((k) => k + 1);
     }
   }, [state]);

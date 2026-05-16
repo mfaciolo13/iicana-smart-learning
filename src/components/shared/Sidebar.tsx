@@ -19,7 +19,6 @@ import {
   BarChart2,
   Home,
   Award,
-  Users,
   PenLine,
   LogOut,
   X,
@@ -193,6 +192,7 @@ export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: 
             style={avatarUrl ? undefined : { background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
           >
             {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
             ) : (
               getInitials(fullName)

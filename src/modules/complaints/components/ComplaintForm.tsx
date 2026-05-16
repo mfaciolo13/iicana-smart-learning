@@ -31,7 +31,7 @@ export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
     }
-  }, [state]);
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-6">

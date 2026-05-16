@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { StudentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
-import type { VariantProps } from "class-variance-authority";
+
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   active: { label: "Activo", variant: "success" },

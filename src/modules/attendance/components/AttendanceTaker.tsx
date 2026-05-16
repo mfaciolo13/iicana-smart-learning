@@ -31,7 +31,7 @@ export function AttendanceTaker({ enrollments, courseId, classDate, action, redi
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
     }
-  }, [state]);
+  }, [state, router]);
 
   if (enrollments.length === 0) {
     return (

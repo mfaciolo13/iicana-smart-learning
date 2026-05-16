@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { grades, enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
-import { eq, desc, avg, count, inArray } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import type { CreateGradeInput, UpdateGradeInput } from "../schemas";
 import type { GradeWithDetails } from "../types";
 
