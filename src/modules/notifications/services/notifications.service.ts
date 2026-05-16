@@ -90,7 +90,6 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Directivos",
   profesor: "Profesores",
   alumno: "Alumnos",
-  tutor: "Tutores",
 };
 
 export async function sendToRole(role: string, payload: NotifPayload) {

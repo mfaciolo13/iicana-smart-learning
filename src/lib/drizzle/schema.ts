@@ -17,7 +17,6 @@ export const roleEnum = pgEnum("role", [
   "admin",
   "profesor",
   "alumno",
-  "tutor",
 ]);
 
 export const studentStatusEnum = pgEnum("student_status", [
@@ -135,18 +134,6 @@ export const profiles = pgTable("profiles", {
     .defaultNow(),
 });
 
-export const tutors = pgTable("tutors", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  profileId: uuid("profile_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  dni: text("dni").notNull().unique(),
-  relationship: text("relationship").notNull(), // madre, padre, tutor legal, etc.
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
 export const students = pgTable("students", {
   id: uuid("id").primaryKey().defaultRandom(),
   profileId: uuid("profile_id")
@@ -154,9 +141,6 @@ export const students = pgTable("students", {
     .references(() => profiles.id, { onDelete: "cascade" }),
   dni: text("dni").notNull().unique(),
   birthDate: date("birth_date").notNull(),
-  tutorId: uuid("tutor_id").references(() => tutors.id, {
-    onDelete: "set null",
-  }),
   level: levelEnum("level"),
   placementTestScore: integer("placement_test_score"),
   status: studentStatusEnum("status").notNull().default("active"),
@@ -400,9 +384,6 @@ export type NewProfile = typeof profiles.$inferInsert;
 
 export type Student = typeof students.$inferSelect;
 export type NewStudent = typeof students.$inferInsert;
-
-export type Tutor = typeof tutors.$inferSelect;
-export type NewTutor = typeof tutors.$inferInsert;
 
 export type Teacher = typeof teachers.$inferSelect;
 export type NewTeacher = typeof teachers.$inferInsert;

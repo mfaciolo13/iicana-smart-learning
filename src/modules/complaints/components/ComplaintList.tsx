@@ -21,7 +21,6 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
   profesor: "Docente",
   alumno: "Alumno",
-  tutor: "Tutor",
 };
 
 interface ComplaintListProps {

@@ -26,7 +26,6 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
   profesor: "Docente",
   alumno: "Alumno",
-  tutor: "Tutor",
 };
 
 export default async function ComplaintDetailPage({

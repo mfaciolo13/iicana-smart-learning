@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
 import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences } from "./services/attendance.service";
-import { sendToRole, sendToUser } from "@/modules/notifications/services/notifications.service";
+import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function recordAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -39,9 +39,7 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
           title: "2 ausencias consecutivas",
           body: `${alert.studentName} acumuló 2 ausencias seguidas en ${alert.courseName}.`,
         };
-        const tasks: Promise<void>[] = [sendToRole("admin", payload)];
-        if (alert.tutorProfileId) tasks.push(sendToUser(alert.tutorProfileId, payload));
-        return tasks;
+        return [sendToRole("admin", payload)];
       })
     );
   }

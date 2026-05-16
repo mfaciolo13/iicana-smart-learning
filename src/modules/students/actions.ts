@@ -19,7 +19,6 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
     dni: formData.get("dni") as string,
     birthDate: formData.get("birthDate") as string,
     level: (formData.get("level") as string) || undefined,
-    tutorId: (formData.get("tutorId") as string) || undefined,
   };
 
   const parsed = createStudentSchema.safeParse(raw);
@@ -79,7 +78,6 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
     birthDate: (formData.get("birthDate") as string) || undefined,
     level: (formData.get("level") as string) || undefined,
     status: (formData.get("status") as string) || undefined,
-    tutorId: (formData.get("tutorId") as string) || undefined,
   };
 
   const parsed = updateStudentSchema.safeParse(raw);

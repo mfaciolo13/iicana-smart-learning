@@ -27,7 +27,6 @@ describe("createStudentSchema", () => {
       phone: "+54 9 351 000 0000",
       level: "intermediate" as const,
       placementTestScore: 65,
-      tutorId: UUID,
     };
     expect(createStudentSchema.safeParse(full).success).toBe(true);
   });
@@ -92,18 +91,6 @@ describe("createStudentSchema", () => {
   it("acepta placementTestScore en los límites exactos (0 y 100)", () => {
     expect(createStudentSchema.safeParse({ ...valid, placementTestScore: 0 }).success).toBe(true);
     expect(createStudentSchema.safeParse({ ...valid, placementTestScore: 100 }).success).toBe(true);
-  });
-
-  it("acepta tutorId UUID válido", () => {
-    expect(createStudentSchema.safeParse({ ...valid, tutorId: UUID }).success).toBe(true);
-  });
-
-  it("rechaza tutorId que no es UUID", () => {
-    expect(createStudentSchema.safeParse({ ...valid, tutorId: "no-es-uuid" }).success).toBe(false);
-  });
-
-  it("acepta omitir tutorId (es opcional)", () => {
-    expect(createStudentSchema.safeParse(valid).success).toBe(true);
   });
 
   it("acepta phone opcional", () => {

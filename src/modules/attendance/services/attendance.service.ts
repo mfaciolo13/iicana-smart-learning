@@ -1,5 +1,5 @@
 import { db } from "@/lib/drizzle";
-import { attendance, enrollments, students, courses, profiles, tutors, teachers } from "@/lib/drizzle/schema";
+import { attendance, enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
 import { eq, and, desc, count, sql, inArray } from "drizzle-orm";
 import type { AttendanceRecord, AttendanceSession } from "../types";
 
@@ -115,7 +115,6 @@ export interface ConsecutiveAbsenceAlert {
   studentName: string;
   courseName: string;
   studentProfileId: string;
-  tutorProfileId: string | null;
 }
 
 export async function checkConsecutiveAbsences(
@@ -148,35 +147,19 @@ export async function checkConsecutiveAbsences(
 
   if (triggered.length === 0) return [];
 
-  // Fetch student + course + tutor info for triggered enrollments
-  const info = await db
+  // Fetch student + course info for triggered enrollments
+  return db
     .select({
       enrollmentId: enrollments.id,
       studentName: profiles.fullName,
       courseName: courses.name,
       studentProfileId: students.profileId,
-      tutorId: students.tutorId,
     })
     .from(enrollments)
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(profiles, eq(students.profileId, profiles.id))
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
     .where(inArray(enrollments.id, triggered));
-
-  // Resolve tutor profileId for each alert
-  const tutorIds = info.map((r) => r.tutorId).filter(Boolean) as string[];
-  const tutorProfiles = tutorIds.length > 0
-    ? await db.select({ id: tutors.id, profileId: tutors.profileId }).from(tutors).where(inArray(tutors.id, tutorIds))
-    : [];
-  const tutorMap = new Map(tutorProfiles.map((t) => [t.id, t.profileId]));
-
-  return info.map((r) => ({
-    enrollmentId: r.enrollmentId,
-    studentName: r.studentName,
-    courseName: r.courseName,
-    studentProfileId: r.studentProfileId,
-    tutorProfileId: r.tutorId ? (tutorMap.get(r.tutorId) ?? null) : null,
-  }));
 }
 
 export async function recordBulkAttendance(

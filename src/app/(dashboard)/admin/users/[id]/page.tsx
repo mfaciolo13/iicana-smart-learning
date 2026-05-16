@@ -14,14 +14,12 @@ const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" |
   admin: { label: "Admin", variant: "warning" },
   profesor: { label: "Docente", variant: "info" },
   alumno: { label: "Alumno", variant: "success" },
-  tutor: { label: "Tutor", variant: "neutral" },
 };
 
 const AVATAR_GRADIENTS: Record<string, string> = {
   admin: "linear-gradient(135deg, #f59e0b, #d97706)",
   profesor: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
   alumno: "linear-gradient(135deg, #10b981, #059669)",
-  tutor: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
 };
 
 function getInitials(name: string) {
