@@ -9,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  LabelList,
 } from "recharts";
 import type { AttendanceByCourse } from "@/modules/reports/services/dashboard.service";
 
@@ -33,7 +34,7 @@ export function AttendanceChart({ data }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
+      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 44, top: 4, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
         <XAxis
           type="number"
@@ -60,6 +61,7 @@ export function AttendanceChart({ data }: Props) {
           {data.map((entry, i) => (
             <Cell key={i} fill={barColor(entry.pct)} />
           ))}
+          <LabelList dataKey="pct" position="right" formatter={(v) => v != null ? `${v}%` : ""} style={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>

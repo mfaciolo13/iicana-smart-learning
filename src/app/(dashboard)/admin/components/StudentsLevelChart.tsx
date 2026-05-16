@@ -8,6 +8,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 import type { StudentsByLevel } from "@/modules/reports/services/dashboard.service";
 
@@ -44,7 +45,7 @@ export function StudentsLevelChart({ data }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={sorted} margin={{ left: 0, right: 16, top: 8, bottom: 8 }}>
+      <BarChart data={sorted} margin={{ left: 0, right: 16, top: 20, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
         <XAxis
           dataKey="level"
@@ -64,7 +65,9 @@ export function StudentsLevelChart({ data }: Props) {
           contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
           cursor={{ fill: "#f8fafc" }}
         />
-        <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40} />
+        <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40}>
+          <LabelList dataKey="count" position="top" style={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );

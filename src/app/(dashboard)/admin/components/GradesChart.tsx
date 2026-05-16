@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Cell,
+  LabelList,
 } from "recharts";
 import type { GradeAvgByCourse } from "@/modules/reports/services/dashboard.service";
 
@@ -34,7 +35,7 @@ export function GradesChart({ data }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} margin={{ left: 0, right: 16, top: 8, bottom: 40 }}>
+      <BarChart data={data} margin={{ left: 0, right: 16, top: 20, bottom: 40 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
         <XAxis
           dataKey="courseName"
@@ -63,6 +64,7 @@ export function GradesChart({ data }: Props) {
           {data.map((entry, i) => (
             <Cell key={i} fill={barColor(entry.avg)} />
           ))}
+          <LabelList dataKey="avg" position="top" formatter={(v) => typeof v === "number" ? v.toFixed(1) : String(v ?? "")} style={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>

@@ -114,7 +114,7 @@ export default async function AlumnoGradesPage() {
                   <thead>
                     <tr className="text-xs text-slate-400 border-b border-slate-100">
                       <th className="text-left px-5 py-3 font-medium">Tipo</th>
-                      <th className="text-left px-5 py-3 font-medium">Nota</th>
+                      <th className="text-left px-5 py-3 font-medium">Nota (1-10)</th>
                       <th className="text-left px-5 py-3 font-medium">Fecha</th>
                       <th className="text-left px-5 py-3 font-medium">Observaciones</th>
                     </tr>

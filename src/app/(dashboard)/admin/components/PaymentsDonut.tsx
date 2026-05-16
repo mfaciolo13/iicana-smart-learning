@@ -1,6 +1,6 @@
 "use client";
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, LabelList } from "recharts";
 import type { PaymentStatusCount } from "@/modules/reports/services/dashboard.service";
 
 interface Props {
@@ -42,6 +42,10 @@ export function PaymentsDonut({ data }: Props) {
           outerRadius={80}
           paddingAngle={3}
           dataKey="value"
+          label={({ value, percent }: { value?: number; percent?: number }) =>
+            (percent ?? 0) > 0.04 ? `${value ?? ""}` : ""
+          }
+          labelLine={false}
         >
           {chartData.map((entry, i) => (
             <Cell key={i} fill={entry.color} />
