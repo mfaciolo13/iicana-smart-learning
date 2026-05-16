@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import * as XLSX from "xlsx";
 import { createClient } from "@/lib/supabase/server";
 import { getAttendanceReport } from "@/modules/reports/services/reports.service";
+import { buildStyledReport } from "@/lib/excel";
 
 export async function GET() {
   const supabase = await createClient();
@@ -13,23 +13,25 @@ export async function GET() {
 
   const rows = await getAttendanceReport();
 
-  const data = rows.map((r) => ({
-    Alumno: r.studentName,
-    DNI: r.studentDni,
-    Curso: r.courseName,
-    "Total clases": r.total,
-    Presentes: r.present,
-    Ausentes: r.absent,
-    Tardanzas: r.late,
-    "% Asistencia": r.pct,
-  }));
+  const headers = ["Alumno", "DNI", "Curso", "Total clases", "Presentes", "Ausentes", "Tardanzas", "% Asistencia"];
+  const data = rows.map((r) => [
+    r.studentName,
+    r.studentDni,
+    r.courseName,
+    r.total,
+    r.present,
+    r.absent,
+    r.late,
+    r.pct,
+  ] as (string | number)[]);
 
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [{ wch: 30 }, { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 14 }];
-  XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
-
-  const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  const buffer = buildStyledReport({
+    title: "Smart Learning — Reporte de Asistencia",
+    headers,
+    rows: data,
+    colWidths: [{ wch: 30 }, { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 14 }],
+    sheetName: "Asistencia",
+  });
 
   return new Response(buffer, {
     headers: {

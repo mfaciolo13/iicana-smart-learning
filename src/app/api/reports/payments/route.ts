@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import * as XLSX from "xlsx";
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentsReport } from "@/modules/reports/services/reports.service";
+import { buildStyledReport } from "@/lib/excel";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
@@ -26,23 +26,25 @@ export async function GET() {
 
   const rows = await getPaymentsReport();
 
-  const data = rows.map((r) => ({
-    Alumno: r.studentName,
-    DNI: r.studentDni,
-    "Monto ($)": parseFloat(r.amount),
-    Vencimiento: new Date(r.dueDate).toLocaleDateString("es-AR"),
-    "Fecha pago": r.paidAt ? new Date(r.paidAt).toLocaleDateString("es-AR") : "—",
-    Método: r.method ? METHOD_LABELS[r.method] ?? r.method : "—",
-    Estado: STATUS_LABELS[r.status] ?? r.status,
-    "Nº Recibo": r.receiptNumber ?? "—",
-  }));
+  const headers = ["Alumno", "DNI", "Monto ($)", "Vencimiento", "Fecha pago", "Método", "Estado", "Nº Recibo"];
+  const data = rows.map((r) => [
+    r.studentName,
+    r.studentDni,
+    parseFloat(r.amount),
+    new Date(r.dueDate).toLocaleDateString("es-AR"),
+    r.paidAt ? new Date(r.paidAt).toLocaleDateString("es-AR") : "—",
+    r.method ? METHOD_LABELS[r.method] ?? r.method : "—",
+    STATUS_LABELS[r.status] ?? r.status,
+    r.receiptNumber ?? "—",
+  ] as (string | number)[]);
 
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(data);
-  ws["!cols"] = [{ wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 16 }];
-  XLSX.utils.book_append_sheet(wb, ws, "Pagos");
-
-  const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  const buffer = buildStyledReport({
+    title: "Smart Learning — Reporte de Pagos",
+    headers,
+    rows: data,
+    colWidths: [{ wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 16 }],
+    sheetName: "Pagos",
+  });
 
   return new Response(buffer, {
     headers: {

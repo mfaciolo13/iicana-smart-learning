@@ -13,10 +13,7 @@ import {
   BarChart2,
   AlertCircle,
 } from "lucide-react";
-import { AttendanceChart } from "./components/AttendanceChart";
-import { PaymentsDonut } from "./components/PaymentsDonut";
-import { GradesChart } from "./components/GradesChart";
-import { StudentsLevelChart } from "./components/StudentsLevelChart";
+import { DashboardCharts } from "./components/DashboardCharts";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -82,6 +79,7 @@ export default async function AdminDashboardPage() {
     .filter(([, s]) => s.total > 0)
     .map(([courseId, s]) => ({
       courseName: activeCourseMap.get(courseId)?.name ?? "",
+      level: activeCourseMap.get(courseId)?.level ?? "",
       pct: Math.round((s.present / s.total) * 100),
     }))
     .sort((a, b) => b.pct - a.pct)
@@ -101,6 +99,7 @@ export default async function AdminDashboardPage() {
     .filter(([, s]) => s.count > 0)
     .map(([courseId, s]) => ({
       courseName: activeCourseMap.get(courseId)?.name ?? "",
+      level: activeCourseMap.get(courseId)?.level ?? "",
       avg: Math.round((s.sum / s.count) * 10) / 10,
     }))
     .sort((a, b) => a.courseName.localeCompare(b.courseName))
@@ -264,52 +263,12 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Charts row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-semibold text-slate-900">Asistencia por curso</h2>
-            <Link href="/admin/attendance" className="text-xs text-brand-700 hover:underline">Ver todo</Link>
-          </div>
-          <p className="text-xs text-slate-400 mb-4">% de presentes sobre el total de clases registradas</p>
-          <AttendanceChart data={attendanceData} />
-          <div className="flex items-center gap-4 mt-3 text-[10px] text-slate-400">
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" /> ≥ 80%</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-400 inline-block" /> 60–79%</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-400 inline-block" /> &lt; 60%</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-semibold text-slate-900">Estado de pagos</h2>
-            <Link href="/admin/payments" className="text-xs text-brand-700 hover:underline">Ver todo</Link>
-          </div>
-          <p className="text-xs text-slate-400 mb-2">Distribución de cuotas</p>
-          <PaymentsDonut data={paymentCounts} />
-        </div>
-      </div>
-
-      {/* Charts row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-semibold text-slate-900">Nota promedio por curso</h2>
-            <Link href="/admin/grades" className="text-xs text-brand-700 hover:underline">Ver todo</Link>
-          </div>
-          <p className="text-xs text-slate-400 mb-4">Promedio de todas las evaluaciones · línea verde = mínimo aprobación (7)</p>
-          <GradesChart data={gradesData} />
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-semibold text-slate-900">Alumnos por nivel</h2>
-            <Link href="/admin/students" className="text-xs text-brand-700 hover:underline">Ver todo</Link>
-          </div>
-          <p className="text-xs text-slate-400 mb-4">Alumnos activos agrupados por nivel de inglés</p>
-          <StudentsLevelChart data={levelData} />
-        </div>
-      </div>
+      <DashboardCharts
+        attendanceData={attendanceData}
+        gradesData={gradesData}
+        levelData={levelData}
+        paymentCounts={paymentCounts}
+      />
 
     </div>
   );
