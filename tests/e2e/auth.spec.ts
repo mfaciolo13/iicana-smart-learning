@@ -7,7 +7,7 @@ test.describe("Autenticación", () => {
     await page.getByLabel("Contraseña").fill("wrongpassword");
     await page.getByRole("button", { name: "Ingresar" }).click();
 
-    await expect(page.locator("text=error, text=inválid, text=incorrecta").first()).toBeVisible({
+    await expect(page.getByText(/credenciales|inválid|incorrecta|error/i).first()).toBeVisible({
       timeout: 5000,
     });
     await expect(page).toHaveURL(/\/login/);
