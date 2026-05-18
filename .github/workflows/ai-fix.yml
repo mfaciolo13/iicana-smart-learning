@@ -55,6 +55,10 @@ jobs:
             RUN_ID=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
               "https://api.github.com/repos/mfaciolo13/iicana-smart-learning/actions/workflows/e2e-daily.yml/runs?status=failure&per_page=1" \
               | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{const r=JSON.parse(d);console.log(r.workflow_runs?.[0]?.id??'')}catch{console.log('')}})")
+            if [ -z "$RUN_ID" ]; then
+              echo "No se encontraron runs fallidos de E2E Daily. Nada que arreglar."
+              exit 0
+            fi
             echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
           fi
 

@@ -33,7 +33,7 @@ async function ghFetch(path: string) {
 }
 
 async function getFailureLogs(): Promise<string> {
-  const jobs = await (await ghFetch(`/actions/runs/${FAILED_RUN_ID}/jobs`)).json() as any;
+  const jobs = await (await ghFetch(`/actions/runs/${FAILED_RUN_ID}/jobs`)).json() as { jobs?: { id: number; name: string; conclusion: string }[] };
   let logs = "";
   for (const job of jobs.jobs ?? []) {
     if (job.conclusion !== "failure") continue;
@@ -63,8 +63,8 @@ function readTestFiles(): Record<string, string> {
 
 async function main() {
   if (!FAILED_RUN_ID) {
-    console.error("FAILED_RUN_ID no está seteado.");
-    process.exit(1);
+    console.log("FAILED_RUN_ID no está seteado. Nada que arreglar.");
+    process.exit(0);
   }
 
   console.log(`Obteniendo logs del run ${FAILED_RUN_ID}...`);
@@ -190,7 +190,7 @@ ${changedList}
     }),
   });
 
-  const pr = await prRes.json() as any;
+  const pr = await prRes.json() as { html_url?: string };
   if (pr.html_url) {
     console.log(`✓ PR creado: ${pr.html_url}`);
   } else {
