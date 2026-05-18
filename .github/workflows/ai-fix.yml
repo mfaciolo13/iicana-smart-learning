@@ -1,0 +1,66 @@
+name: AI Fix E2E
+
+on:
+  workflow_run:
+    workflows: ["E2E Daily"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "ID del run fallido de E2E Daily (dejar vacío para el más reciente)"
+        required: false
+
+jobs:
+  fix:
+    name: Analizar y corregir con Claude
+    if: ${{ github.event.workflow_run.conclusion == 'failure' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Resolver FAILED_RUN_ID
+        id: resolve_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          if [ -n "$EVENT_RUN_ID" ]; then
+            echo "run_id=$EVENT_RUN_ID" >> $GITHUB_OUTPUT
+          elif [ -n "$INPUT_RUN_ID" ]; then
+            echo "run_id=$INPUT_RUN_ID" >> $GITHUB_OUTPUT
+          else
+            # Buscar el run fallido más reciente del E2E Daily
+            RUN_ID=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/mfaciolo13/iicana-smart-learning/actions/workflows/e2e-daily.yml/runs?status=failure&per_page=1" \
+              | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).workflow_runs[0]?.id??''))")
+            echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Correr agente de fix con Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILED_RUN_ID: ${{ steps.resolve_run.outputs.run_id }}
+        run: npx tsx scripts/ai-fix.ts
