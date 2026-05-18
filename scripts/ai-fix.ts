@@ -82,7 +82,7 @@ async function main() {
   console.log("Consultando Claude para el fix...");
 
   const response = await client.messages.create({
-    model: "claude-opus-4-7",
+    model: "claude-sonnet-4-6",
     max_tokens: 8096,
     tools: [
       {
@@ -174,7 +174,7 @@ Analizá los errores. Para cada archivo que necesite fix, usá write_file con el
     },
     body: JSON.stringify({
       title: "fix(e2e): auto-fix de tests E2E via Claude AI",
-      body: `## Fixes automáticos generados por Claude Opus
+      body: `## Fixes automáticos generados por Claude Sonnet
 
 El workflow **E2E Daily** falló en el run [#${FAILED_RUN_ID}](https://github.com/${REPO}/actions/runs/${FAILED_RUN_ID}).
 
