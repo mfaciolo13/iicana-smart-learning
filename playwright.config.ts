@@ -25,6 +25,12 @@ export default defineConfig({
     {
       name: "setup",
       testMatch: /auth\.setup\.ts/,
+      use: {
+        // Producción puede tardar más en responder; 60s por acción evita
+        // el timeout de 30s que causaba el fallo en locator.fill
+        actionTimeout: 60_000,
+        navigationTimeout: 60_000,
+      },
     },
     {
       name: "admin",
