@@ -1,0 +1,6 @@
+# Asegurar que el node de nvm esté primero en PATH (Windows + nvm-windows)
+export PATH="/c/Users/mdfac/AppData/Roaming/nvm/v22.15.0:$PATH"
+
+pnpm lint
+pnpm tsc --noEmit
+pnpm test
