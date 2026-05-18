@@ -28,7 +28,6 @@ jobs:
           restore-keys: pnpm-${{ runner.os }}-
 
       - run: pnpm install --frozen-lockfile
-
       - run: pnpm lint
 
   typecheck:
@@ -53,5 +52,72 @@ jobs:
           restore-keys: pnpm-${{ runner.os }}-
 
       - run: pnpm install --frozen-lockfile
-
       - run: pnpm tsc --noEmit
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Instalar browsers de Playwright
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Correr tests E2E
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: https://cervantes-smart-learning.com.ar
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_ALUMNO_EMAIL: ${{ secrets.E2E_ALUMNO_EMAIL }}
+          E2E_ALUMNO_PASSWORD: ${{ secrets.E2E_ALUMNO_PASSWORD }}
+        run: pnpm exec playwright test
+
+      - name: Subir reporte de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-pr-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 7
