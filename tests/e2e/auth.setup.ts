@@ -15,6 +15,8 @@ setup("autenticar como admin", async ({ page }) => {
   }
 
   await page.goto("/login");
+  await page.waitForLoadState("domcontentloaded");
+  await page.getByLabel("Email").waitFor({ state: "visible" });
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Ingresar" }).click();
@@ -33,6 +35,8 @@ setup("autenticar como alumno", async ({ page }) => {
   }
 
   await page.goto("/login");
+  await page.waitForLoadState("domcontentloaded");
+  await page.getByLabel("Email").waitFor({ state: "visible" });
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Ingresar" }).click();

@@ -4,7 +4,7 @@ test.describe("Autenticación", () => {
   test("login con credenciales inválidas muestra error", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email").fill("no-existe@test.com");
-    await page.getByLabel("Contraseña").fill("wrongpassword");
+    await page.getByLabel("Contraseña", { exact: true }).fill("wrongpassword");
     await page.getByRole("button", { name: "Ingresar" }).click();
 
     await expect(page.getByText(/credenciales|inválid|incorrecta|error/i).first()).toBeVisible({
@@ -26,7 +26,7 @@ test.describe("Autenticación", () => {
   test("la página de login tiene los campos correctos", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Contraseña")).toBeVisible();
+    await expect(page.getByLabel("Contraseña", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Ingresar" })).toBeVisible();
   });
 });
