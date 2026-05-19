@@ -10,7 +10,7 @@ test.describe("Autenticación", () => {
     await emailInput.waitFor({ state: "visible" });
     await emailInput.fill("no-existe@test.com");
 
-    const passwordInput = page.getByLabel("Contraseña", { exact: true });
+    const passwordInput = page.locator("#password");
     await passwordInput.waitFor({ state: "visible" });
     await passwordInput.fill("wrongpassword");
 
@@ -41,7 +41,7 @@ test.describe("Autenticación", () => {
     await emailInput.waitFor({ state: "visible" });
     await expect(emailInput).toBeVisible();
 
-    const passwordInput = page.getByLabel("Contraseña", { exact: true });
+    const passwordInput = page.locator("#password");
     await passwordInput.waitFor({ state: "visible" });
     await expect(passwordInput).toBeVisible();
 

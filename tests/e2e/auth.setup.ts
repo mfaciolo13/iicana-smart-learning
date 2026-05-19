@@ -22,7 +22,7 @@ setup("autenticar como admin", async ({ page }) => {
   await emailInput.waitFor({ state: "visible" });
   await emailInput.fill(email);
 
-  const passwordInput = page.getByLabel("Contraseña", { exact: true });
+  const passwordInput = page.locator("#password");
   await passwordInput.waitFor({ state: "visible" });
   await passwordInput.fill(password);
 
@@ -49,7 +49,7 @@ setup("autenticar como alumno", async ({ page }) => {
   await emailInput.waitFor({ state: "visible" });
   await emailInput.fill(email);
 
-  const passwordInput = page.getByLabel("Contraseña", { exact: true });
+  const passwordInput = page.locator("#password");
   await passwordInput.waitFor({ state: "visible" });
   await passwordInput.fill(password);
 
