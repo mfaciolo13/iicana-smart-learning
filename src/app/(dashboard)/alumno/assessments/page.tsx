@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getServerUser } from "@/lib/auth/helpers";
-import { createClient } from "@/lib/supabase/server";
-import type { StudentAssessmentItem } from "@/modules/assessments/types";
-import type { QuizQuestion } from "@/modules/assessments/types";
 import { redirect } from "next/navigation";
+import { getServerUser } from "@/lib/auth/helpers";
+import { getPublishedAssessmentsForStudent } from "@/modules/assessments/services/assessments.service";
 
 function ScoreRing({ score }: { score: number }) {
   const color =
@@ -18,67 +16,7 @@ export default async function AlumnoAssessmentsPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const supabase = await createClient();
-
-  const { data: studentRow } = await supabase
-    .from("students")
-    .select("id")
-    .eq("profile_id", user.id)
-    .single();
-
-  let items: StudentAssessmentItem[] = [];
-
-  if (studentRow) {
-    const { data: enrollmentRows } = await supabase
-      .from("enrollments")
-      .select("course_id")
-      .eq("student_id", studentRow.id)
-      .eq("status", "active");
-
-    const courseIds = (enrollmentRows ?? []).map((e) => e.course_id);
-
-    if (courseIds.length > 0) {
-      const { data: assessmentRows } = await supabase
-        .from("assessments")
-        .select("id, course_id, week_label, topic, questions, courses(name)")
-        .eq("status", "published")
-        .in("course_id", courseIds)
-        .order("created_at", { ascending: false });
-
-      const assessmentIds = (assessmentRows ?? []).map((a) => a.id);
-
-      const { data: attemptRows } = assessmentIds.length > 0
-        ? await supabase
-            .from("assessment_attempts")
-            .select("id, assessment_id, score, completed_at")
-            .eq("student_id", user.id)
-            .in("assessment_id", assessmentIds)
-        : { data: [] };
-
-      const attemptByAssessment = new Map(
-        (attemptRows ?? []).map((a) => [a.assessment_id, a])
-      );
-
-      type CourseRaw = { name: string } | null;
-
-      items = (assessmentRows ?? []).map((a) => {
-        const course = a.courses as unknown as CourseRaw;
-        const attempt = attemptByAssessment.get(a.id);
-        const questions = a.questions as unknown as QuizQuestion[];
-        return {
-          id: a.id,
-          courseId: a.course_id,
-          courseName: course?.name ?? "",
-          weekLabel: a.week_label,
-          topic: a.topic,
-          questionCount: Array.isArray(questions) ? questions.length : 0,
-          attempt: attempt
-            ? { id: attempt.id, score: attempt.score, completedAt: new Date(attempt.completed_at) }
-            : null,
-        };
-      });
-    }
-  }
+  const items = await getPublishedAssessmentsForStudent(user.id);
 
   const pending = items.filter((a) => !a.attempt).length;
   const completed = items.filter((a) => a.attempt !== null).length;

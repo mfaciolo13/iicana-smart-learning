@@ -7,7 +7,13 @@ export const createStudentSchema = z.object({
   phone: z.string().optional(),
   // Student fields
   dni: z.string().min(7, "DNI inválido").max(8, "DNI inválido"),
-  birthDate: z.string().min(1, "Fecha de nacimiento requerida"),
+  birthDate: z
+    .string()
+    .min(1, "Fecha de nacimiento requerida")
+    .refine((v) => {
+      const d = new Date(v);
+      return !isNaN(d.getTime()) && d <= new Date() && d.getFullYear() >= 1900;
+    }, "Fecha de nacimiento inválida"),
   level: z
     .enum([
       "beginner",

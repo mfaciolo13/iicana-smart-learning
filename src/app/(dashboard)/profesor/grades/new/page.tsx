@@ -1,56 +1,14 @@
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
-import { createClient } from "@/lib/supabase/server";
+import { getEnrollmentsByTeacherProfile } from "@/modules/enrollments/services/enrollments.service";
 import { createGradeAction } from "@/modules/grades/actions";
 import { GradeForm } from "@/modules/grades/components/GradeForm";
-import type { EnrollmentListItem } from "@/modules/enrollments/types";
 
-export default async function ProfesorNewGradePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ courseId?: string }>;
-}) {
+export default async function ProfesorNewGradePage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  await searchParams;
-  const supabase = await createClient();
-
-  const { data: teacherRow } = await supabase
-    .from("teachers")
-    .select("id, courses(id)")
-    .eq("profile_id", user.id)
-    .single();
-
-  if (!teacherRow) redirect("/login");
-
-  const courseIds = (teacherRow.courses as unknown as { id: string }[] | null ?? []).map((c) => c.id);
-
-  const { data: enrollmentRows } = courseIds.length > 0
-    ? await supabase
-        .from("enrollments")
-        .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
-        .in("course_id", courseIds)
-        .eq("status", "active")
-        .order("enrolled_at", { ascending: true })
-    : { data: [] };
-
-  type StudentRaw = { profiles: { full_name: string } | null; dni: string } | null;
-  type CourseRaw = { name: string; level: string } | null;
-
-  const enrollments: EnrollmentListItem[] = (enrollmentRows ?? []).map((e) => {
-    const student = e.students as unknown as StudentRaw;
-    const course = e.courses as unknown as CourseRaw;
-    return {
-      id: e.id,
-      enrolledAt: new Date(e.enrolled_at),
-      status: e.status as EnrollmentListItem["status"],
-      studentName: student?.profiles?.full_name ?? "",
-      studentDni: student?.dni ?? "",
-      courseName: course?.name ?? "",
-      courseLevel: course?.level ?? "",
-    };
-  });
+  const enrollments = await getEnrollmentsByTeacherProfile(user.id);
 
   return (
     <div>

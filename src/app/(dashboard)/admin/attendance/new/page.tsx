@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
 import { recordAttendanceAction } from "@/modules/attendance/actions";
 import { AttendanceTaker } from "@/modules/attendance/components/AttendanceTaker";
 import { Input, Field, Select } from "@/components/ui/Input";
@@ -25,32 +26,12 @@ export default async function TakeAttendancePage({
   const { data: courseRows } = await supabase.from("courses").select("id, name, status").order("name");
   const activeCourses = (courseRows ?? []).filter((c) => c.status === "active");
 
-  type StudentRaw = { dni: string; profiles: { full_name: string } | null } | null;
-  type CourseRaw = { name: string; level: string } | null;
-
   let enrollments: EnrollmentListItem[] = [];
   let alreadyRecorded = false;
   let existingRecords: Array<{ id: string; status: string; studentName: string; studentDni: string }> = [];
 
   if (courseId) {
-    const { data: enrollmentRows } = await supabase
-      .from("enrollments")
-      .select("id, status, enrolled_at, students(dni, profiles(full_name)), courses(name, level)")
-      .eq("course_id", courseId);
-
-    enrollments = (enrollmentRows ?? []).map((e) => {
-      const student = e.students as unknown as StudentRaw;
-      const course = e.courses as unknown as CourseRaw;
-      return {
-        id: e.id,
-        status: e.status as EnrollmentListItem["status"],
-        enrolledAt: new Date(e.enrolled_at),
-        studentName: student?.profiles?.full_name ?? "",
-        studentDni: student?.dni ?? "",
-        courseName: course?.name ?? "",
-        courseLevel: course?.level ?? "",
-      };
-    });
+    enrollments = await getEnrollmentsByCourse(courseId);
 
     const enrollmentIds = enrollments.map((e) => e.id);
 
