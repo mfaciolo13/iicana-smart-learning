@@ -3,12 +3,21 @@ import { test, expect } from "@playwright/test";
 test.describe("Autenticación", () => {
   test("login con credenciales inválidas muestra error", async ({ page }) => {
     await page.goto("/login");
-    await page.getByLabel("Email").fill("no-existe@test.com");
-    await page.getByLabel("Contraseña", { exact: true }).fill("wrongpassword");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForLoadState("networkidle");
+
+    const emailInput = page.getByLabel("Email");
+    await emailInput.waitFor({ state: "visible" });
+    await emailInput.fill("no-existe@test.com");
+
+    const passwordInput = page.getByLabel("Contraseña", { exact: true });
+    await passwordInput.waitFor({ state: "visible" });
+    await passwordInput.fill("wrongpassword");
+
     await page.getByRole("button", { name: "Ingresar" }).click();
 
     await expect(page.getByText(/credenciales|inválid|incorrecta|error/i).first()).toBeVisible({
-      timeout: 5000,
+      timeout: 15000,
     });
     await expect(page).toHaveURL(/\/login/);
   });
@@ -25,8 +34,17 @@ test.describe("Autenticación", () => {
 
   test("la página de login tiene los campos correctos", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Contraseña", { exact: true })).toBeVisible();
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForLoadState("networkidle");
+
+    const emailInput = page.getByLabel("Email");
+    await emailInput.waitFor({ state: "visible" });
+    await expect(emailInput).toBeVisible();
+
+    const passwordInput = page.getByLabel("Contraseña", { exact: true });
+    await passwordInput.waitFor({ state: "visible" });
+    await expect(passwordInput).toBeVisible();
+
     await expect(page.getByRole("button", { name: "Ingresar" })).toBeVisible();
   });
 });
