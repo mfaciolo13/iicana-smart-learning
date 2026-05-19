@@ -6,9 +6,9 @@ test.describe("Marketing — Campañas", () => {
   test("listado de campañas carga correctamente", async ({ page }) => {
     await page.goto("/admin/marketing");
     await expect(page.getByRole("heading", { name: "Marketing" })).toBeVisible();
-    await expect(page.getByText("Campañas")).toBeVisible();
-    await expect(page.getByText("Consultas totales")).toBeVisible();
-    await expect(page.getByText("Tasa de conversión global")).toBeVisible();
+    await expect(page.getByText(/campañas/i).first()).toBeVisible();
+    await expect(page.getByText(/consultas totales/i)).toBeVisible();
+    await expect(page.getByText(/tasa de conversión global/i)).toBeVisible();
   });
 
   test("crear campaña muestra toast de éxito y aparece en listado", async ({ page }) => {

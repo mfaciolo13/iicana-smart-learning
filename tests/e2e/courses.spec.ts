@@ -52,7 +52,7 @@ test.describe("Gestión de Cursos", () => {
     await page.goto("/admin/courses/new");
     await page.getByLabel("Nombre del curso").fill("Sin horario");
     await page.getByLabel("Nivel").selectOption("beginner");
-    await page.getByRole("button", { name: "Guardar" }).click();
+    await page.getByRole("button", { name: /crear curso|guardar/i }).click();
 
     // El campo schedule es required y no tiene valor → no navega
     await expect(page).toHaveURL(/\/admin\/courses\/new/);
