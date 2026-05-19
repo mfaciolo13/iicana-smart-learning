@@ -2,10 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
 import { createClient } from "@/lib/supabase/server";
+import { getGradesByTeacherProfile } from "@/modules/grades/services/grades.service";
 import { GradeList } from "@/modules/grades/components/GradeList";
 import { buttonVariants } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
-import type { GradeWithDetails, EvaluationType } from "@/modules/grades/types";
 
 export default async function ProfesorGradesPage({
   searchParams,
@@ -20,57 +20,17 @@ export default async function ProfesorGradesPage({
 
   const { data: teacherRow } = await supabase
     .from("teachers")
-    .select("id")
+    .select("id, courses(id, name)")
     .eq("profile_id", user.id)
     .single();
 
   if (!teacherRow) redirect("/login");
 
-  const [{ data: courseRows }, { data: gradeRows }] = await Promise.all([
-    supabase
-      .from("courses")
-      .select("id, name")
-      .eq("teacher_id", teacherRow.id)
-      .eq("status", "active")
-      .order("name"),
-    supabase
-      .from("grades")
-      .select("id, enrollment_id, evaluation_type, score, evaluated_at, notes, enrollments(course_id, students(profiles(full_name), dni), courses(name, level))")
-      .order("evaluated_at", { ascending: false }),
-  ]);
-
-  const myCourses = courseRows ?? [];
+  const myCourses = (teacherRow.courses as unknown as { id: string; name: string }[] | null) ?? [];
   const teacherCourseIds = new Set(myCourses.map((c) => c.id));
   const validCourseId = courseId && teacherCourseIds.has(courseId) ? courseId : undefined;
 
-  type EnrRaw = {
-    course_id: string;
-    students: { profiles: { full_name: string } | null; dni: string } | null;
-    courses: { name: string; level: string } | null;
-  } | null;
-
-  type GradeRow = GradeWithDetails & { _courseId: string };
-
-  const allGrades: GradeRow[] = (gradeRows ?? []).map((g) => {
-    const enr = g.enrollments as unknown as EnrRaw;
-    return {
-      id: g.id,
-      enrollmentId: g.enrollment_id,
-      evaluationType: g.evaluation_type as EvaluationType,
-      score: g.score,
-      evaluatedAt: new Date(g.evaluated_at),
-      notes: g.notes as string | null,
-      studentName: enr?.students?.profiles?.full_name ?? "",
-      studentDni: enr?.students?.dni ?? "",
-      courseName: enr?.courses?.name ?? "",
-      courseLevel: enr?.courses?.level ?? "",
-      _courseId: enr?.course_id ?? "",
-    };
-  });
-
-  const gradesList: GradeWithDetails[] = validCourseId
-    ? allGrades.filter((g) => g._courseId === validCourseId)
-    : allGrades.filter((g) => teacherCourseIds.has(g._courseId));
+  const gradesList = await getGradesByTeacherProfile(user.id, validCourseId);
 
   return (
     <div>

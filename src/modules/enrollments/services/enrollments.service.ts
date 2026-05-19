@@ -140,6 +140,30 @@ export async function getEnrollmentsByTeacherProfile(teacherProfileId: string): 
   return rows as EnrollmentListItem[];
 }
 
+function parseScheduleMinutes(schedule: string): { days: string[]; start: number; end: number } | null {
+  const spaceIdx = schedule.lastIndexOf(" ");
+  if (spaceIdx === -1) return null;
+  const daysPart = schedule.slice(0, spaceIdx);
+  const timesPart = schedule.slice(spaceIdx + 1);
+  const days = daysPart.split("/").filter(Boolean);
+  const sep = timesPart.includes("–") ? "–" : "-";
+  const parts = timesPart.split(sep).map((t) => t.trim());
+  if (parts.length !== 2) return null;
+  const toMin = (t: string) => {
+    const [h = "0", m = "0"] = t.split(":");
+    return parseInt(h) * 60 + parseInt(m);
+  };
+  return { days, start: toMin(parts[0]), end: toMin(parts[1]) };
+}
+
+function schedulesOverlap(a: string, b: string): boolean {
+  const pa = parseScheduleMinutes(a);
+  const pb = parseScheduleMinutes(b);
+  if (!pa || !pb) return false;
+  if (!pa.days.some((d) => pb.days.includes(d))) return false;
+  return pa.start < pb.end && pb.start < pa.end;
+}
+
 export async function validateAndCreateEnrollment(input: CreateEnrollmentInput) {
   // Check for duplicate active enrollment
   const existing = await db
@@ -158,9 +182,9 @@ export async function validateAndCreateEnrollment(input: CreateEnrollmentInput) 
     return { error: "El alumno ya está inscripto en este curso" };
   }
 
-  // Check course capacity
+  // Check course capacity and get schedule
   const [course] = await db
-    .select({ maxCapacity: courses.maxCapacity })
+    .select({ maxCapacity: courses.maxCapacity, schedule: courses.schedule, name: courses.name })
     .from(courses)
     .where(eq(courses.id, input.courseId))
     .limit(1);
@@ -179,6 +203,18 @@ export async function validateAndCreateEnrollment(input: CreateEnrollmentInput) 
 
   if (total >= course.maxCapacity) {
     return { error: `El curso alcanzó el cupo máximo de ${course.maxCapacity} alumnos` };
+  }
+
+  // Check schedule conflicts with student's other active enrollments
+  const activeEnrollments = await db
+    .select({ schedule: courses.schedule, courseName: courses.name })
+    .from(enrollments)
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(and(eq(enrollments.studentId, input.studentId), eq(enrollments.status, "active")));
+
+  const conflict = activeEnrollments.find((e) => schedulesOverlap(course.schedule, e.schedule));
+  if (conflict) {
+    return { error: `El horario se superpone con el curso "${conflict.courseName}"` };
   }
 
   const [enrollment] = await db

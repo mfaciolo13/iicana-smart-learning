@@ -70,7 +70,7 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
           </Field>
 
           <Field label="Fecha de nacimiento" required={!isEditing} id="birthDate">
-            <Input id="birthDate" name="birthDate" type="date" required={!isEditing} defaultValue={student?.birthDate} />
+            <Input id="birthDate" name="birthDate" type="date" required={!isEditing} defaultValue={student?.birthDate} max={new Date().toISOString().split("T")[0]} />
           </Field>
         </div>
       </Card>

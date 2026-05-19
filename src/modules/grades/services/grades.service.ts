@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { grades, enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import type { CreateGradeInput, UpdateGradeInput } from "../schemas";
 import type { GradeWithDetails } from "../types";
 
@@ -112,7 +112,11 @@ export async function deleteGrade(id: string) {
   await db.delete(grades).where(eq(grades.id, id));
 }
 
-export async function getGradesByTeacherProfile(teacherProfileId: string): Promise<GradeWithDetails[]> {
+export async function getGradesByTeacherProfile(teacherProfileId: string, courseId?: string): Promise<GradeWithDetails[]> {
+  const condition = courseId
+    ? and(eq(teachers.profileId, teacherProfileId), eq(courses.id, courseId))
+    : eq(teachers.profileId, teacherProfileId);
+
   const rows = await db
     .select({
       id: grades.id,
@@ -132,7 +136,7 @@ export async function getGradesByTeacherProfile(teacherProfileId: string): Promi
     .innerJoin(profiles, eq(students.profileId, profiles.id))
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
     .innerJoin(teachers, eq(courses.teacherId, teachers.id))
-    .where(eq(teachers.profileId, teacherProfileId))
+    .where(condition)
     .orderBy(desc(grades.evaluatedAt));
 
   return rows as GradeWithDetails[];
