@@ -12,11 +12,12 @@ test.describe("Portal del Alumno — Notas", () => {
       return; // alumno E2E sin registro en students — página redirige al dashboard
     }
     await expect(page.getByRole("heading", { name: /notas/i })).toBeVisible();
-    const hasContent =
-      (await page.getByText(/promedio/i).isVisible().catch(() => false)) ||
-      (await page.getByText(/sin notas/i).isVisible().catch(() => false)) ||
-      (await page.locator("table").isVisible().catch(() => false));
-    expect(hasContent).toBeTruthy();
+
+    // Esperar a que aparezca alguno de los estados posibles de la página
+    const promedio = page.getByText(/promedio/i);
+    const sinNotas = page.getByText(/sin notas/i);
+    const tabla = page.locator("table");
+    await expect(promedio.or(sinNotas).or(tabla)).toBeVisible({ timeout: 15_000 });
   });
 });
 
@@ -34,11 +35,12 @@ test.describe("Portal del Alumno — Evaluación Docente", () => {
       return; // alumno E2E sin registro en students — página redirige al dashboard
     }
     await expect(page.getByRole("heading", { name: /evaluac/i })).toBeVisible();
-    const hasContent =
-      (await page.getByText(/evaluar/i).isVisible().catch(() => false)) ||
-      (await page.getByText(/evaluado/i).isVisible().catch(() => false)) ||
-      (await page.getByText(/sin inscripciones/i).isVisible().catch(() => false));
-    expect(hasContent).toBeTruthy();
+
+    // Esperar a que aparezca alguno de los estados posibles de la página
+    const evaluar = page.getByText(/evaluar/i);
+    const evaluado = page.getByText(/evaluado/i);
+    const sinInscripciones = page.getByText(/sin inscripciones/i);
+    await expect(evaluar.or(evaluado).or(sinInscripciones)).toBeVisible({ timeout: 15_000 });
   });
 
   test("curso ya evaluado muestra badge 'Evaluado' no clickeable", async ({ page }) => {
