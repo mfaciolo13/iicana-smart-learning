@@ -50,11 +50,11 @@ test.describe("Reclamos", () => {
     await expect(page.getByRole("heading", { name: "Reclamos" })).toBeVisible();
   });
 
-  test("formulario de reclamo muestra banner de 48hs destacado", async ({ page }) => {
+  test("formulario de reclamo muestra banner de 48hs destacado", async () => {
     test.skip(true, "/admin/complaints/new no existe — reclamos se crean desde el listado admin");
   });
 
-  test("descripción tiene minLength de 20 y maxLength de 1000", async ({ page }) => {
+  test("descripción tiene minLength de 20 y maxLength de 1000", async () => {
     test.skip(true, "/admin/complaints/new no existe — reclamos se crean desde el listado admin");
   });
 });
