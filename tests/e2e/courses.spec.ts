@@ -61,10 +61,10 @@ test.describe("Gestión de Cursos", () => {
   test("listado de cursos muestra los cursos existentes", async ({ page }) => {
     await page.goto("/admin/courses");
     await expect(page.getByRole("heading", { name: "Cursos" })).toBeVisible();
-    await page.waitForLoadState("networkidle");
-    // La tabla o el mensaje vacío están presentes
-    const hasTable = await page.locator("table").isVisible().catch(() => false);
-    const hasEmpty = await page.getByText("No hay cursos").isVisible().catch(() => false);
-    expect(hasTable || hasEmpty).toBeTruthy();
+
+    // Esperar a que la tabla o el mensaje vacío sean visibles (con timeout)
+    const table = page.locator("table");
+    const empty = page.getByText("No hay cursos");
+    await expect(table.or(empty)).toBeVisible({ timeout: 15_000 });
   });
 });
