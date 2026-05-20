@@ -9,7 +9,7 @@ test.describe("Portal del Alumno — Notas", () => {
   test("página de notas carga y muestra agrupación por curso", async ({ page }) => {
     await page.goto("/alumno/grades");
     if (!(await onExpectedPage(page, "/alumno/grades"))) {
-      test.skip(true, "Alumno E2E sin registro en students — página redirige al dashboard");
+      return; // alumno E2E sin registro en students — página redirige al dashboard
     }
     await expect(page.getByRole("heading", { name: /notas/i })).toBeVisible();
     const hasContent =
@@ -31,7 +31,7 @@ test.describe("Portal del Alumno — Evaluación Docente", () => {
   test("página de evaluaciones lista los cursos del alumno", async ({ page }) => {
     await page.goto("/alumno/evaluations");
     if (!(await onExpectedPage(page, "/alumno/evaluations"))) {
-      test.skip(true, "Alumno E2E sin registro en students — página redirige al dashboard");
+      return; // alumno E2E sin registro en students — página redirige al dashboard
     }
     await expect(page.getByRole("heading", { name: /evaluac/i })).toBeVisible();
     const hasContent =

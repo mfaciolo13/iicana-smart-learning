@@ -61,6 +61,7 @@ test.describe("Gestión de Cursos", () => {
   test("listado de cursos muestra los cursos existentes", async ({ page }) => {
     await page.goto("/admin/courses");
     await expect(page.getByRole("heading", { name: "Cursos" })).toBeVisible();
+    await page.waitForLoadState("networkidle");
     // La tabla o el mensaje vacío están presentes
     const hasTable = await page.locator("table").isVisible().catch(() => false);
     const hasEmpty = await page.getByText("No hay cursos").isVisible().catch(() => false);

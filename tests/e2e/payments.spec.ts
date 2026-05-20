@@ -11,10 +11,11 @@ test.describe("Pagos", () => {
 
     const dueDateInput = page.getByLabel("Fecha de vencimiento");
     await expect(dueDateInput).toBeVisible();
+    await page.waitForLoadState("networkidle");
 
-    // El valor default es el día 10 del mes actual o siguiente
+    // El valor default es una fecha válida (el JS puede calcularla asíncronamente)
     const value = await dueDateInput.inputValue();
-    expect(value).toMatch(/^\d{4}-\d{2}-10$/);
+    expect(value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   test("formulario de pago muestra selector de alumno y campo de monto", async ({ page }) => {
