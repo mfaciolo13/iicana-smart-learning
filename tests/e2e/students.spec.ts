@@ -8,7 +8,7 @@ test.describe("Gestión de Alumnos", () => {
 
   test("campos requeridos vacíos bloquean el submit", async ({ page }) => {
     await page.goto("/admin/students/new");
-    await page.getByRole("button", { name: /guardar/i }).click();
+    await page.getByRole("button", { name: /registrar alumno|guardar/i }).click();
     // Sin rellenar nada, el navegador bloquea el submit por HTML5 required
     await expect(page).toHaveURL(/\/admin\/students\/new/);
   });
@@ -37,7 +37,7 @@ test.describe("Gestión de Docentes", () => {
 
   test("campos requeridos vacíos bloquean el submit", async ({ page }) => {
     await page.goto("/admin/teachers/new");
-    await page.getByRole("button", { name: /guardar/i }).click();
+    await page.getByRole("button", { name: /registrar docente|guardar/i }).click();
     await expect(page).toHaveURL(/\/admin\/teachers\/new/);
   });
 });
