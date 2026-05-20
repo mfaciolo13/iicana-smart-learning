@@ -1,43 +1,34 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getAllNotificationsAdmin } from "@/modules/notifications/services/notifications.service";
 import { SentNotificationList } from "@/modules/notifications/components/SentNotificationList";
 import { buttonVariants } from "@/components/ui/Button";
 import type { SentNotificationItem } from "@/modules/notifications/types";
 
 export default async function AdminNotificationsPage() {
-  const supabase = await createClient();
-
-  const { data: rows } = await supabase
-    .from("notifications")
-    .select("id, type, title, body, created_at, batch_id, batch_label, profiles(full_name)")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const rows = await getAllNotificationsAdmin();
 
   // Group by batch_id (new sends) or by content+minute (legacy sends without batch_id)
   const batchMap = new Map<string, SentNotificationItem>();
   const legacyMap = new Map<string, SentNotificationItem>();
 
-  for (const row of rows ?? []) {
-    const recipientName =
-      (row.profiles as unknown as { full_name: string } | null)?.full_name ?? null;
-
-    if (row.batch_id) {
-      if (!batchMap.has(row.batch_id)) {
-        batchMap.set(row.batch_id, {
-          id: row.batch_id,
+  for (const row of rows) {
+    if (row.batchId) {
+      if (!batchMap.has(row.batchId)) {
+        batchMap.set(row.batchId, {
+          id: row.batchId,
           type: row.type as SentNotificationItem["type"],
           title: row.title,
           body: row.body,
-          createdAt: new Date(row.created_at),
-          batchId: row.batch_id,
-          batchLabel: row.batch_label,
+          createdAt: row.createdAt,
+          batchId: row.batchId,
+          batchLabel: row.batchLabel,
           recipientCount: 0,
           recipientName: null,
         });
       }
-      batchMap.get(row.batch_id)!.recipientCount++;
+      batchMap.get(row.batchId)!.recipientCount++;
     } else {
-      const minute = row.created_at.slice(0, 16);
+      const minute = row.createdAt.toISOString().slice(0, 16);
       const key = `${row.type}|${row.title}|${row.body}|${minute}`;
       if (!legacyMap.has(key)) {
         legacyMap.set(key, {
@@ -45,11 +36,11 @@ export default async function AdminNotificationsPage() {
           type: row.type as SentNotificationItem["type"],
           title: row.title,
           body: row.body,
-          createdAt: new Date(row.created_at),
+          createdAt: row.createdAt,
           batchId: null,
           batchLabel: null,
           recipientCount: 0,
-          recipientName,
+          recipientName: row.recipientName,
         });
       }
       const item = legacyMap.get(key)!;

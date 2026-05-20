@@ -2,6 +2,7 @@ import { db } from "@/lib/drizzle";
 import { notifications, profiles, enrollments, students, courses } from "@/lib/drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import type { NotificationItem, NotificationType } from "../types";
+import type { Profile } from "@/lib/drizzle/schema";
 
 interface NotifPayload {
   type: NotificationType;
@@ -138,6 +139,41 @@ export async function getEmailForUser(userId: string): Promise<{ email: string; 
     .where(eq(profiles.id, userId))
     .limit(1);
   return row ?? null;
+}
+
+export async function getAllNotificationsAdmin(): Promise<{
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  createdAt: Date;
+  batchId: string | null;
+  batchLabel: string | null;
+  recipientName: string | null;
+}[]> {
+  return db
+    .select({
+      id: notifications.id,
+      type: notifications.type,
+      title: notifications.title,
+      body: notifications.body,
+      createdAt: notifications.createdAt,
+      batchId: notifications.batchId,
+      batchLabel: notifications.batchLabel,
+      recipientName: profiles.fullName,
+    })
+    .from(notifications)
+    .innerJoin(profiles, eq(notifications.userId, profiles.id))
+    .orderBy(desc(notifications.createdAt))
+    .limit(500);
+}
+
+export async function getProfilesForSelector(): Promise<Pick<Profile, "id" | "fullName" | "role">[]> {
+  const rows = await db
+    .select({ id: profiles.id, fullName: profiles.fullName, role: profiles.role })
+    .from(profiles)
+    .orderBy(profiles.fullName);
+  return rows as Pick<Profile, "id" | "fullName" | "role">[];
 }
 
 export async function sendToCourse(courseId: string, payload: NotifPayload) {
