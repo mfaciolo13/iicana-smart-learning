@@ -100,7 +100,12 @@ export default function UpdatePasswordPage() {
 
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
-      setError(updateError.message);
+      const msg = updateError.message.toLowerCase();
+      setError(
+        msg.includes("different from the old password")
+          ? "La nueva contraseña debe ser diferente a la actual."
+          : updateError.message
+      );
       setSubmitting(false);
       return;
     }
