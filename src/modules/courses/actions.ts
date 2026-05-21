@@ -29,7 +29,7 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
 
   updateTag("courses");
   revalidatePath("/admin/courses");
-  return { success: "Curso creado correctamente", redirectTo: `/admin/courses/${course.id}` };
+  return { success: "Curso creado correctamente", redirectTo: "/admin/courses" };
 }
 
 export async function updateCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

@@ -20,9 +20,10 @@ test.describe("Marketing — Campañas", () => {
     await page.getByLabel("Canal").selectOption("social_media");
     await page.getByRole("button", { name: /registrar campaña/i }).click();
 
-    await expect(page.getByText(/campaña/i).first()).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/campaña creada correctamente/i)).toBeVisible({ timeout: 8000 });
     await expect(page).toHaveURL(/\/admin\/marketing$/);
-    await expect(page.getByText(name)).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("cell", { name })).toBeVisible({ timeout: 10_000 });
   });
 
   test("formulario de campaña tiene fechas con type=date", async ({ page }) => {

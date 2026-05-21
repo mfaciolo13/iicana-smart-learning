@@ -27,14 +27,15 @@ test.describe("Gestión de Cursos", () => {
     await expect(page.getByText("Lun/Mié 18:00–19:30")).toBeVisible();
 
     await page.getByLabel("Cupo máximo").fill("20");
-    await page.getByRole("button", { name: "Guardar" }).click();
+    await page.getByRole("button", { name: /crear curso|guardar/i }).click();
 
     // Toast de éxito
     await expect(page.getByText("Curso creado correctamente")).toBeVisible();
 
     // Redirige al listado y aparece el curso
     await expect(page).toHaveURL(/\/admin\/courses$/);
-    await expect(page.getByText(name)).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("cell", { name })).toBeVisible({ timeout: 10_000 });
   });
 
   test("el preview del horario se actualiza en tiempo real", async ({ page }) => {

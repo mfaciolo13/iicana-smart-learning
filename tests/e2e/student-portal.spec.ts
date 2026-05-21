@@ -8,6 +8,7 @@ async function onExpectedPage(page: import("@playwright/test").Page, segment: st
 test.describe("Portal del Alumno — Notas", () => {
   test("página de notas carga y muestra agrupación por curso", async ({ page }) => {
     await page.goto("/alumno/grades");
+    await page.waitForLoadState("networkidle");
     if (!(await onExpectedPage(page, "/alumno/grades"))) {
       return; // alumno E2E sin registro en students — página redirige al dashboard
     }
@@ -31,6 +32,7 @@ test.describe("Portal del Alumno — Asistencia", () => {
 test.describe("Portal del Alumno — Evaluación Docente", () => {
   test("página de evaluaciones lista los cursos del alumno", async ({ page }) => {
     await page.goto("/alumno/evaluations");
+    await page.waitForLoadState("networkidle");
     if (!(await onExpectedPage(page, "/alumno/evaluations"))) {
       return; // alumno E2E sin registro en students — página redirige al dashboard
     }
