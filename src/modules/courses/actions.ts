@@ -25,7 +25,7 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
   const parsed = createCourseSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const course = await createCourse(parsed.data);
+  await createCourse(parsed.data);
 
   updateTag("courses");
   revalidatePath("/admin/courses");
