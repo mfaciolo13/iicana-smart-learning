@@ -5,6 +5,8 @@ import { recordAttendanceAction } from "@/modules/attendance/actions";
 import { AttendanceTaker } from "@/modules/attendance/components/AttendanceTaker";
 import { Input, Field, Select } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
+import { getAttendanceByCourse, isAttendanceRecorded } from "@/modules/attendance/services/attendance.service";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import type { AttendanceRecord } from "@/modules/attendance/types";
 
@@ -43,62 +45,13 @@ export default async function ProfesorTakeAttendancePage({
   let existingRecords: AttendanceRecord[] = [];
 
   if (courseId && isOwnCourse) {
-    const { data: enrollmentRows } = await supabase
-      .from("enrollments")
-      .select("id, enrolled_at, status, students(profiles(full_name), dni), courses(name, level)")
-      .eq("course_id", courseId);
+    [enrollments, alreadyRecorded] = await Promise.all([
+      getEnrollmentsByCourse(courseId),
+      isAttendanceRecorded(courseId, classDate),
+    ]);
 
-    type StudentRaw = { profiles: { full_name: string } | null; dni: string } | null;
-    type CourseRaw = { name: string; level: string } | null;
-
-    enrollments = (enrollmentRows ?? []).map((e) => {
-      const student = e.students as unknown as StudentRaw;
-      const course = e.courses as unknown as CourseRaw;
-      return {
-        id: e.id,
-        enrolledAt: new Date(e.enrolled_at),
-        status: e.status as EnrollmentListItem["status"],
-        studentName: student?.profiles?.full_name ?? "",
-        studentDni: student?.dni ?? "",
-        courseName: course?.name ?? "",
-        courseLevel: course?.level ?? "",
-      };
-    });
-
-    const enrollmentIds = enrollments.map((e) => e.id);
-
-    if (enrollmentIds.length > 0) {
-      const { data: attendanceRows } = await supabase
-        .from("attendance")
-        .select("id, enrollment_id, class_date, status, notes, created_at, enrollments(students(profiles(full_name), dni), courses(name))")
-        .in("enrollment_id", enrollmentIds)
-        .eq("class_date", classDate);
-
-      alreadyRecorded = (attendanceRows ?? []).length > 0;
-
-      if (alreadyRecorded) {
-        type AttEnrRaw = {
-          students: { profiles: { full_name: string } | null; dni: string } | null;
-          courses: { name: string } | null;
-        } | null;
-
-        existingRecords = (attendanceRows ?? [])
-          .map((r) => {
-            const enr = r.enrollments as unknown as AttEnrRaw;
-            return {
-              id: r.id,
-              enrollmentId: r.enrollment_id,
-              classDate: r.class_date,
-              status: r.status as AttendanceRecord["status"],
-              notes: r.notes as string | null,
-              createdAt: new Date(r.created_at),
-              studentName: enr?.students?.profiles?.full_name ?? "",
-              studentDni: enr?.students?.dni ?? "",
-              courseName: enr?.courses?.name ?? "",
-            };
-          })
-          .sort((a, b) => a.studentName.localeCompare(b.studentName));
-      }
+    if (alreadyRecorded) {
+      existingRecords = await getAttendanceByCourse(courseId, classDate);
     }
   }
 
