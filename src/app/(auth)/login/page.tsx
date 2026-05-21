@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useEffect, useRef } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import { loginAction } from "@/modules/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
@@ -122,6 +123,13 @@ export default function LoginPage() {
                 </button>
               </div>
             </Field>
+
+            {/* Forgot password */}
+            <div className="text-right -mt-1">
+              <Link href="/forgot-password" className="text-xs text-brand-700 hover:underline">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
 
             {/* Remember me */}
             <label className="flex items-center gap-2.5 cursor-pointer select-none">

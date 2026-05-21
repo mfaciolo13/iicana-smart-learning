@@ -1,8 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { z } from "zod";
 import { loginSchema, registerSchema } from "./schemas";
+import { sendPasswordResetEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function loginAction(_prev: unknown, formData: FormData) {
@@ -109,4 +113,33 @@ export async function logoutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function forgotPasswordAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const email = formData.get("email");
+  const parsed = z.string().email("Email inválido").safeParse(email);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const origin = (await headers()).get("origin") ?? "https://cervantes-smart-learning.com.ar";
+  const redirectTo = `${origin}/update-password`;
+
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email: parsed.data,
+      options: { redirectTo },
+    });
+
+    if (error || !data?.properties?.action_link) {
+      // No revelar si el email existe o no — siempre mostrar éxito
+      return { success: "ok" };
+    }
+
+    await sendPasswordResetEmail({ to: parsed.data, resetLink: data.properties.action_link });
+  } catch {
+    // Silenciar errores para no revelar si el email existe
+  }
+
+  return { success: "ok" };
 }
