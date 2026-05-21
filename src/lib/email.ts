@@ -183,6 +183,46 @@ export async function sendInstitutionalNotificationEmail({
   });
 }
 
+export async function sendPasswordResetEmail({
+  to,
+  resetLink,
+}: {
+  to: string;
+  resetLink: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Password reset email for ${to}\n🔗 Link: ${resetLink}\n`);
+    return;
+  }
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: "Restablecer contraseña — Smart Learning",
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Recibimos una solicitud para restablecer la contraseña de tu cuenta en Smart Learning.
+        Hacé clic en el botón de abajo para elegir una nueva contraseña.
+      </p>
+      <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">
+        El link expira en <strong>1 hora</strong>. Si no solicitaste este cambio, podés ignorar este email.
+      </p>
+      <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
+        <tr>
+          <td style="background:#1d4ed8;border-radius:8px;">
+            <a href="${resetLink}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
+              Restablecer mi contraseña →
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
+        Si el botón no funciona, copiá este link: <a href="${resetLink}" style="color:#3b82f6;word-break:break-all;">${resetLink}</a>
+      </p>
+    `),
+  });
+}
+
 export async function sendAssessmentPublishedEmail({
   to,
   fullName,
