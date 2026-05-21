@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/helpers";
 import { createCampaign, createInquiry, updateInquiryStatus } from "./services/marketing.service";
@@ -40,10 +39,10 @@ export async function createCampaignAction(_prev: ActionResult, formData: FormDa
   const parsed = campaignSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const campaign = await createCampaign(parsed.data);
+  await createCampaign(parsed.data);
 
   revalidatePath("/admin/marketing");
-  redirect(`/admin/marketing/${campaign.id}`);
+  return { success: "Campaña creada correctamente", redirectTo: "/admin/marketing" };
 }
 
 export async function createInquiryAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

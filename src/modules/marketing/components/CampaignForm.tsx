@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input, Field, Select, Textarea } from "@/components/ui/Input";
@@ -12,11 +13,19 @@ interface Props {
 }
 
 export function CampaignForm({ channels, action }: Props) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
-  }, [state]);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) {
+        router.push(state.redirectTo);
+        router.refresh();
+      }
+    }
+  }, [state, router]);
 
   const today = new Date().toISOString().split("T")[0];
 
