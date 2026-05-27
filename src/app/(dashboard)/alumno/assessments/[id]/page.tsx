@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerUser } from "@/lib/auth/helpers";
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/drizzle";
+import { assessments, assessmentAttempts, courses } from "@/lib/drizzle/schema";
+import { eq, and } from "drizzle-orm";
 import { QuizPlayer } from "@/modules/assessments/components/QuizPlayer";
 import type { QuizQuestion } from "@/modules/assessments/types";
 
@@ -13,28 +15,36 @@ export default async function AlumnoAssessmentPage({
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const supabase = await createClient();
-
-  const [{ data: assessmentRow }, { data: existingRows }] = await Promise.all([
-    supabase
-      .from("assessments")
-      .select("id, week_label, topic, status, questions, courses(name)")
-      .eq("id", id)
-      .single(),
-    supabase
-      .from("assessment_attempts")
-      .select("id")
-      .eq("assessment_id", id)
-      .eq("student_id", user.id)
+  const [assessmentRows, attemptRows] = await Promise.all([
+    db
+      .select({
+        id: assessments.id,
+        weekLabel: assessments.weekLabel,
+        topic: assessments.topic,
+        status: assessments.status,
+        questions: assessments.questions,
+        courseName: courses.name,
+      })
+      .from(assessments)
+      .innerJoin(courses, eq(assessments.courseId, courses.id))
+      .where(eq(assessments.id, id))
+      .limit(1),
+    db
+      .select({ id: assessmentAttempts.id })
+      .from(assessmentAttempts)
+      .where(
+        and(
+          eq(assessmentAttempts.assessmentId, id),
+          eq(assessmentAttempts.studentId, user.id)
+        )
+      )
       .limit(1),
   ]);
 
+  const assessmentRow = assessmentRows[0];
   if (!assessmentRow || assessmentRow.status !== "published") notFound();
+  if (attemptRows.length > 0) redirect(`/alumno/assessments/${id}/resultado`);
 
-  if ((existingRows ?? []).length > 0) redirect(`/alumno/assessments/${id}/resultado`);
-
-  type CourseRaw = { name: string } | null;
-  const courseName = (assessmentRow.courses as unknown as CourseRaw)?.name ?? "";
   const questions = assessmentRow.questions as unknown as QuizQuestion[];
 
   return (
@@ -42,9 +52,9 @@ export default async function AlumnoAssessmentPage({
       <QuizPlayer
         assessmentId={assessmentRow.id}
         questions={questions}
-        weekLabel={assessmentRow.week_label}
+        weekLabel={assessmentRow.weekLabel}
         topic={assessmentRow.topic}
-        courseName={courseName}
+        courseName={assessmentRow.courseName}
       />
     </div>
   );
