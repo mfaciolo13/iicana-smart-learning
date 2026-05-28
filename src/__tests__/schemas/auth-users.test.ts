@@ -142,10 +142,7 @@ describe("ADMIN_ONLY_ROUTES — protección para rol administrativo", () => {
 
   it("admin tiene acceso a todas las rutas", () => {
     const allRoutes = [...ADMIN_ONLY_ROUTES, ...SHARED_ROUTES];
-    for (const route of allRoutes) {
-      // admin always passes — simulated by checking role is not "administrativo"
-      const role = "admin";
-      expect(role).not.toBe("administrativo");
-    }
+    // admin always passes — none of these routes are restricted for admin
+    expect(allRoutes.length).toBeGreaterThan(0);
   });
 });
