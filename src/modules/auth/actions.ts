@@ -60,7 +60,9 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     profile = created;
   }
 
-  redirect(`/${profile?.role ?? "alumno"}`);
+  const role = profile?.role ?? "alumno";
+  const target = role === "administrativo" ? "admin" : role;
+  redirect(`/${target}`);
 }
 
 export async function registerAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
