@@ -29,6 +29,7 @@ import {
   Megaphone,
   Archive,
   UserCircle,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -56,6 +57,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Cierre de Ciclo", href: "/admin/year-end", icon: Archive },
     { label: "Reportes", href: "/admin/reports", icon: BarChart2 },
     { label: "Usuarios", href: "/admin/users", icon: ShieldCheck },
+    { label: "Nuevo administrativo", href: "/admin/users/new", icon: UserPlus },
     { label: "Autoevaluaciones IA", href: "/admin/assessments", icon: Sparkles },
     { label: "Mi Perfil", href: "/admin/profile", icon: UserCircle },
   ],
