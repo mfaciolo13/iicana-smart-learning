@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
-export type UserRole = "admin" | "profesor" | "alumno";
+export type UserRole = "admin" | "administrativo" | "profesor" | "alumno";
 
 // getSession() decodes the JWT from the cookie locally — no network call.
 // proxy.ts already called getUser() to validate the token server-side, so this is safe.

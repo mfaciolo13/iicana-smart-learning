@@ -21,5 +21,7 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  redirect(`/${profile.role}`);
+  // administrativo uses the /admin portal
+  const targetRole = profile.role === "administrativo" ? "admin" : profile.role;
+  redirect(`/${targetRole}`);
 }

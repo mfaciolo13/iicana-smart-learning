@@ -6,7 +6,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const profile = await getServerProfile(); // cache hit — already fetched by dashboard layout
 
   if (!profile) redirect("/login");
-  if (profile.role !== "admin") redirect(`/${profile.role}`);
+  if (profile.role !== "admin" && profile.role !== "administrativo") redirect(`/${profile.role}`);
 
   return <>{children}</>;
 }

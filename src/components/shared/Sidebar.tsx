@@ -59,6 +59,17 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Autoevaluaciones IA", href: "/admin/assessments", icon: Sparkles },
     { label: "Mi Perfil", href: "/admin/profile", icon: UserCircle },
   ],
+  administrativo: [
+    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { label: "Alumnos", href: "/admin/students", icon: GraduationCap },
+    { label: "Inscripciones", href: "/admin/enrollments", icon: ClipboardList },
+    { label: "Asistencia", href: "/admin/attendance", icon: CalendarCheck },
+    { label: "Notas", href: "/admin/grades", icon: Star },
+    { label: "Pagos", href: "/admin/payments", icon: CreditCard },
+    { label: "Comunicaciones", href: "/admin/notifications", icon: MessageSquare },
+    { label: "Reclamos", href: "/admin/complaints", icon: AlertCircle },
+    { label: "Reportes", href: "/admin/reports", icon: BarChart2 },
+  ],
   profesor: [
     { label: "Mis Cursos", href: "/profesor", icon: BookOpen },
     { label: "Asistencia", href: "/profesor/attendance", icon: CalendarCheck },
@@ -80,7 +91,8 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Administrador",
+  admin: "Director",
+  administrativo: "Administrativo",
   profesor: "Docente",
   alumno: "Alumno",
 };
@@ -146,8 +158,10 @@ export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: 
       {/* Nav */}
       <nav className="flex-1 px-3 pb-3 space-y-0.5 overflow-y-auto" aria-label="Navegación principal">
         {items.map((item) => {
+          // rootHref is the dashboard item — match exactly to avoid false positives
+          const rootHref = items[0].href;
           const isActive =
-            item.href === `/${role}`
+            item.href === rootHref
               ? pathname === item.href
               : pathname.startsWith(item.href);
           const Icon = item.icon;

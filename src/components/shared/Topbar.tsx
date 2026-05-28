@@ -26,7 +26,8 @@ interface TopbarProps {
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Administrador",
+  admin: "Director",
+  administrativo: "Administrativo",
   profesor: "Docente",
   alumno: "Alumno",
 };

@@ -15,7 +15,7 @@ import {
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     studentId: formData.get("studentId") as string,
@@ -64,7 +64,7 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
 }
 
 export async function updateEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -85,7 +85,7 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
 }
 
 export async function deleteEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
