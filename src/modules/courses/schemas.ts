@@ -13,11 +13,11 @@ export const createCourseSchema = z.object({
   schedule: z.string().min(1, "El horario es requerido"),
   classroom: z.string().optional(),
   maxCapacity: z.coerce.number().int().min(1).max(50).default(15),
-  teacherId: z.string().uuid().optional(),
+  teacherId: z.uuid().optional(),
 });
 
 export const updateCourseSchema = createCourseSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
   status: z.enum(["active", "inactive", "completed"]).optional(),
 });
 

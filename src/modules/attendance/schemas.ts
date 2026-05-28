@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const recordAttendanceSchema = z.object({
-  courseId: z.string().uuid("Seleccioná un curso"),
+  courseId: z.uuid("Seleccioná un curso"),
   classDate: z.string().min(1, "La fecha es requerida"),
   // enrollmentIds passed as comma-separated list
   enrollmentIds: z.string().min(1),

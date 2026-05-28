@@ -6,7 +6,7 @@ export const createComplaintSchema = z.object({
 });
 
 export const updateComplaintStatusSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   status: z.enum(["open", "in_progress", "resolved", "closed"]),
 });
 

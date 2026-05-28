@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 export const createEnrollmentSchema = z.object({
-  studentId: z.string().uuid("Alumno requerido"),
-  courseId: z.string().uuid("Curso requerido"),
+  studentId: z.uuid("Alumno requerido"),
+  courseId: z.uuid("Curso requerido"),
 });
 
 export const updateEnrollmentSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   status: z.enum(["active", "completed", "withdrawn"]),
 });
 
