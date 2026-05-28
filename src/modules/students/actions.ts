@@ -10,7 +10,7 @@ import { sendInvitationEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     email: formData.get("email") as string,
@@ -68,7 +68,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
 }
 
 export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -91,7 +91,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
 }
 
 export async function deleteStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };

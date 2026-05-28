@@ -7,7 +7,7 @@ import { sendToRole } from "@/modules/notifications/services/notifications.servi
 import type { ActionResult } from "@/lib/action-result";
 
 export async function recordAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "profesor"]);
+  await requireRole(["admin", "administrativo", "profesor"]);
 
   const courseId = formData.get("courseId") as string;
   const classDate = formData.get("classDate") as string;

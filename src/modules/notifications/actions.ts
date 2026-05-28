@@ -17,7 +17,7 @@ import {
 import type { ActionResult } from "@/lib/action-result";
 
 export async function sendNotificationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     targetId: formData.get("targetId") as string,

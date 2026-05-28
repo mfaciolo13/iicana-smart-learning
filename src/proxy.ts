@@ -3,6 +3,19 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = ["/admin", "/profesor", "/alumno"];
 
+// Rutas de /admin exclusivas del director — el rol 'administrativo' es bloqueado
+const ADMIN_ONLY_ROUTES = [
+  "/admin/users",
+  "/admin/teachers",
+  "/admin/courses",
+  "/admin/teacher-evaluations",
+  "/admin/assessments",
+  "/admin/year-end",
+  "/admin/marketing",
+  "/admin/promotions",
+  "/admin/profile",
+];
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -40,6 +53,17 @@ export async function proxy(request: NextRequest) {
 
   if (isProtectedRoute && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Bloquear al rol 'administrativo' de rutas exclusivas del director
+  if (user && pathname.startsWith("/admin")) {
+    const role = user.user_metadata?.role as string | undefined;
+    if (role === "administrativo") {
+      const isRestricted = ADMIN_ONLY_ROUTES.some((r) => pathname.startsWith(r));
+      if (isRestricted) {
+        return NextResponse.redirect(new URL("/403", request.url));
+      }
+    }
   }
 
   return supabaseResponse;

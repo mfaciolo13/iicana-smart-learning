@@ -17,7 +17,7 @@ import { sendToRole } from "@/modules/notifications/services/notifications.servi
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     studentId: formData.get("studentId") as string,
@@ -36,7 +36,7 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
 }
 
 export async function markAsPaidAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -54,7 +54,7 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
 }
 
 export async function updatePaymentStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -71,14 +71,14 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
 }
 
 export async function markOverduePaymentsAction(_prev: ActionResult): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
   await markOverduePayments();
   revalidatePath("/admin/payments");
   return { success: "Pagos vencidos actualizados" };
 }
 
 export async function runOverdueChecksAction(_prev: ActionResult, _formData?: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   await markOverduePayments();
 

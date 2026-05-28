@@ -45,7 +45,7 @@ export async function createComplaintAsProfesorAction(_prev: ActionResult, formD
 }
 
 export async function updateComplaintStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["admin", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
