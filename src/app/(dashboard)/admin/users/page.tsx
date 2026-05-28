@@ -1,4 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/drizzle";
+import { profiles } from "@/lib/drizzle/schema";
+import { asc } from "drizzle-orm";
 import { UserList } from "@/modules/users/components/UserList";
 import { Input } from "@/components/ui/Input";
 import type { UserListItem } from "@/modules/users/types";
@@ -18,19 +20,25 @@ export default async function UsersPage({
   const { q, role } = await searchParams;
   const activeRole = role ?? "all";
 
-  const supabase = await createClient();
-  const { data: rows } = await supabase
-    .from("profiles")
-    .select("id, email, role, full_name, phone, created_at")
-    .order("full_name");
+  const rows = await db
+    .select({
+      id: profiles.id,
+      email: profiles.email,
+      role: profiles.role,
+      fullName: profiles.fullName,
+      phone: profiles.phone,
+      createdAt: profiles.createdAt,
+    })
+    .from(profiles)
+    .orderBy(asc(profiles.fullName));
 
-  const allUsers: UserListItem[] = (rows ?? []).map((r) => ({
+  const allUsers: UserListItem[] = rows.map((r) => ({
     id: r.id,
     email: r.email,
     role: r.role as UserListItem["role"],
-    fullName: r.full_name,
-    phone: r.phone as string | null,
-    createdAt: new Date(r.created_at),
+    fullName: r.fullName,
+    phone: r.phone ?? null,
+    createdAt: new Date(r.createdAt),
   }));
 
   const searched = q

@@ -11,9 +11,10 @@ const STATUS_CONFIG: Record<AssessmentStatus, { label: string; variant: "info" |
 
 interface AssessmentListProps {
   assessments: AssessmentListItem[];
+  basePath?: string;
 }
 
-export function AssessmentList({ assessments }: AssessmentListProps) {
+export function AssessmentList({ assessments, basePath = "/admin/assessments" }: AssessmentListProps) {
   if (assessments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -37,7 +38,7 @@ export function AssessmentList({ assessments }: AssessmentListProps) {
           return (
             <Link
               key={a.id}
-              href={`/admin/assessments/${a.id}`}
+              href={`${basePath}/${a.id}`}
               className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
             >
               <div className="flex-1 min-w-0">
@@ -83,7 +84,7 @@ export function AssessmentList({ assessments }: AssessmentListProps) {
                 <td className="py-3 pr-4 text-slate-500 hidden md:table-cell">{a.questionCount}</td>
                 <td className="py-3 pr-4 text-slate-500 hidden md:table-cell">{a.attemptCount}</td>
                 <td className="py-3 text-right">
-                  <Link href={`/admin/assessments/${a.id}`} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
+                  <Link href={`${basePath}/${a.id}`} className="text-brand-700 hover:underline text-xs font-medium inline-flex items-center gap-1">
                     Ver <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </td>

@@ -5,8 +5,9 @@ import {
   courses,
   enrollments,
   students,
+  teachers,
 } from "@/lib/drizzle/schema";
-import { eq, desc, sql, and, inArray } from "drizzle-orm";
+import { eq, desc, asc, sql, and, inArray } from "drizzle-orm";
 import type {
   AssessmentListItem,
   AssessmentDetail,
@@ -194,6 +195,62 @@ export async function archiveAssessment(id: string) {
     .where(eq(assessments.id, id))
     .returning();
   return row;
+}
+
+export async function getActiveCoursesForTeacher(teacherProfileId: string) {
+  const teacherRows = await db
+    .select({ id: teachers.id })
+    .from(teachers)
+    .where(eq(teachers.profileId, teacherProfileId))
+    .limit(1);
+
+  if (!teacherRows[0]) return [];
+
+  return db
+    .select({ id: courses.id, name: courses.name, level: courses.level })
+    .from(courses)
+    .where(and(eq(courses.teacherId, teacherRows[0].id), eq(courses.status, "active")))
+    .orderBy(asc(courses.name));
+}
+
+export async function getAssessmentsForTeacher(teacherProfileId: string): Promise<AssessmentListItem[]> {
+  const teacherRows = await db
+    .select({ id: teachers.id })
+    .from(teachers)
+    .where(eq(teachers.profileId, teacherProfileId))
+    .limit(1);
+
+  if (!teacherRows[0]) return [];
+
+  const courseRows = await db
+    .select({ id: courses.id })
+    .from(courses)
+    .where(eq(courses.teacherId, teacherRows[0].id));
+
+  if (courseRows.length === 0) return [];
+
+  const courseIds = courseRows.map((c) => c.id);
+
+  const rows = await db
+    .select({
+      id: assessments.id,
+      courseId: assessments.courseId,
+      courseName: courses.name,
+      weekLabel: assessments.weekLabel,
+      topic: assessments.topic,
+      status: assessments.status,
+      questionCount: sql<number>`jsonb_array_length(${assessments.questions})`,
+      attemptCount: sql<number>`cast(count(${assessmentAttempts.id}) as int)`,
+      createdAt: assessments.createdAt,
+    })
+    .from(assessments)
+    .innerJoin(courses, eq(assessments.courseId, courses.id))
+    .leftJoin(assessmentAttempts, eq(assessmentAttempts.assessmentId, assessments.id))
+    .where(inArray(assessments.courseId, courseIds))
+    .groupBy(assessments.id, courses.name)
+    .orderBy(desc(assessments.createdAt));
+
+  return rows as AssessmentListItem[];
 }
 
 export async function submitAttempt(

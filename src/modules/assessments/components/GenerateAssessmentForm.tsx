@@ -16,9 +16,10 @@ interface Course {
 interface GenerateAssessmentFormProps {
   courses: Course[];
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
+  cancelHref?: string;
 }
 
-export function GenerateAssessmentForm({ courses, action }: GenerateAssessmentFormProps) {
+export function GenerateAssessmentForm({ courses, action, cancelHref = "/admin/assessments" }: GenerateAssessmentFormProps) {
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export function GenerateAssessmentForm({ courses, action }: GenerateAssessmentFo
           ✨ Generar con IA
         </Button>
         <Link
-          href="/admin/assessments"
+          href={cancelHref}
           className="text-sm text-slate-500 hover:text-slate-700 flex items-center justify-center"
         >
           Cancelar
