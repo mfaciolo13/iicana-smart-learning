@@ -63,6 +63,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Mis Cursos", href: "/profesor", icon: BookOpen },
     { label: "Asistencia", href: "/profesor/attendance", icon: CalendarCheck },
     { label: "Cargar Notas", href: "/profesor/grades", icon: PenLine },
+    { label: "Autoevaluaciones IA", href: "/profesor/assessments", icon: Sparkles },
     { label: "Mensajes", href: "/profesor/notifications", icon: MessageSquare },
     { label: "Mi Perfil", href: "/profesor/profile", icon: UserCircle },
   ],

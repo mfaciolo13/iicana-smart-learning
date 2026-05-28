@@ -133,6 +133,116 @@ export async function archiveAssessmentAction(_prev: ActionResult, formData: For
   redirect(`/admin/assessments/${id}`);
 }
 
+export async function generateAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["profesor"]);
+  const user = await getCurrentUser();
+  if (!user) return { error: "No autorizado" };
+
+  const raw = {
+    courseId: formData.get("courseId") as string,
+    weekLabel: formData.get("weekLabel") as string,
+    topic: formData.get("topic") as string,
+  };
+
+  const parsed = generateAssessmentSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const prompt = `Sos un profesor experto de inglés en Argentina.
+Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
+Tema de la semana: "${parsed.data.topic}"
+Semana: "${parsed.data.weekLabel}"
+
+IMPORTANTE:
+- Las instrucciones/preguntas pueden estar en español o inglés según corresponda al nivel.
+- Cada pregunta debe tener exactamente 4 opciones (A, B, C, D).
+- El campo "correct" es el índice (0=A, 1=B, 2=C, 3=D) de la respuesta correcta.
+- El campo "explanation" es una breve explicación en español de por qué esa es la respuesta correcta (1-2 oraciones).
+- Variá los tipos: completar oraciones, elegir la forma correcta del verbo, vocabulario, comprensión, etc.
+- Hacé las preguntas interesantes y relevantes al tema.
+
+Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este formato exacto:
+[
+  {
+    "question": "texto de la pregunta",
+    "options": ["opción A", "opción B", "opción C", "opción D"],
+    "correct": 0,
+    "explanation": "explicación de por qué esta opción es correcta"
+  }
+]`;
+
+  let questions: QuizQuestion[];
+
+  try {
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2048,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const text = message.content[0].type === "text" ? message.content[0].text : "";
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return { error: "Error generando preguntas. Intentá de nuevo." };
+
+    questions = JSON.parse(jsonMatch[0]) as QuizQuestion[];
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return { error: "Respuesta inválida del modelo. Intentá de nuevo." };
+    }
+  } catch {
+    return { error: "Error al conectar con el modelo de IA. Verificá tu conexión." };
+  }
+
+  const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
+
+  revalidatePath("/profesor/assessments");
+  redirect(`/profesor/assessments/${assessment.id}`);
+}
+
+export async function publishAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["admin", "profesor"]);
+
+  const parsed = publishAssessmentSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const assessment = await publishAssessment(parsed.data.id);
+  const detail = await getAssessmentDetail(parsed.data.id);
+
+  if (detail) {
+    try {
+      const recipients = await getEmailsForCourse(assessment.courseId);
+      await Promise.all(
+        recipients.map((r) =>
+          sendAssessmentPublishedEmail({
+            to: r.email,
+            fullName: r.fullName,
+            courseName: detail.courseName,
+            topic: detail.topic,
+            weekLabel: detail.weekLabel,
+          })
+        )
+      );
+    } catch (e) {
+      console.error("[assessment published email]", e);
+    }
+  }
+
+  revalidatePath("/profesor/assessments");
+  revalidatePath(`/profesor/assessments/${parsed.data.id}`);
+  redirect(`/profesor/assessments/${parsed.data.id}`);
+}
+
+export async function archiveAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["admin", "profesor"]);
+
+  const id = formData.get("id") as string;
+  if (!id) return { error: "ID requerido" };
+
+  await archiveAssessment(id);
+
+  revalidatePath("/profesor/assessments");
+  revalidatePath(`/profesor/assessments/${id}`);
+  redirect(`/profesor/assessments/${id}`);
+}
+
 export async function submitAttemptAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["alumno"]);
   const user = await getCurrentUser();
