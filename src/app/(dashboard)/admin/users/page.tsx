@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { UserPlus } from "lucide-react";
 import { db } from "@/lib/drizzle";
 import { profiles } from "@/lib/drizzle/schema";
 import { asc } from "drizzle-orm";
@@ -8,6 +10,7 @@ import type { UserListItem } from "@/modules/users/types";
 const ROLE_TABS = [
   { value: "all", label: "Todos" },
   { value: "admin", label: "Admins" },
+  { value: "administrativo", label: "Administrativos" },
   { value: "profesor", label: "Docentes" },
   { value: "alumno", label: "Alumnos" },
 ];
@@ -54,23 +57,34 @@ export default async function UsersPage({
 
   const counts = {
     admin: allUsers.filter((u) => u.role === "admin").length,
+    administrativo: allUsers.filter((u) => u.role === "administrativo").length,
     profesor: allUsers.filter((u) => u.role === "profesor").length,
     alumno: allUsers.filter((u) => u.role === "alumno").length,
   };
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900">Usuarios</h2>
-        <p className="text-sm text-slate-400 mt-0.5">
-          {allUsers.length} usuario{allUsers.length !== 1 ? "s" : ""} en el sistema
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Usuarios</h2>
+          <p className="text-sm text-slate-400 mt-0.5">
+            {allUsers.length} usuario{allUsers.length !== 1 ? "s" : ""} en el sistema
+          </p>
+        </div>
+        <Link
+          href="/admin/users/new"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand-700 text-white text-sm font-medium hover:bg-brand-800 transition-colors shrink-0"
+        >
+          <UserPlus className="w-4 h-4" />
+          Nuevo administrativo
+        </Link>
       </div>
 
       {/* Role summary */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           { label: "Admins", value: counts.admin, color: "text-amber-600" },
+          { label: "Administrativos", value: counts.administrativo, color: "text-purple-600" },
           { label: "Docentes", value: counts.profesor, color: "text-blue-600" },
           { label: "Alumnos", value: counts.alumno, color: "text-emerald-600" },
         ].map((s) => (
