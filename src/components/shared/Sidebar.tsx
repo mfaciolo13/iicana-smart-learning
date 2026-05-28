@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { logoutAction } from "@/modules/auth/actions";
 import type { UserRole } from "@/modules/auth/types";
 import { cn } from "@/lib/cn";
@@ -56,8 +56,8 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Marketing", href: "/admin/marketing", icon: Megaphone },
     { label: "Cierre de Ciclo", href: "/admin/year-end", icon: Archive },
     { label: "Reportes", href: "/admin/reports", icon: BarChart2 },
+    { label: "Administrativos", href: "/admin/users?role=administrativo", icon: UserPlus },
     { label: "Usuarios", href: "/admin/users", icon: ShieldCheck },
-    { label: "Nuevo administrativo", href: "/admin/users/new", icon: UserPlus },
     { label: "Autoevaluaciones IA", href: "/admin/assessments", icon: Sparkles },
     { label: "Mi Perfil", href: "/admin/profile", icon: UserCircle },
   ],
@@ -118,6 +118,7 @@ interface SidebarProps {
 
 export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const items = NAV_ITEMS[role];
 
   return (
@@ -162,10 +163,13 @@ export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: 
         {items.map((item) => {
           // rootHref is the dashboard item — match exactly to avoid false positives
           const rootHref = items[0].href;
+          const [hrefPath, hrefQuery] = item.href.split("?");
           const isActive =
             item.href === rootHref
-              ? pathname === item.href
-              : pathname.startsWith(item.href);
+              ? pathname === hrefPath
+              : hrefQuery
+              ? pathname === hrefPath && new URLSearchParams(hrefQuery).get("role") === searchParams.get("role")
+              : pathname.startsWith(hrefPath);
           const Icon = item.icon;
           return (
             <Link
