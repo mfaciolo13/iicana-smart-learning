@@ -16,9 +16,9 @@ const campaignSchema = z.object({
 });
 
 const inquirySchema = z.object({
-  campaignId: z.string().uuid(),
+  campaignId: z.uuid(),
   name: z.string().min(2, "Nombre requerido"),
-  email: z.string().email().optional().or(z.literal("")),
+  email: z.email().optional().or(z.literal("")),
   phone: z.string().optional(),
   notes: z.string().optional(),
   receivedAt: z.string().min(1, "Fecha requerida"),

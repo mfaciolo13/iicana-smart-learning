@@ -582,7 +582,7 @@ const studentSchema = z.object({
   fullName: z.string().min(2).max(80),
   dni: z.string().regex(/^\d{7,8}$/),
   birthDate: z.coerce.date().refine(d => d < new Date(), 'Fecha inválida'),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.email().optional().or(z.literal('')),
   // ...
 }).refine(data => {
   const age = calculateAge(data.birthDate)

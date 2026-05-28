@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createGradeSchema = z.object({
-  enrollmentId: z.string().uuid("Inscripción requerida"),
+  enrollmentId: z.uuid("Inscripción requerida"),
   evaluationType: z.enum(["parcial", "final", "oral", "homework", "quiz"]),
   score: z.coerce
     .number()
@@ -11,7 +11,7 @@ export const createGradeSchema = z.object({
 });
 
 export const updateGradeSchema = createGradeSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 });
 
 export type CreateGradeInput = z.infer<typeof createGradeSchema>;

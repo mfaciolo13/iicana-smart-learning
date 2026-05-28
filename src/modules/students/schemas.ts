@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createStudentSchema = z.object({
   // Profile fields
-  email: z.string().email("Email inválido"),
+  email: z.email("Email inválido"),
   fullName: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
   phone: z.string().optional(),
   // Student fields
@@ -28,7 +28,7 @@ export const createStudentSchema = z.object({
 });
 
 export const updateStudentSchema = createStudentSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
   status: z
     .enum(["active", "inactive", "suspended", "graduated"])
     .optional(),

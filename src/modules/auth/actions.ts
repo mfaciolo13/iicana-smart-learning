@@ -117,7 +117,7 @@ export async function logoutAction() {
 
 export async function forgotPasswordAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const email = formData.get("email");
-  const parsed = z.string().email("Email inválido").safeParse(email);
+  const parsed = z.email("Email inválido").safeParse(email);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const origin = (await headers()).get("origin") ?? "https://cervantes-smart-learning.com.ar";
