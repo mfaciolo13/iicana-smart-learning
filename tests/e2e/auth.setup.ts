@@ -27,7 +27,9 @@ setup("autenticar como admin", async ({ page }) => {
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/admin/);
+
+  // El servidor puede redirigir con o sin "www" — esperamos cualquiera de las dos variantes
+  await page.waitForURL(/\/admin/, { timeout: 30_000 });
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -54,6 +56,8 @@ setup("autenticar como alumno", async ({ page }) => {
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/alumno/);
+
+  // El servidor puede redirigir con o sin "www" — esperamos cualquiera de las dos variantes
+  await page.waitForURL(/\/alumno/, { timeout: 30_000 });
   await page.context().storageState({ path: ALUMNO_FILE });
 });
