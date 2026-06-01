@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
@@ -17,7 +17,7 @@ import { sendToRole } from "@/modules/notifications/services/notifications.servi
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     studentId: formData.get("studentId") as string,
@@ -31,12 +31,12 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
 
   const payment = await createPayment(parsed.data);
 
-  revalidatePath("/admin/payments");
-  return { success: "Pago registrado correctamente", redirectTo: `/admin/payments/${payment.id}` };
+  revalidatePath("/director/payments");
+  return { success: "Pago registrado correctamente", redirectTo: `/director/payments/${payment.id}` };
 }
 
 export async function markAsPaidAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -49,12 +49,12 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
 
   await markAsPaid(parsed.data);
 
-  revalidatePath("/admin/payments");
+  revalidatePath("/director/payments");
   return { success: "Pago registrado como abonado" };
 }
 
 export async function updatePaymentStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -66,19 +66,19 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
 
   await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
 
-  revalidatePath("/admin/payments");
+  revalidatePath("/director/payments");
   return { success: "Estado actualizado" };
 }
 
 export async function markOverduePaymentsAction(_prev: ActionResult): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
   await markOverduePayments();
-  revalidatePath("/admin/payments");
+  revalidatePath("/director/payments");
   return { success: "Pagos vencidos actualizados" };
 }
 
 export async function runOverdueChecksAction(_prev: ActionResult, _formData?: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   await markOverduePayments();
 
@@ -89,7 +89,7 @@ export async function runOverdueChecksAction(_prev: ActionResult, _formData?: Fo
       title: "Alerta de mora",
       body: `${t.studentName} tiene un pago vencido hace más de 15 días.`,
     };
-    await sendToRole("admin", payload);
+    await sendToRole("director", payload);
   }
   if (alertTargets.length > 0) {
     await markOverdueAlertSent(alertTargets.map((t) => t.paymentId));
@@ -111,11 +111,11 @@ export async function runOverdueChecksAction(_prev: ActionResult, _formData?: Fo
       title: "Alumno suspendido por mora",
       body: `${studentName} fue suspendido por tener pagos vencidos hace más de 30 días.`,
     };
-    await sendToRole("admin", payload);
+    await sendToRole("director", payload);
     suspended++;
   }
 
-  revalidatePath("/admin/payments");
+  revalidatePath("/director/payments");
   const parts: string[] = [];
   if (alertTargets.length > 0) parts.push(`${alertTargets.length} alerta(s) de mora enviada(s)`);
   if (suspended > 0) parts.push(`${suspended} alumno(s) suspendido(s)`);

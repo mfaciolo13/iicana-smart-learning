@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { TeacherListItem } from "../types";
 
@@ -18,7 +18,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
         <p className="text-base font-semibold text-slate-700">Aún no hay docentes cargados</p>
         <p className="text-sm text-slate-400 mt-1">Empezá registrando el primero.</p>
         <Link
-          href="/admin/teachers/new"
+          href="/director/teachers/new"
           className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
         >
           + Nuevo docente
@@ -34,7 +34,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
         {teachers.map((teacher) => (
           <Link
             key={teacher.id}
-            href={`/admin/teachers/${teacher.id}`}
+            href={`/director/teachers/${teacher.id}`}
             className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
           >
             <div className="min-w-0">
@@ -71,7 +71,7 @@ export function TeacherList({ teachers }: TeacherListProps) {
                   {teacher.specialization ?? <span className="text-slate-400">—</span>}
                 </td>
                 <td className="py-3.5 pr-4 text-right">
-                  <Link href={`/admin/teachers/${teacher.id}`} className="after:absolute after:inset-0 after:content-['']">
+                  <Link href={`/director/teachers/${teacher.id}`} className="after:absolute after:inset-0 after:content-['']">
                     <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                   </Link>
                 </td>

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+﻿import { describe, it, expect } from "vitest";
 import { loginSchema, registerSchema } from "@/modules/auth/schemas";
 import { updateUserSchema } from "@/modules/users/schemas";
 
@@ -56,7 +56,7 @@ describe("registerSchema", () => {
   });
 
   it("acepta todos los roles válidos", () => {
-    const roles = ["admin", "administrativo", "profesor", "alumno"] as const;
+    const roles = ["director", "administrativo", "profesor", "alumno"] as const;
     for (const role of roles) {
       expect(registerSchema.safeParse({ ...valid, role }).success).toBe(true);
     }
@@ -103,27 +103,27 @@ describe("updateUserSchema", () => {
 // SCRUM-177: Tests de protección de rutas para el rol administrativo
 describe("ADMIN_ONLY_ROUTES — protección para rol administrativo", () => {
   const ADMIN_ONLY_ROUTES = [
-    "/admin/users",
-    "/admin/teachers",
-    "/admin/courses",
-    "/admin/teacher-evaluations",
-    "/admin/assessments",
-    "/admin/year-end",
-    "/admin/marketing",
-    "/admin/promotions",
-    "/admin/profile",
+    "/director/users",
+    "/director/teachers",
+    "/director/courses",
+    "/director/teacher-evaluations",
+    "/director/assessments",
+    "/director/year-end",
+    "/director/marketing",
+    "/director/promotions",
+    "/director/profile",
   ];
 
   const SHARED_ROUTES = [
-    "/admin",
-    "/admin/students",
-    "/admin/enrollments",
-    "/admin/payments",
-    "/admin/attendance",
-    "/admin/grades",
-    "/admin/complaints",
-    "/admin/notifications",
-    "/admin/reports",
+    "/director",
+    "/director/students",
+    "/director/enrollments",
+    "/director/payments",
+    "/director/attendance",
+    "/director/grades",
+    "/director/complaints",
+    "/director/notifications",
+    "/director/reports",
   ];
 
   it("administrativo NO tiene acceso a rutas exclusivas del director", () => {

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -61,7 +61,7 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   }
 
   const role = profile?.role ?? "alumno";
-  const target = role === "administrativo" ? "admin" : role;
+  const target = role === "administrativo" ? "director" : role;
   redirect(`/${target}`);
 }
 

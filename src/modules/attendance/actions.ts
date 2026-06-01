@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
@@ -7,7 +7,7 @@ import { sendToRole } from "@/modules/notifications/services/notifications.servi
 import type { ActionResult } from "@/lib/action-result";
 
 export async function recordAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo", "profesor"]);
+  await requireRole(["director", "administrativo", "profesor"]);
 
   const courseId = formData.get("courseId") as string;
   const classDate = formData.get("classDate") as string;
@@ -39,13 +39,13 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
           title: "2 ausencias consecutivas",
           body: `${alert.studentName} acumuló 2 ausencias seguidas en ${alert.courseName}.`,
         };
-        return [sendToRole("admin", payload)];
+        return [sendToRole("director", payload)];
       })
     );
   }
 
-  revalidatePath("/admin/attendance");
+  revalidatePath("/director/attendance");
   revalidatePath("/profesor/attendance");
-  const redirectTo = (formData.get("redirectTo") as string) || "/admin/attendance";
+  const redirectTo = (formData.get("redirectTo") as string) || "/director/attendance";
   return { success: "Asistencia registrada correctamente", redirectTo };
 }

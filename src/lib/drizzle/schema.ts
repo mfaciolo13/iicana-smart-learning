@@ -1,4 +1,4 @@
-import {
+﻿import {
   pgTable,
   uuid,
   text,
@@ -14,7 +14,7 @@ import {
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export const roleEnum = pgEnum("role", [
-  "admin",
+  "director",
   "administrativo",
   "profesor",
   "alumno",

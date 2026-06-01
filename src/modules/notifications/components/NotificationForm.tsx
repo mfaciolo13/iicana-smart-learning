@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
@@ -115,7 +115,7 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
       </Card>
 
       <div className="flex justify-end gap-3">
-        <Link href="/admin/notifications" className={buttonVariants({ variant: "secondary" })}>
+        <Link href="/director/notifications" className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
         <Button type="submit" variant="primary" loading={isPending}>

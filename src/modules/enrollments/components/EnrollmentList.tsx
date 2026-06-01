@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { EnrollmentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
@@ -36,7 +36,7 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
         <p className="text-sm text-slate-400 mt-1">Todavía no hay inscripciones registradas.</p>
         {showNewLink && (
           <Link
-            href="/admin/enrollments/new"
+            href="/director/enrollments/new"
             className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
           >
             + Nueva inscripción
@@ -55,7 +55,7 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
           return (
             <Link
               key={e.id}
-              href={`/admin/enrollments/${e.id}`}
+              href={`/director/enrollments/${e.id}`}
               className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
             >
               <div className="min-w-0">
@@ -104,7 +104,7 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
                     <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                   </td>
                   <td className="py-3.5 pr-4 text-right">
-                    <Link href={`/admin/enrollments/${e.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Link href={`/director/enrollments/${e.id}`} className="after:absolute after:inset-0 after:content-['']">
                       <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                     </Link>
                   </td>

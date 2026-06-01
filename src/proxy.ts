@@ -1,19 +1,19 @@
-import { createServerClient } from "@supabase/ssr";
+﻿import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/admin", "/profesor", "/alumno"];
+const PROTECTED_PREFIXES = ["/director", "/profesor", "/alumno"];
 
 // Rutas de /admin exclusivas del director — el rol 'administrativo' es bloqueado
 const ADMIN_ONLY_ROUTES = [
-  "/admin/users",
-  "/admin/teachers",
-  "/admin/courses",
-  "/admin/teacher-evaluations",
-  "/admin/assessments",
-  "/admin/year-end",
-  "/admin/marketing",
-  "/admin/promotions",
-  "/admin/profile",
+  "/director/users",
+  "/director/teachers",
+  "/director/courses",
+  "/director/teacher-evaluations",
+  "/director/assessments",
+  "/director/year-end",
+  "/director/marketing",
+  "/director/promotions",
+  "/director/profile",
 ];
 
 export async function proxy(request: NextRequest) {
@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Bloquear al rol 'administrativo' de rutas exclusivas del director
-  if (user && pathname.startsWith("/admin")) {
+  if (user && pathname.startsWith("/director")) {
     const role = user.user_metadata?.role as string | undefined;
     if (role === "administrativo") {
       const isRestricted = ADMIN_ONLY_ROUTES.some((r) => pathname.startsWith(r));

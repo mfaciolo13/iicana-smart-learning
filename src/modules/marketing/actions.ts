@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -25,7 +25,7 @@ const inquirySchema = z.object({
 });
 
 export async function createCampaignAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const raw = {
     name: formData.get("name") as string,
@@ -41,12 +41,12 @@ export async function createCampaignAction(_prev: ActionResult, formData: FormDa
 
   await createCampaign(parsed.data);
 
-  revalidatePath("/admin/marketing");
-  return { success: "Campaña creada correctamente", redirectTo: "/admin/marketing" };
+  revalidatePath("/director/marketing");
+  return { success: "Campaña creada correctamente", redirectTo: "/director/marketing" };
 }
 
 export async function createInquiryAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const raw = {
     campaignId: formData.get("campaignId") as string,
@@ -62,12 +62,12 @@ export async function createInquiryAction(_prev: ActionResult, formData: FormDat
 
   await createInquiry({ ...parsed.data, email: parsed.data.email || undefined });
 
-  revalidatePath(`/admin/marketing/${raw.campaignId}`);
+  revalidatePath(`/director/marketing/${raw.campaignId}`);
   return { success: "Consulta registrada" };
 }
 
 export async function updateInquiryStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const id = formData.get("id") as string;
   const status = formData.get("status") as "pending" | "enrolled" | "lost";
@@ -77,6 +77,6 @@ export async function updateInquiryStatusAction(_prev: ActionResult, formData: F
 
   await updateInquiryStatus(id, status);
 
-  revalidatePath(`/admin/marketing/${campaignId}`);
+  revalidatePath(`/director/marketing/${campaignId}`);
   return { success: "Estado actualizado" };
 }

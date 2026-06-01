@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
@@ -28,7 +28,7 @@ interface GradeFormProps {
   redirectTo?: string;
 }
 
-export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar", cancelHref = "/admin/grades", redirectTo }: GradeFormProps) {
+export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar", cancelHref = "/director/grades", redirectTo }: GradeFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!grade;

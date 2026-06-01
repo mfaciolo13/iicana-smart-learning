@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -7,7 +7,7 @@ import { promoteEnrollment } from "./services/promotions.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function promoteStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const enrollmentId = formData.get("enrollmentId") as string;
   if (!enrollmentId) return { error: "Datos incompletos" };
@@ -16,6 +16,6 @@ export async function promoteStudentAction(_prev: ActionResult, formData: FormDa
 
   updateTag("students");
   updateTag("enrollments");
-  revalidatePath("/admin/promotions");
-  redirect(`/admin/promotions/${enrollmentId}/certificate`);
+  revalidatePath("/director/promotions");
+  redirect(`/director/promotions/${enrollmentId}/certificate`);
 }

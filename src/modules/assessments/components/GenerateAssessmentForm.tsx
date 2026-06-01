@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
@@ -19,7 +19,7 @@ interface GenerateAssessmentFormProps {
   cancelHref?: string;
 }
 
-export function GenerateAssessmentForm({ courses, action, cancelHref = "/admin/assessments" }: GenerateAssessmentFormProps) {
+export function GenerateAssessmentForm({ courses, action, cancelHref = "/director/assessments" }: GenerateAssessmentFormProps) {
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {

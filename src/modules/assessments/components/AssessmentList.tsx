@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { AssessmentListItem, AssessmentStatus } from "../types";
@@ -14,7 +14,7 @@ interface AssessmentListProps {
   basePath?: string;
 }
 
-export function AssessmentList({ assessments, basePath = "/admin/assessments" }: AssessmentListProps) {
+export function AssessmentList({ assessments, basePath = "/director/assessments" }: AssessmentListProps) {
   if (assessments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">

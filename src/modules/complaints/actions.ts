@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
@@ -21,7 +21,7 @@ export async function createComplaintAction(_prev: ActionResult, formData: FormD
   await createComplaint(user.id, parsed.data);
 
   revalidatePath("/alumno/complaints");
-  revalidatePath("/admin/complaints");
+  revalidatePath("/director/complaints");
   return { success: "Reclamo enviado correctamente", redirectTo: "/alumno/complaints" };
 }
 
@@ -40,12 +40,12 @@ export async function createComplaintAsProfesorAction(_prev: ActionResult, formD
   await createComplaint(user.id, parsed.data);
 
   revalidatePath("/profesor/complaints");
-  revalidatePath("/admin/complaints");
+  revalidatePath("/director/complaints");
   return { success: "Reclamo enviado correctamente", redirectTo: "/profesor/complaints" };
 }
 
 export async function updateComplaintStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -57,6 +57,6 @@ export async function updateComplaintStatusAction(_prev: ActionResult, formData:
 
   await updateComplaintStatus(parsed.data.id, parsed.data.status);
 
-  revalidatePath("/admin/complaints");
+  revalidatePath("/director/complaints");
   return { success: "Estado actualizado" };
 }

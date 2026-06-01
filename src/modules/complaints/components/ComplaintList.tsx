@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { ComplaintItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "warning" | "info"
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
+  admin: "director",
   profesor: "Docente",
   alumno: "Alumno",
 };
@@ -59,7 +59,7 @@ export function ComplaintList({ complaints, adminView = false, newLink }: Compla
         {complaints.map((c) => {
           const typeCfg = TYPE_CONFIG[c.type] ?? { label: c.type };
           const statusCfg = STATUS_CONFIG[c.status] ?? { label: c.status, variant: "neutral" as const };
-          const detailHref = adminView ? `/admin/complaints/${c.id}` : null;
+          const detailHref = adminView ? `/director/complaints/${c.id}` : null;
           const inner = (
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -109,7 +109,7 @@ export function ComplaintList({ complaints, adminView = false, newLink }: Compla
             {complaints.map((c) => {
               const typeCfg = TYPE_CONFIG[c.type] ?? { label: c.type };
               const statusCfg = STATUS_CONFIG[c.status] ?? { label: c.status, variant: "neutral" as const };
-              const detailHref = adminView ? `/admin/complaints/${c.id}` : undefined;
+              const detailHref = adminView ? `/director/complaints/${c.id}` : undefined;
               return (
                 <tr key={c.id} className={`hover:bg-brand-50 transition-colors ${detailHref ? "relative group cursor-pointer" : ""}`}>
                   {adminView && (
