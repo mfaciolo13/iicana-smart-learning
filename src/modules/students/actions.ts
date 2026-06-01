@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath, updateTag } from "next/cache";
 import { headers } from "next/headers";
@@ -10,7 +10,7 @@ import { sendInvitationEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     email: formData.get("email") as string,
@@ -63,12 +63,12 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   }).catch(() => {});
 
   updateTag("students");
-  revalidatePath("/admin/students");
-  return { success: "Alumno registrado correctamente", redirectTo: "/admin/students" };
+  revalidatePath("/director/students");
+  return { success: "Alumno registrado correctamente", redirectTo: "/director/students" };
 }
 
 export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -86,12 +86,12 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
   await updateStudent(parsed.data);
 
   updateTag("students");
-  revalidatePath("/admin/students");
-  return { success: "Alumno actualizado", redirectTo: `/admin/students/${parsed.data.id}` };
+  revalidatePath("/director/students");
+  return { success: "Alumno actualizado", redirectTo: `/director/students/${parsed.data.id}` };
 }
 
 export async function deleteStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -99,6 +99,6 @@ export async function deleteStudentAction(_prev: ActionResult, formData: FormDat
   await deleteStudent(id);
 
   updateTag("students");
-  revalidatePath("/admin/students");
-  return { success: "Alumno eliminado", redirectTo: "/admin/students" };
+  revalidatePath("/director/students");
+  return { success: "Alumno eliminado", redirectTo: "/director/students" };
 }

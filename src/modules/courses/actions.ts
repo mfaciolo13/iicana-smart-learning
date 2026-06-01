@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
@@ -11,7 +11,7 @@ import { createCourse, updateCourse, deleteCourse, getCourseById } from "./servi
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const raw = {
     name: formData.get("name") as string,
@@ -28,12 +28,12 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
   await createCourse(parsed.data);
 
   updateTag("courses");
-  revalidatePath("/admin/courses");
-  return { success: "Curso creado correctamente", redirectTo: "/admin/courses" };
+  revalidatePath("/director/courses");
+  return { success: "Curso creado correctamente", redirectTo: "/director/courses" };
 }
 
 export async function updateCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -77,12 +77,12 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
   }
 
   updateTag("courses");
-  revalidatePath("/admin/courses");
-  return { success: "Curso actualizado", redirectTo: `/admin/courses/${parsed.data.id}` };
+  revalidatePath("/director/courses");
+  return { success: "Curso actualizado", redirectTo: `/director/courses/${parsed.data.id}` };
 }
 
 export async function deleteCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -90,6 +90,6 @@ export async function deleteCourseAction(_prev: ActionResult, formData: FormData
   await deleteCourse(id);
 
   updateTag("courses");
-  revalidatePath("/admin/courses");
-  return { success: "Curso eliminado", redirectTo: "/admin/courses" };
+  revalidatePath("/director/courses");
+  return { success: "Curso eliminado", redirectTo: "/director/courses" };
 }

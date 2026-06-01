@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
@@ -15,7 +15,7 @@ import {
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     studentId: formData.get("studentId") as string,
@@ -57,14 +57,14 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
 
   updateTag("enrollments");
   updateTag("students");
-  revalidatePath("/admin/enrollments");
-  revalidatePath("/admin/students");
-  revalidatePath("/admin/courses");
-  return { success: "Inscripción creada correctamente", redirectTo: "/admin/enrollments" };
+  revalidatePath("/director/enrollments");
+  revalidatePath("/director/students");
+  revalidatePath("/director/courses");
+  return { success: "Inscripción creada correctamente", redirectTo: "/director/enrollments" };
 }
 
 export async function updateEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -78,14 +78,14 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
 
   updateTag("enrollments");
   updateTag("students");
-  revalidatePath("/admin/enrollments");
-  revalidatePath("/admin/students");
-  revalidatePath("/admin/courses");
+  revalidatePath("/director/enrollments");
+  revalidatePath("/director/students");
+  revalidatePath("/director/courses");
   return { success: "Inscripción actualizada" };
 }
 
 export async function deleteEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -94,8 +94,8 @@ export async function deleteEnrollmentAction(_prev: ActionResult, formData: Form
 
   updateTag("enrollments");
   updateTag("students");
-  revalidatePath("/admin/enrollments");
-  revalidatePath("/admin/students");
-  revalidatePath("/admin/courses");
-  return { success: "Inscripción eliminada", redirectTo: "/admin/enrollments" };
+  revalidatePath("/director/enrollments");
+  revalidatePath("/director/students");
+  revalidatePath("/director/courses");
+  return { success: "Inscripción eliminada", redirectTo: "/director/enrollments" };
 }

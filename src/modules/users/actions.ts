@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -14,7 +14,7 @@ import { sendInvitationEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createAdministrativoAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const raw = {
     email: formData.get("email") as string,
@@ -61,12 +61,12 @@ export async function createAdministrativoAction(_prev: ActionResult, formData: 
     inviteLink: safeInviteUrl,
   }).catch(() => {});
 
-  revalidatePath("/admin/users");
-  redirect("/admin/users");
+  revalidatePath("/director/users");
+  redirect("/director/users");
 }
 
 export async function updateUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -82,12 +82,12 @@ export async function updateUserAction(_prev: ActionResult, formData: FormData):
 
   updateTag("teachers");
   updateTag("students");
-  revalidatePath("/admin/users");
-  redirect(`/admin/users/${parsed.data.id}`);
+  revalidatePath("/director/users");
+  redirect(`/director/users/${parsed.data.id}`);
 }
 
 export async function banUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -96,12 +96,12 @@ export async function banUserAction(_prev: ActionResult, formData: FormData): Pr
 
   updateTag("teachers");
   updateTag("students");
-  revalidatePath("/admin/users");
-  redirect(`/admin/users/${id}`);
+  revalidatePath("/director/users");
+  redirect(`/director/users/${id}`);
 }
 
 export async function resendInvitationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const email = formData.get("email") as string;
   const fullName = formData.get("fullName") as string;
@@ -128,7 +128,7 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
 }
 
 export async function unbanUserAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -137,6 +137,6 @@ export async function unbanUserAction(_prev: ActionResult, formData: FormData): 
 
   updateTag("teachers");
   updateTag("students");
-  revalidatePath("/admin/users");
-  redirect(`/admin/users/${id}`);
+  revalidatePath("/director/users");
+  redirect(`/director/users/${id}`);
 }

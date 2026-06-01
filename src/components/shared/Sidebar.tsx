@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -40,37 +40,37 @@ interface NavItem {
 }
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
-  admin: [
-    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { label: "Alumnos", href: "/admin/students", icon: GraduationCap },
-    { label: "Docentes", href: "/admin/teachers", icon: UserCheck },
-    { label: "Administrativos", href: "/admin/users?role=administrativo", icon: UserPlus },
-    { label: "Cursos", href: "/admin/courses", icon: BookOpen },
-    { label: "Inscripciones", href: "/admin/enrollments", icon: ClipboardList },
-    { label: "Asistencia", href: "/admin/attendance", icon: CalendarCheck },
-    { label: "Notas", href: "/admin/grades", icon: Star },
-    { label: "Pagos", href: "/admin/payments", icon: CreditCard },
-    { label: "Comunicaciones", href: "/admin/notifications", icon: MessageSquare },
-    { label: "Reclamos", href: "/admin/complaints", icon: AlertCircle },
-    { label: "Eval. Docentes", href: "/admin/teacher-evaluations", icon: ClipboardCheck },
-    { label: "Promociones", href: "/admin/promotions", icon: Medal },
-    { label: "Marketing", href: "/admin/marketing", icon: Megaphone },
-    { label: "Cierre de Ciclo", href: "/admin/year-end", icon: Archive },
-    { label: "Reportes", href: "/admin/reports", icon: BarChart2 },
-    { label: "Usuarios", href: "/admin/users", icon: ShieldCheck },
-    { label: "Autoevaluaciones IA", href: "/admin/assessments", icon: Sparkles },
-    { label: "Mi Perfil", href: "/admin/profile", icon: UserCircle },
+  director: [
+    { label: "Dashboard", href: "/director", icon: LayoutDashboard },
+    { label: "Alumnos", href: "/director/students", icon: GraduationCap },
+    { label: "Docentes", href: "/director/teachers", icon: UserCheck },
+    { label: "Administrativos", href: "/director/users?role=administrativo", icon: UserPlus },
+    { label: "Cursos", href: "/director/courses", icon: BookOpen },
+    { label: "Inscripciones", href: "/director/enrollments", icon: ClipboardList },
+    { label: "Asistencia", href: "/director/attendance", icon: CalendarCheck },
+    { label: "Notas", href: "/director/grades", icon: Star },
+    { label: "Pagos", href: "/director/payments", icon: CreditCard },
+    { label: "Comunicaciones", href: "/director/notifications", icon: MessageSquare },
+    { label: "Reclamos", href: "/director/complaints", icon: AlertCircle },
+    { label: "Eval. Docentes", href: "/director/teacher-evaluations", icon: ClipboardCheck },
+    { label: "Promociones", href: "/director/promotions", icon: Medal },
+    { label: "Marketing", href: "/director/marketing", icon: Megaphone },
+    { label: "Cierre de Ciclo", href: "/director/year-end", icon: Archive },
+    { label: "Reportes", href: "/director/reports", icon: BarChart2 },
+    { label: "Usuarios", href: "/director/users", icon: ShieldCheck },
+    { label: "Autoevaluaciones IA", href: "/director/assessments", icon: Sparkles },
+    { label: "Mi Perfil", href: "/director/profile", icon: UserCircle },
   ],
   administrativo: [
-    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { label: "Alumnos", href: "/admin/students", icon: GraduationCap },
-    { label: "Inscripciones", href: "/admin/enrollments", icon: ClipboardList },
-    { label: "Asistencia", href: "/admin/attendance", icon: CalendarCheck },
-    { label: "Notas", href: "/admin/grades", icon: Star },
-    { label: "Pagos", href: "/admin/payments", icon: CreditCard },
-    { label: "Comunicaciones", href: "/admin/notifications", icon: MessageSquare },
-    { label: "Reclamos", href: "/admin/complaints", icon: AlertCircle },
-    { label: "Reportes", href: "/admin/reports", icon: BarChart2 },
+    { label: "Dashboard", href: "/director", icon: LayoutDashboard },
+    { label: "Alumnos", href: "/director/students", icon: GraduationCap },
+    { label: "Inscripciones", href: "/director/enrollments", icon: ClipboardList },
+    { label: "Asistencia", href: "/director/attendance", icon: CalendarCheck },
+    { label: "Notas", href: "/director/grades", icon: Star },
+    { label: "Pagos", href: "/director/payments", icon: CreditCard },
+    { label: "Comunicaciones", href: "/director/notifications", icon: MessageSquare },
+    { label: "Reclamos", href: "/director/complaints", icon: AlertCircle },
+    { label: "Reportes", href: "/director/reports", icon: BarChart2 },
   ],
   profesor: [
     { label: "Mis Cursos", href: "/profesor", icon: BookOpen },
@@ -93,7 +93,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
 };
 
 const ROLE_LABELS: Record<UserRole, string> = {
-  admin: "Director",
+  director: "Director",
   administrativo: "Administrativo",
   profesor: "Docente",
   alumno: "Alumno",

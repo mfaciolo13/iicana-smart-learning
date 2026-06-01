@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
@@ -38,7 +38,7 @@ export function UserEditForm({ userId, fullName, phone, role, action }: UserEdit
 
           <Field label="Rol" required id="role">
             <Select id="role" name="role" required defaultValue={role}>
-              <option value="admin">Director</option>
+              <option value="director">Director</option>
               <option value="administrativo">Administrativo</option>
               <option value="profesor">Docente</option>
               <option value="alumno">Alumno</option>

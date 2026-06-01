@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ShieldX } from "lucide-react";
 
 export default function ForbiddenPage() {
@@ -13,7 +13,7 @@ export default function ForbiddenPage() {
           No tenés permisos para acceder a esta sección. Si creés que es un error, contactá al administrador.
         </p>
         <Link
-          href="/admin"
+          href="/director"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
           style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }}
         >

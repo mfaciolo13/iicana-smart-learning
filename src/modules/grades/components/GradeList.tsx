@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { GradeWithDetails } from "../types";
 import { Badge } from "@/components/ui/Badge";
@@ -44,7 +44,7 @@ export function GradeList({ grades, showNewLink = false }: GradeListProps) {
         <p className="text-sm text-slate-400 mt-1">Aún no hay evaluaciones registradas.</p>
         {showNewLink && (
           <Link
-            href="/admin/grades/new"
+            href="/director/grades/new"
             className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
           >
             + Cargar nota
@@ -63,7 +63,7 @@ export function GradeList({ grades, showNewLink = false }: GradeListProps) {
           return (
             <Link
               key={g.id}
-              href={`/admin/grades/${g.id}`}
+              href={`/director/grades/${g.id}`}
               className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
             >
               <div className="min-w-0">
@@ -114,7 +114,7 @@ export function GradeList({ grades, showNewLink = false }: GradeListProps) {
                     {new Date(g.evaluatedAt).toLocaleDateString("es-AR")}
                   </td>
                   <td className="py-3.5 pr-4 text-right">
-                    <Link href={`/admin/grades/${g.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Link href={`/director/grades/${g.id}`} className="after:absolute after:inset-0 after:content-['']">
                       <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                     </Link>
                   </td>

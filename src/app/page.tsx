@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
@@ -22,6 +22,6 @@ export default async function HomePage() {
   }
 
   // administrativo uses the /admin portal
-  const targetRole = profile.role === "administrativo" ? "admin" : profile.role;
+  const targetRole = profile.role === "administrativo" ? "director" : profile.role;
   redirect(`/${targetRole}`);
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
@@ -100,7 +100,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
       </Card>
 
       <div className="flex justify-end gap-3">
-        <Link href="/admin/courses" className={buttonVariants({ variant: "secondary" })}>
+        <Link href="/director/courses" className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
         <Button type="submit" variant="primary" loading={isPending}>

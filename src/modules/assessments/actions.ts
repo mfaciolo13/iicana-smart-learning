@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -24,7 +24,7 @@ import type { ActionResult } from "@/lib/action-result";
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function generateAssessmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
   const user = await getCurrentUser();
   if (!user) return { error: "No autorizado" };
 
@@ -83,12 +83,12 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
 
-  revalidatePath("/admin/assessments");
-  redirect(`/admin/assessments/${assessment.id}`);
+  revalidatePath("/director/assessments");
+  redirect(`/director/assessments/${assessment.id}`);
 }
 
 export async function publishAssessmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const parsed = publishAssessmentSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -115,22 +115,22 @@ export async function publishAssessmentAction(_prev: ActionResult, formData: For
     }
   }
 
-  revalidatePath("/admin/assessments");
-  revalidatePath(`/admin/assessments/${parsed.data.id}`);
-  redirect(`/admin/assessments/${parsed.data.id}`);
+  revalidatePath("/director/assessments");
+  revalidatePath(`/director/assessments/${parsed.data.id}`);
+  redirect(`/director/assessments/${parsed.data.id}`);
 }
 
 export async function archiveAssessmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
 
   await archiveAssessment(id);
 
-  revalidatePath("/admin/assessments");
-  revalidatePath(`/admin/assessments/${id}`);
-  redirect(`/admin/assessments/${id}`);
+  revalidatePath("/director/assessments");
+  revalidatePath(`/director/assessments/${id}`);
+  redirect(`/director/assessments/${id}`);
 }
 
 export async function generateAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -198,7 +198,7 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
 }
 
 export async function publishAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "profesor"]);
+  await requireRole(["director", "profesor"]);
 
   const parsed = publishAssessmentSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -231,7 +231,7 @@ export async function publishAssessmentProfesorAction(_prev: ActionResult, formD
 }
 
 export async function archiveAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "profesor"]);
+  await requireRole(["director", "profesor"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };

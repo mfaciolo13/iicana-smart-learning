@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath, updateTag } from "next/cache";
 import { headers } from "next/headers";
@@ -10,7 +10,7 @@ import { sendInvitationEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const raw = {
     email: formData.get("email") as string,
@@ -62,12 +62,12 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
   }).catch(() => {});
 
   updateTag("teachers");
-  revalidatePath("/admin/teachers");
-  return { success: "Docente registrado correctamente", redirectTo: "/admin/teachers" };
+  revalidatePath("/director/teachers");
+  return { success: "Docente registrado correctamente", redirectTo: "/director/teachers" };
 }
 
 export async function updateTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -83,12 +83,12 @@ export async function updateTeacherAction(_prev: ActionResult, formData: FormDat
   await updateTeacher(parsed.data);
 
   updateTag("teachers");
-  revalidatePath("/admin/teachers");
-  return { success: "Docente actualizado", redirectTo: `/admin/teachers/${parsed.data.id}` };
+  revalidatePath("/director/teachers");
+  return { success: "Docente actualizado", redirectTo: `/director/teachers/${parsed.data.id}` };
 }
 
 export async function deleteTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -96,6 +96,6 @@ export async function deleteTeacherAction(_prev: ActionResult, formData: FormDat
   await deleteTeacher(id);
 
   updateTag("teachers");
-  revalidatePath("/admin/teachers");
-  return { success: "Docente eliminado", redirectTo: "/admin/teachers" };
+  revalidatePath("/director/teachers");
+  return { success: "Docente eliminado", redirectTo: "/director/teachers" };
 }

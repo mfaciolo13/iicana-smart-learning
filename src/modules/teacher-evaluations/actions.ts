@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -37,7 +37,7 @@ export async function submitSurveyAction(_prev: ActionResult, formData: FormData
 }
 
 export async function createObservationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]);
+  await requireRole(["director"]);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -58,6 +58,6 @@ export async function createObservationAction(_prev: ActionResult, formData: For
 
   await createObservation(parsed.data, user.id);
 
-  revalidatePath("/admin/teacher-evaluations");
-  redirect("/admin/teacher-evaluations");
+  revalidatePath("/director/teacher-evaluations");
+  redirect("/director/teacher-evaluations");
 }

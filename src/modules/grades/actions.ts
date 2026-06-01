@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
@@ -7,7 +7,7 @@ import { createGradeSchema, updateGradeSchema } from "./schemas";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "profesor"]);
+  await requireRole(["director", "profesor"]);
 
   const raw = {
     enrollmentId: formData.get("enrollmentId") as string,
@@ -29,14 +29,14 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
 
   if (error) return { error: error.message };
 
-  revalidatePath("/admin/grades");
+  revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
-  const redirectTo = (formData.get("redirectTo") as string) || "/admin/grades";
+  const redirectTo = (formData.get("redirectTo") as string) || "/director/grades";
   return { success: "Nota cargada correctamente", redirectTo };
 }
 
 export async function updateGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "profesor"]);
+  await requireRole(["director", "profesor"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -58,13 +58,13 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
 
   if (error) return { error: error.message };
 
-  revalidatePath("/admin/grades");
+  revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
-  return { success: "Nota actualizada", redirectTo: `/admin/grades/${parsed.data.id}` };
+  return { success: "Nota actualizada", redirectTo: `/director/grades/${parsed.data.id}` };
 }
 
 export async function deleteGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "profesor"]);
+  await requireRole(["director", "profesor"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -74,7 +74,7 @@ export async function deleteGradeAction(_prev: ActionResult, formData: FormData)
 
   if (error) return { error: error.message };
 
-  revalidatePath("/admin/grades");
+  revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
-  return { success: "Nota eliminada", redirectTo: "/admin/grades" };
+  return { success: "Nota eliminada", redirectTo: "/director/grades" };
 }

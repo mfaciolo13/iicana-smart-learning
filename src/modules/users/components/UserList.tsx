@@ -1,10 +1,10 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { UserListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
 const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" | "warning" | "neutral" }> = {
-  admin: { label: "Admin", variant: "warning" },
+  admin: { label: "director", variant: "warning" },
   profesor: { label: "Docente", variant: "info" },
   alumno: { label: "Alumno", variant: "success" },
 };
@@ -47,7 +47,7 @@ export function UserList({ users }: UserListProps) {
           return (
             <Link
               key={u.id}
-              href={`/admin/users/${u.id}`}
+              href={`/director/users/${u.id}`}
               className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
             >
               <div
@@ -105,7 +105,7 @@ export function UserList({ users }: UserListProps) {
                     {new Date(u.createdAt).toLocaleDateString("es-AR")}
                   </td>
                   <td className="py-3 pr-4 text-right">
-                    <Link href={`/admin/users/${u.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Link href={`/director/users/${u.id}`} className="after:absolute after:inset-0 after:content-['']">
                       <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                     </Link>
                   </td>

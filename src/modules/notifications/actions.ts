@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
@@ -17,7 +17,7 @@ import {
 import type { ActionResult } from "@/lib/action-result";
 
 export async function sendNotificationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin", "administrativo"]);
+  await requireRole(["director", "administrativo"]);
 
   const raw = {
     targetId: formData.get("targetId") as string,
@@ -64,8 +64,8 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
     }
   }
 
-  revalidatePath("/admin/notifications");
-  return { success: "Notificación enviada correctamente", redirectTo: "/admin/notifications" };
+  revalidatePath("/director/notifications");
+  return { success: "Notificación enviada correctamente", redirectTo: "/director/notifications" };
 }
 
 export async function markAsReadAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -76,7 +76,7 @@ export async function markAsReadAction(_prev: ActionResult, formData: FormData):
   if (!id) return;
 
   await markAsRead(id, user.id);
-  revalidatePath("/admin/notifications");
+  revalidatePath("/director/notifications");
   revalidatePath("/alumno/notifications");
   revalidatePath("/profesor/notifications");
 }
@@ -86,7 +86,7 @@ export async function markAllAsReadAction(_prev: ActionResult, _formData?: FormD
   if (!user) return;
 
   await markAllAsRead(user.id);
-  revalidatePath("/admin/notifications");
+  revalidatePath("/director/notifications");
   revalidatePath("/alumno/notifications");
   revalidatePath("/profesor/notifications");
   return { success: "Notificaciones marcadas como leídas" };

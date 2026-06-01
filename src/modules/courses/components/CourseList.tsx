@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { CourseListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
@@ -34,7 +34,7 @@ export function CourseList({ courses }: CourseListProps) {
         <p className="text-base font-semibold text-slate-700">Aún no hay cursos cargados</p>
         <p className="text-sm text-slate-400 mt-1">Empezá creando el primero.</p>
         <Link
-          href="/admin/courses/new"
+          href="/director/courses/new"
           className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
         >
           + Nuevo curso
@@ -53,7 +53,7 @@ export function CourseList({ courses }: CourseListProps) {
           return (
             <Link
               key={course.id}
-              href={`/admin/courses/${course.id}`}
+              href={`/director/courses/${course.id}`}
               className="block p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
@@ -115,7 +115,7 @@ export function CourseList({ courses }: CourseListProps) {
                     <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                   </td>
                   <td className="py-3.5 pr-4 text-right">
-                    <Link href={`/admin/courses/${course.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Link href={`/director/courses/${course.id}`} className="after:absolute after:inset-0 after:content-['']">
                       <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                     </Link>
                   </td>
