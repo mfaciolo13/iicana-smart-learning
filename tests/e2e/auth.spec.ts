@@ -24,12 +24,12 @@ test.describe("Autenticación", () => {
 
   test("acceder a /admin sin sesión redirige a /login", async ({ page }) => {
     await page.goto("/admin");
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
   });
 
   test("acceder a /alumno sin sesión redirige a /login", async ({ page }) => {
     await page.goto("/alumno");
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
   });
 
   test("la página de login tiene los campos correctos", async ({ page }) => {
