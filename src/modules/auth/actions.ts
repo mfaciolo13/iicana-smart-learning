@@ -61,7 +61,8 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   }
 
   const role = profile?.role ?? "alumno";
-  const target = role === "administrativo" ? "director" : role;
+  // "admin" → "director" mientras se aplica la migración SQL en Supabase
+  const target = role === "administrativo" || role === "admin" ? "director" : role;
   redirect(`/${target}`);
 }
 
