@@ -64,6 +64,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
 
   updateTag("students");
   revalidatePath("/director/students");
+  revalidatePath("/administrativo/students");
   return { success: "Alumno registrado correctamente", redirectTo: "/director/students" };
 }
 
@@ -87,6 +88,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
 
   updateTag("students");
   revalidatePath("/director/students");
+  revalidatePath("/administrativo/students");
   return { success: "Alumno actualizado", redirectTo: `/director/students/${parsed.data.id}` };
 }
 
@@ -100,5 +102,6 @@ export async function deleteStudentAction(_prev: ActionResult, formData: FormDat
 
   updateTag("students");
   revalidatePath("/director/students");
+  revalidatePath("/administrativo/students");
   return { success: "Alumno eliminado", redirectTo: "/director/students" };
 }

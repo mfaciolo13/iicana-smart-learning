@@ -21,9 +21,10 @@ const LEVEL_LABELS: Record<string, string> = {
 interface EnrollmentListProps {
   enrollments: EnrollmentListItem[];
   showNewLink?: boolean;
+  basePath?: string;
 }
 
-export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentListProps) {
+export function EnrollmentList({ enrollments, showNewLink = false, basePath = "/director/enrollments" }: EnrollmentListProps) {
   if (enrollments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -36,7 +37,7 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
         <p className="text-sm text-slate-400 mt-1">Todavía no hay inscripciones registradas.</p>
         {showNewLink && (
           <Link
-            href="/director/enrollments/new"
+            href={`${basePath}/new`}
             className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
           >
             + Nueva inscripción
@@ -55,7 +56,7 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
           return (
             <Link
               key={e.id}
-              href={`/director/enrollments/${e.id}`}
+              href={`${basePath}/${e.id}`}
               className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
             >
               <div className="min-w-0">
@@ -104,7 +105,7 @@ export function EnrollmentList({ enrollments, showNewLink = false }: EnrollmentL
                     <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                   </td>
                   <td className="py-3.5 pr-4 text-right">
-                    <Link href={`/director/enrollments/${e.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Link href={`${basePath}/${e.id}`} className="after:absolute after:inset-0 after:content-['']">
                       <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                     </Link>
                   </td>

@@ -32,6 +32,7 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
   const payment = await createPayment(parsed.data);
 
   revalidatePath("/director/payments");
+  revalidatePath("/administrativo/payments");
   return { success: "Pago registrado correctamente", redirectTo: `/director/payments/${payment.id}` };
 }
 
@@ -50,6 +51,7 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
   await markAsPaid(parsed.data);
 
   revalidatePath("/director/payments");
+  revalidatePath("/administrativo/payments");
   return { success: "Pago registrado como abonado" };
 }
 
@@ -67,6 +69,7 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
   await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
 
   revalidatePath("/director/payments");
+  revalidatePath("/administrativo/payments");
   return { success: "Estado actualizado" };
 }
 
@@ -74,6 +77,7 @@ export async function markOverduePaymentsAction(_prev: ActionResult): Promise<Ac
   await requireRole(["director", "administrativo"]);
   await markOverduePayments();
   revalidatePath("/director/payments");
+  revalidatePath("/administrativo/payments");
   return { success: "Pagos vencidos actualizados" };
 }
 
@@ -116,6 +120,7 @@ export async function runOverdueChecksAction(_prev: ActionResult, _formData?: Fo
   }
 
   revalidatePath("/director/payments");
+  revalidatePath("/administrativo/payments");
   const parts: string[] = [];
   if (alertTargets.length > 0) parts.push(`${alertTargets.length} alerta(s) de mora enviada(s)`);
   if (suspended > 0) parts.push(`${suspended} alumno(s) suspendido(s)`);

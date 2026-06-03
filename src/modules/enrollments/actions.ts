@@ -60,6 +60,8 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
   revalidatePath("/director/enrollments");
   revalidatePath("/director/students");
   revalidatePath("/director/courses");
+  revalidatePath("/administrativo/enrollments");
+  revalidatePath("/administrativo/students");
   return { success: "Inscripción creada correctamente", redirectTo: "/director/enrollments" };
 }
 
@@ -81,6 +83,8 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
   revalidatePath("/director/enrollments");
   revalidatePath("/director/students");
   revalidatePath("/director/courses");
+  revalidatePath("/administrativo/enrollments");
+  revalidatePath("/administrativo/students");
   return { success: "Inscripción actualizada" };
 }
 
@@ -97,5 +101,7 @@ export async function deleteEnrollmentAction(_prev: ActionResult, formData: Form
   revalidatePath("/director/enrollments");
   revalidatePath("/director/students");
   revalidatePath("/director/courses");
+  revalidatePath("/administrativo/enrollments");
+  revalidatePath("/administrativo/students");
   return { success: "Inscripción eliminada", redirectTo: "/director/enrollments" };
 }

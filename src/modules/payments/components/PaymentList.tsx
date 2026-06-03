@@ -13,9 +13,10 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutr
 interface PaymentListProps {
   payments: PaymentListItem[];
   showNewLink?: boolean;
+  basePath?: string;
 }
 
-export function PaymentList({ payments, showNewLink = false }: PaymentListProps) {
+export function PaymentList({ payments, showNewLink = false, basePath = "/director/payments" }: PaymentListProps) {
   if (payments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -28,7 +29,7 @@ export function PaymentList({ payments, showNewLink = false }: PaymentListProps)
         <p className="text-sm text-slate-400 mt-1">No hay pagos que coincidan con el filtro.</p>
         {showNewLink && (
           <Link
-            href="/director/payments/new"
+            href={`${basePath}/new`}
             className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
           >
             + Registrar pago
@@ -48,7 +49,7 @@ export function PaymentList({ payments, showNewLink = false }: PaymentListProps)
           return (
             <Link
               key={p.id}
-              href={`/director/payments/${p.id}`}
+              href={`${basePath}/${p.id}`}
               className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${isOverdue ? "bg-red-50/60 border-red-100 hover:border-red-200" : "bg-white border-slate-100 hover:border-brand-200"}`}
             >
               <div className="min-w-0">
@@ -112,7 +113,7 @@ export function PaymentList({ payments, showNewLink = false }: PaymentListProps)
                     <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                   </td>
                   <td className="py-3.5 pr-4 text-right">
-                    <Link href={`/director/payments/${p.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Link href={`${basePath}/${p.id}`} className="after:absolute after:inset-0 after:content-['']">
                       <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                     </Link>
                   </td>

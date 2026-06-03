@@ -1,7 +1,7 @@
 ﻿import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/director", "/admin", "/profesor", "/alumno"];
+const PROTECTED_PREFIXES = ["/director", "/admin", "/profesor", "/alumno", "/administrativo"];
 
 // Rutas de /admin exclusivas del director — el rol 'administrativo' es bloqueado
 const ADMIN_ONLY_ROUTES = [
