@@ -21,7 +21,7 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  // "admin" y "administrativo" usan el portal /director
-  const targetRole = profile.role === "administrativo" || profile.role === "admin" ? "director" : profile.role;
+  // "admin" → legacy alias para "director"
+  const targetRole = profile.role === "admin" ? "director" : profile.role;
   redirect(`/${targetRole}`);
 }

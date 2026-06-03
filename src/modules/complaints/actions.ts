@@ -22,6 +22,7 @@ export async function createComplaintAction(_prev: ActionResult, formData: FormD
 
   revalidatePath("/alumno/complaints");
   revalidatePath("/director/complaints");
+  revalidatePath("/administrativo/complaints");
   return { success: "Reclamo enviado correctamente", redirectTo: "/alumno/complaints" };
 }
 
@@ -41,6 +42,7 @@ export async function createComplaintAsProfesorAction(_prev: ActionResult, formD
 
   revalidatePath("/profesor/complaints");
   revalidatePath("/director/complaints");
+  revalidatePath("/administrativo/complaints");
   return { success: "Reclamo enviado correctamente", redirectTo: "/profesor/complaints" };
 }
 
@@ -58,5 +60,6 @@ export async function updateComplaintStatusAction(_prev: ActionResult, formData:
   await updateComplaintStatus(parsed.data.id, parsed.data.status);
 
   revalidatePath("/director/complaints");
+  revalidatePath("/administrativo/complaints");
   return { success: "Estado actualizado" };
 }

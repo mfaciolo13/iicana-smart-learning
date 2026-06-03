@@ -65,6 +65,7 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
   }
 
   revalidatePath("/director/notifications");
+  revalidatePath("/administrativo/notifications");
   return { success: "Notificación enviada correctamente", redirectTo: "/director/notifications" };
 }
 
@@ -79,6 +80,7 @@ export async function markAsReadAction(_prev: ActionResult, formData: FormData):
   revalidatePath("/director/notifications");
   revalidatePath("/alumno/notifications");
   revalidatePath("/profesor/notifications");
+  revalidatePath("/administrativo/notifications");
 }
 
 export async function markAllAsReadAction(_prev: ActionResult, _formData?: FormData): Promise<ActionResult> {
@@ -89,5 +91,6 @@ export async function markAllAsReadAction(_prev: ActionResult, _formData?: FormD
   revalidatePath("/director/notifications");
   revalidatePath("/alumno/notifications");
   revalidatePath("/profesor/notifications");
+  revalidatePath("/administrativo/notifications");
   return { success: "Notificaciones marcadas como leídas" };
 }

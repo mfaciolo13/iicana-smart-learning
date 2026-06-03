@@ -46,6 +46,7 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
 
   revalidatePath("/director/attendance");
   revalidatePath("/profesor/attendance");
+  revalidatePath("/administrativo/attendance");
   const redirectTo = (formData.get("redirectTo") as string) || "/director/attendance";
   return { success: "Asistencia registrada correctamente", redirectTo };
 }
