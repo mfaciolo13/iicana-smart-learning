@@ -20,6 +20,9 @@ export const getServerProfile = cache(async () => {
     .select("id, role, full_name, avatar_url, phone, email")
     .eq("id", user.id)
     .single();
+  if (!profile) return null;
+  // Normalizar rol pre-migración: "admin" → "director"
+  if (profile.role === "admin") profile.role = "director";
   return profile as {
     id: string;
     role: string;
