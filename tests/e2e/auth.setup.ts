@@ -27,7 +27,7 @@ setup("autenticar como admin", async ({ page }) => {
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/admin/);
+  await expect(page).toHaveURL(/\/director/);
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
