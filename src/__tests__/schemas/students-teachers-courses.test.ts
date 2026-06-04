@@ -251,14 +251,14 @@ describe("createCourseSchema", () => {
     if (result.success) expect(result.data.maxCapacity).toBe(12);
   });
 
-  it("rechaza maxCapacity fuera de rango 1-50", () => {
+  it("rechaza maxCapacity fuera de rango 1-15", () => {
     expect(createCourseSchema.safeParse({ ...valid, maxCapacity: 0 }).success).toBe(false);
-    expect(createCourseSchema.safeParse({ ...valid, maxCapacity: 51 }).success).toBe(false);
+    expect(createCourseSchema.safeParse({ ...valid, maxCapacity: 16 }).success).toBe(false);
   });
 
-  it("acepta maxCapacity en los límites exactos (1 y 50)", () => {
+  it("acepta maxCapacity en los límites exactos (1 y 15)", () => {
     expect(createCourseSchema.safeParse({ ...valid, maxCapacity: 1 }).success).toBe(true);
-    expect(createCourseSchema.safeParse({ ...valid, maxCapacity: 50 }).success).toBe(true);
+    expect(createCourseSchema.safeParse({ ...valid, maxCapacity: 15 }).success).toBe(true);
   });
 
   it("acepta teacherId UUID válido", () => {

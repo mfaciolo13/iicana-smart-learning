@@ -75,7 +75,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
           </Field>
 
           <Field label="Cupo máximo" required id="maxCapacity">
-            <Input id="maxCapacity" name="maxCapacity" type="number" required min={1} max={50} defaultValue={course?.maxCapacity ?? 15} />
+            <Input id="maxCapacity" name="maxCapacity" type="number" required min={1} max={15} defaultValue={course?.maxCapacity ?? 15} />
           </Field>
 
           <Field label="Docente" id="teacherId">
