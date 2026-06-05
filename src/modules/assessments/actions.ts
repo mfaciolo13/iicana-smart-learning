@@ -6,6 +6,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { sendAssessmentPublishedEmail } from "@/lib/email";
 import { getEmailsForCourse } from "@/modules/notifications/services/notifications.service";
+import { createServiceClient } from "@/lib/supabase/service";
+import { getDocumentById } from "@/modules/documents/services/documents.service";
 import {
   generateAssessmentSchema,
   publishAssessmentSchema,
@@ -21,6 +23,63 @@ import {
 import type { QuizQuestion } from "./types";
 import type { ActionResult } from "@/lib/action-result";
 
+// MIME types supported by Claude's API
+const CLAUDE_PDF_MIME = "application/pdf";
+const CLAUDE_IMAGE_MIMES = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+async function buildDocumentContent(documentIds: string[]): Promise<Anthropic.Messages.ContentBlockParam[]> {
+  if (documentIds.length === 0) return [];
+
+  const supabase = createServiceClient();
+  const contentBlocks: Anthropic.Messages.ContentBlockParam[] = [];
+
+  for (const id of documentIds) {
+    const doc = await getDocumentById(id);
+    if (!doc) continue;
+
+    // Skip formats Claude cannot process
+    const isPdf = doc.mimeType === CLAUDE_PDF_MIME;
+    const isImage = CLAUDE_IMAGE_MIMES.has(doc.mimeType);
+    if (!isPdf && !isImage) continue;
+
+    try {
+      const { data: fileData, error } = await supabase.storage
+        .from("documents")
+        .download(doc.filePath);
+      if (error || !fileData) continue;
+
+      const arrayBuffer = await fileData.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+      if (isPdf) {
+        contentBlocks.push({
+          type: "document",
+          source: {
+            type: "base64",
+            media_type: "application/pdf",
+            data: base64,
+          },
+          title: doc.name,
+        } satisfies Anthropic.Messages.DocumentBlockParam);
+      } else {
+        contentBlocks.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: doc.mimeType as "image/png" | "image/jpeg" | "image/webp",
+            data: base64,
+          },
+        } satisfies Anthropic.Messages.ImageBlockParam);
+      }
+    } catch {
+      // Silently skip documents that fail to download
+      continue;
+    }
+  }
+
+  return contentBlocks;
+}
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function generateAssessmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -32,6 +91,7 @@ export async function generateAssessmentAction(_prev: ActionResult, formData: Fo
     courseId: formData.get("courseId") as string,
     weekLabel: formData.get("weekLabel") as string,
     topic: formData.get("topic") as string,
+    documentIds: (formData.get("documentIds") as string) || "",
   };
 
   const parsed = generateAssessmentSchema.safeParse(raw);
@@ -59,6 +119,7 @@ IMPORTANTE:
 - El campo "explanation" es una breve explicación en español de por qué esa es la respuesta correcta (1-2 oraciones).
 - Variá los tipos: completar oraciones, elegir la forma correcta del verbo, vocabulario, comprensión, etc.
 - Hacé las preguntas interesantes y relevantes al tema.
+${raw.documentIds ? "- Usá los documentos adjuntos como contexto adicional para generar preguntas más específicas y relevantes al material de la clase." : ""}
 
 Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este formato exacto:
 [
@@ -73,10 +134,20 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
   let questions: QuizQuestion[];
 
   try {
+    const docIds = raw.documentIds
+      ? raw.documentIds.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+    const docBlocks = await buildDocumentContent(docIds);
+
+    const userContent: Anthropic.Messages.ContentBlockParam[] = [
+      ...docBlocks,
+      { type: "text", text: prompt },
+    ];
+
     const message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: userContent }],
     });
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
@@ -152,6 +223,7 @@ export async function generateAssessmentProfesorAction(_prev: ActionResult, form
     courseId: formData.get("courseId") as string,
     weekLabel: formData.get("weekLabel") as string,
     topic: formData.get("topic") as string,
+    documentIds: (formData.get("documentIds") as string) || "",
   };
 
   const parsed = generateAssessmentSchema.safeParse(raw);
@@ -179,6 +251,7 @@ IMPORTANTE:
 - El campo "explanation" es una breve explicación en español de por qué esa es la respuesta correcta (1-2 oraciones).
 - Variá los tipos: completar oraciones, elegir la forma correcta del verbo, vocabulario, comprensión, etc.
 - Hacé las preguntas interesantes y relevantes al tema.
+${raw.documentIds ? "- Usá los documentos adjuntos como contexto adicional para generar preguntas más específicas y relevantes al material de la clase." : ""}
 
 Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este formato exacto:
 [
@@ -193,10 +266,20 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
   let questions: QuizQuestion[];
 
   try {
+    const docIds = raw.documentIds
+      ? raw.documentIds.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+    const docBlocks = await buildDocumentContent(docIds);
+
+    const userContent: Anthropic.Messages.ContentBlockParam[] = [
+      ...docBlocks,
+      { type: "text", text: prompt },
+    ];
+
     const message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: userContent }],
     });
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
