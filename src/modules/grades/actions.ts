@@ -17,7 +17,17 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
   };
 
   const parsed = createGradeSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("grades").insert({
@@ -46,7 +56,17 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
   };
 
   const parsed = updateGradeSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const updateData: Record<string, string | null | undefined> = {};
   if (parsed.data.evaluationType) updateData.evaluation_type = parsed.data.evaluationType;

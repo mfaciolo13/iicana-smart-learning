@@ -38,7 +38,7 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
   const isEditing = !!student;
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
@@ -51,25 +51,25 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
 
       <Card title="Datos personales" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Nombre completo" required id="fullName">
+          <Field label="Nombre completo" required id="fullName" error={state?.fieldErrors?.fullName}>
             <Input id="fullName" name="fullName" type="text" required defaultValue={student?.profile.fullName} placeholder="Juan Pérez" />
           </Field>
 
-          <Field label="DNI" required id="dni">
+          <Field label="DNI" required id="dni" error={state?.fieldErrors?.dni}>
             <Input id="dni" name="dni" type="text" required minLength={7} maxLength={8} defaultValue={student?.dni} placeholder="12345678" />
           </Field>
 
           {!isEditing && (
-            <Field label="Email" required id="email">
+            <Field label="Email" required id="email" error={state?.fieldErrors?.email}>
               <Input id="email" name="email" type="email" required autoComplete="email" placeholder="alumno@email.com" />
             </Field>
           )}
 
-          <Field label="Teléfono" id="phone">
+          <Field label="Teléfono" id="phone" error={state?.fieldErrors?.phone}>
             <Input id="phone" name="phone" type="tel" defaultValue={student?.profile.phone ?? ""} placeholder="+54 9 351 000 0000" />
           </Field>
 
-          <Field label="Fecha de nacimiento" required={!isEditing} id="birthDate">
+          <Field label="Fecha de nacimiento" required={!isEditing} id="birthDate" error={state?.fieldErrors?.birthDate}>
             <Input id="birthDate" name="birthDate" type="date" required={!isEditing} defaultValue={student?.birthDate} min="1900-01-01" max={new Date().toISOString().split("T")[0]} />
           </Field>
         </div>

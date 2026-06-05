@@ -19,7 +19,7 @@ export function UserEditForm({ userId, fullName, phone, role, action }: UserEdit
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
   }, [state]);
 
   return (
@@ -28,15 +28,15 @@ export function UserEditForm({ userId, fullName, phone, role, action }: UserEdit
         <input type="hidden" name="id" value={userId} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Nombre completo" required id="fullName" className="sm:col-span-2">
+          <Field label="Nombre completo" required id="fullName" className="sm:col-span-2" error={state?.fieldErrors?.fullName}>
             <Input id="fullName" name="fullName" required defaultValue={fullName} />
           </Field>
 
-          <Field label="Teléfono" id="phone">
+          <Field label="Teléfono" id="phone" error={state?.fieldErrors?.phone}>
             <Input id="phone" name="phone" type="tel" defaultValue={phone ?? ""} placeholder="Ej: 3516789012" />
           </Field>
 
-          <Field label="Rol" required id="role">
+          <Field label="Rol" required id="role" error={state?.fieldErrors?.role}>
             <Select id="role" name="role" required defaultValue={role}>
               <option value="director">Director</option>
               <option value="administrativo">Administrativo</option>

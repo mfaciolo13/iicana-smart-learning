@@ -27,7 +27,17 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
   };
 
   const parsed = sendNotificationSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const { targetId, type, title, body } = parsed.data;
   const payload = { type: type as never, title, body };

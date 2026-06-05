@@ -34,7 +34,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
   const isEditing = !!grade;
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
@@ -49,7 +49,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
       <Card title="Datos de la evaluación" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {!isEditing && (
-            <Field label="Alumno / Inscripción" required id="enrollmentId" className="sm:col-span-2">
+            <Field label="Alumno / Inscripción" required id="enrollmentId" className="sm:col-span-2" error={state?.fieldErrors?.enrollmentId}>
               <Select id="enrollmentId" name="enrollmentId" required defaultValue="">
                 <option value="" disabled>Seleccioná un alumno</option>
                 {enrollments.map((e) => (
@@ -59,7 +59,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
             </Field>
           )}
 
-          <Field label="Tipo de evaluación" required id="evaluationType">
+          <Field label="Tipo de evaluación" required id="evaluationType" error={state?.fieldErrors?.evaluationType}>
             <Select id="evaluationType" name="evaluationType" required defaultValue={grade?.evaluationType ?? "parcial"}>
               <option value="" disabled>Seleccioná el tipo</option>
               {EVAL_TYPES.map((t) => (
@@ -68,11 +68,11 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
             </Select>
           </Field>
 
-          <Field label="Nota (1–10)" required id="score">
+          <Field label="Nota (1–10)" required id="score" error={state?.fieldErrors?.score}>
             <Input id="score" name="score" type="number" required min={1} max={10} step={0.5} defaultValue={grade?.score ?? ""} placeholder="ej. 8.5" />
           </Field>
 
-          <Field label="Observaciones" id="notes" className="sm:col-span-2">
+          <Field label="Observaciones" id="notes" className="sm:col-span-2" error={state?.fieldErrors?.notes}>
             <Textarea id="notes" name="notes" defaultValue={grade?.notes ?? ""} placeholder="Comentarios opcionales sobre la evaluación..." />
           </Field>
         </div>

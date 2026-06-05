@@ -35,7 +35,17 @@ export async function generateAssessmentAction(_prev: ActionResult, formData: Fo
   };
 
   const parsed = generateAssessmentSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const prompt = `Sos un profesor experto de inglés en Argentina.
 Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
@@ -145,7 +155,17 @@ export async function generateAssessmentProfesorAction(_prev: ActionResult, form
   };
 
   const parsed = generateAssessmentSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const prompt = `Sos un profesor experto de inglés en Argentina.
 Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
@@ -260,7 +280,17 @@ export async function submitAttemptAction(_prev: ActionResult, formData: FormDat
     assessmentId: formData.get("assessmentId"),
     answers,
   });
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const detail = await getAssessmentDetail(parsed.data.assessmentId);
   if (!detail || detail.status !== "published") return { error: "Evaluación no disponible" };

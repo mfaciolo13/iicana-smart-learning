@@ -27,7 +27,17 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
   };
 
   const parsed = createPaymentSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const payment = await createPayment(parsed.data);
 
@@ -46,7 +56,17 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
   };
 
   const parsed = markAsPaidSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   await markAsPaid(parsed.data);
 
@@ -64,7 +84,17 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
   };
 
   const parsed = updatePaymentStatusSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
 

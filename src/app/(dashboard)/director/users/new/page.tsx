@@ -1,14 +1,25 @@
 ﻿"use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import { createAdministrativoAction } from "@/modules/users/actions";
 import { Field, Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 export default function NewAdministrativoPage() {
+  const router = useRouter();
   const [state, action, pending] = useActionState(createAdministrativoAction, undefined);
+
+  useEffect(() => {
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
+  }, [state, router]);
 
   return (
     <div>
@@ -27,21 +38,17 @@ export default function NewAdministrativoPage() {
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-lg">
         <form action={action} className="space-y-4">
-          <Field label="Nombre completo" id="fullName" required>
+          <Field label="Nombre completo" id="fullName" required error={state?.fieldErrors?.fullName}>
             <Input id="fullName" name="fullName" placeholder="María González" required />
           </Field>
 
-          <Field label="Email" id="email" required>
+          <Field label="Email" id="email" required error={state?.fieldErrors?.email}>
             <Input id="email" name="email" type="email" placeholder="maria@cervantes.com" required />
           </Field>
 
-          <Field label="Teléfono" id="phone">
+          <Field label="Teléfono" id="phone" error={state?.fieldErrors?.phone}>
             <Input id="phone" name="phone" type="tel" placeholder="+54 351 123 4567" />
           </Field>
-
-          {state?.error && (
-            <p className="text-sm text-red-600">{state.error}</p>
-          )}
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={pending}>

@@ -28,7 +28,7 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
@@ -39,7 +39,7 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
     <form action={formAction} className="space-y-6">
       <Card title="Datos del pago" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Alumno" required id="studentId" className="sm:col-span-2">
+          <Field label="Alumno" required id="studentId" className="sm:col-span-2" error={state?.fieldErrors?.studentId}>
             <Select id="studentId" name="studentId" required defaultValue={defaultStudentId ?? ""}>
               <option value="" disabled>Seleccioná un alumno</option>
               {students.map((s) => (
@@ -48,15 +48,15 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
             </Select>
           </Field>
 
-          <Field label="Monto ($)" required id="amount">
+          <Field label="Monto ($)" required id="amount" error={state?.fieldErrors?.amount}>
             <Input id="amount" name="amount" type="number" required min={1} step={0.01} placeholder="ej. 15000" />
           </Field>
 
-          <Field label="Fecha de vencimiento" required id="dueDate">
+          <Field label="Fecha de vencimiento" required id="dueDate" error={state?.fieldErrors?.dueDate}>
             <Input id="dueDate" name="dueDate" type="date" required defaultValue={defaultDueDate()} />
           </Field>
 
-          <Field label="Notas" id="notes" className="sm:col-span-2">
+          <Field label="Notas" id="notes" className="sm:col-span-2" error={state?.fieldErrors?.notes}>
             <Textarea id="notes" name="notes" maxLength={500} placeholder="Descripción opcional del pago..." />
           </Field>
         </div>

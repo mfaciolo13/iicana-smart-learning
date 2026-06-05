@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, cloneElement, isValidElement, Children } from "react";
 import { cn } from "@/lib/cn";
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
@@ -17,6 +17,12 @@ interface FieldProps {
 }
 
 export function Field({ label, required, helper, error, className, children, id }: FieldProps) {
+  const childrenWithError = error
+    ? Children.map(children, (child) =>
+        isValidElement(child) ? cloneElement(child as React.ReactElement<{ error?: boolean }>, { error: true }) : child
+      )
+    : children;
+
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {label && (
@@ -28,7 +34,7 @@ export function Field({ label, required, helper, error, className, children, id 
           {required && <span className="text-danger-500 ml-0.5">*</span>}
         </label>
       )}
-      {children}
+      {childrenWithError}
       {error ? (
         <p className="text-xs text-danger-500" role="alert" aria-live="polite">
           {error}
