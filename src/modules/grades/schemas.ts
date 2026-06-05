@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createGradeSchema = z.object({
   enrollmentId: z.uuid("Inscripción requerida"),
-  evaluationType: z.enum(["parcial", "final", "oral", "homework", "quiz"]),
+  evaluationType: z.enum(["parcial", "final", "oral", "homework", "quiz"], "Seleccioná un tipo de evaluación"),
   score: z.coerce
     .number()
     .min(1, "La nota mínima es 1")

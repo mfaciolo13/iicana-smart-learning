@@ -9,7 +9,7 @@ export const createPaymentSchema = z.object({
 
 export const markAsPaidSchema = z.object({
   id: z.uuid(),
-  method: z.enum(["cash", "transfer", "card"]),
+  method: z.enum(["cash", "transfer", "card"], "Seleccioná un método de pago"),
   receiptNumber: z.string().optional(),
 });
 
