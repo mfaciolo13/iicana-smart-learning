@@ -1,5 +1,5 @@
 ﻿import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getPayments } from "@/modules/payments/services/payments.service";
 import { PaymentList } from "@/modules/payments/components/PaymentList";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
@@ -20,31 +20,8 @@ export default async function PaymentsPage({
 }) {
   const { status } = await searchParams;
   const activeTab = status ?? "all";
-  const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("payments")
-    .select("id, amount, due_date, paid_at, status, receipt_number, students(profiles(full_name), dni)")
-    .order("due_date", { ascending: false });
-
-  const today = new Date().toISOString().split("T")[0];
-
-  const allPayments = (data ?? []).map((p) => {
-    const student = p.students as unknown as { profiles: { full_name: string } | null; dni: string } | null;
-    const isOverdue =
-      (p.status === "pending" || p.status === "overdue") && p.due_date < today;
-    return {
-      id: p.id,
-      amount: p.amount,
-      dueDate: p.due_date,
-      paidAt: p.paid_at,
-      status: p.status,
-      receiptNumber: p.receipt_number,
-      studentName: student?.profiles?.full_name ?? "",
-      studentDni: student?.dni ?? "",
-      isOverdue,
-    };
-  });
+  const allPayments = await getPayments();
 
   const paymentsList =
     activeTab === "all"

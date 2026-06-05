@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { getPaymentById } from "@/modules/payments/services/payments.service";
 import { markAsPaidAction, updatePaymentStatusAction } from "@/modules/payments/actions";
 import { MarkAsPaidForm, PaymentStatusForm } from "@/modules/payments/components/MarkAsPaidForm";
 import { Badge } from "@/components/ui/Badge";
@@ -26,33 +26,9 @@ export default async function PaymentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
 
-  const { data: row } = await supabase
-    .from("payments")
-    .select("id, student_id, amount, due_date, paid_at, method, status, receipt_number, notes, created_at, students(id, dni, profiles(full_name))")
-    .eq("id", id)
-    .single();
-
-  if (!row) notFound();
-
-  type StudentRaw = { id: string; dni: string; profiles: { full_name: string } | null } | null;
-  const studentRaw = row.students as unknown as StudentRaw;
-
-  const payment = {
-    id: row.id,
-    studentId: row.student_id,
-    studentName: studentRaw?.profiles?.full_name ?? "",
-    studentDni: studentRaw?.dni ?? "",
-    amount: row.amount,
-    dueDate: row.due_date,
-    paidAt: row.paid_at,
-    method: row.method as string | null,
-    status: row.status,
-    receiptNumber: row.receipt_number,
-    notes: row.notes as string | null,
-    createdAt: row.created_at,
-  };
+  const payment = await getPaymentById(id);
+  if (!payment) notFound();
 
   const today = new Date().toISOString().split("T")[0];
   const isOverdue =
