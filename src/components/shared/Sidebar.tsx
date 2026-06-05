@@ -57,6 +57,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Marketing", href: "/director/marketing", icon: Megaphone },
     { label: "Cierre de Ciclo", href: "/director/year-end", icon: Archive },
     { label: "Reportes", href: "/director/reports", icon: BarChart2 },
+    { label: "Material", href: "/director/documents", icon: BookOpen },
     { label: "Usuarios", href: "/director/users", icon: ShieldCheck },
     { label: "Autoevaluaciones IA", href: "/director/assessments", icon: Sparkles },
     { label: "Mi Perfil", href: "/director/profile", icon: UserCircle },
@@ -79,6 +80,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Cargar Notas", href: "/profesor/grades", icon: PenLine },
     { label: "Autoevaluaciones IA", href: "/profesor/assessments", icon: Sparkles },
     { label: "Mensajes", href: "/profesor/notifications", icon: MessageSquare },
+    { label: "Material", href: "/profesor/documents", icon: BookOpen },
     { label: "Mi Perfil", href: "/profesor/profile", icon: UserCircle },
   ],
   alumno: [
@@ -88,6 +90,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Evaluar Docente", href: "/alumno/evaluations", icon: Star },
     { label: "Autoevaluaciones", href: "/alumno/assessments", icon: Sparkles },
     { label: "Pagos", href: "/alumno/payments", icon: CreditCard },
+    { label: "Material", href: "/alumno/documents", icon: BookOpen },
     { label: "Mensajes", href: "/alumno/notifications", icon: MessageSquare },
     { label: "Mi Perfil", href: "/alumno/profile", icon: UserCircle },
   ],

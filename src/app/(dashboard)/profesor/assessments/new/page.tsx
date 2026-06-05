@@ -5,13 +5,23 @@ import { getServerUser } from "@/lib/auth/helpers";
 import { getActiveCoursesForTeacher } from "@/modules/assessments/services/assessments.service";
 import { generateAssessmentProfesorAction } from "@/modules/assessments/actions";
 import { GenerateAssessmentForm } from "@/modules/assessments/components/GenerateAssessmentForm";
+import { getDocuments } from "@/modules/documents/services/documents.service";
 import { Card } from "@/components/ui/Card";
 
 export default async function ProfesorNewAssessmentPage() {
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const activeCourses = await getActiveCoursesForTeacher(user.id);
+  const [activeCourses, docs] = await Promise.all([
+    getActiveCoursesForTeacher(user.id),
+    getDocuments(),
+  ]);
+
+  const documentOptions = docs.map((d) => ({
+    id: d.id,
+    name: d.name,
+    mimeType: d.mimeType,
+  }));
 
   return (
     <div>
@@ -43,6 +53,7 @@ export default async function ProfesorNewAssessmentPage() {
                 courses={activeCourses}
                 action={generateAssessmentProfesorAction}
                 cancelHref="/profesor/assessments"
+                documents={documentOptions}
               />
             </Card>
 
@@ -50,6 +61,7 @@ export default async function ProfesorNewAssessmentPage() {
               <p className="text-xs text-blue-700 font-medium mb-1">¿Cómo funciona?</p>
               <ol className="text-xs text-blue-600 space-y-1 list-decimal list-inside">
                 <li>Completá el curso, la semana y el tema.</li>
+                <li>Opcionalmente, adjuntá material de referencia (PDF o imágenes).</li>
                 <li>Claude genera 10 preguntas con opciones y explicaciones.</li>
                 <li>Revisás las preguntas y publicás cuando estés listo.</li>
                 <li>Los alumnos ven la evaluación en su portal y la responden.</li>

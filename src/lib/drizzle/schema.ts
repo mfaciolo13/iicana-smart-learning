@@ -378,6 +378,22 @@ export const classObservations = pgTable("class_observations", {
     .defaultNow(),
 });
 
+export const documents = pgTable("documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description"),
+  fileUrl: text("file_url").notNull(),
+  filePath: text("file_path").notNull(),
+  fileSize: integer("file_size"),
+  mimeType: text("mime_type").notNull(),
+  uploadedById: uuid("uploaded_by_id")
+    .notNull()
+    .references(() => profiles.id),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Profile = typeof profiles.$inferSelect;
