@@ -24,7 +24,7 @@ export const createStudentSchema = z.object({
       "advanced",
     ])
     .optional(),
-  placementTestScore: z.coerce.number().int().min(0).max(100).optional(),
+  placementTestScore: z.coerce.number().int("Debe ser un número entero").min(0, "Mínimo 0").max(100, "Máximo 100").optional(),
 });
 
 export const updateStudentSchema = createStudentSchema.partial().extend({

@@ -26,13 +26,12 @@ export function DocumentUploadForm() {
         <Input id="description" name="description" placeholder="Descripción breve (opcional)" />
       </Field>
 
-      <Field label="Archivo" id="file">
+      <Field label="Archivo" id="file" error={state?.error && state.error.includes("archivo") ? state.error : undefined}>
         <input
           id="file"
           name="file"
           type="file"
           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.txt"
-          required
           className="w-full text-sm text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 transition-colors cursor-pointer"
         />
         <p className="text-xs text-slate-400 mt-1">PDF, Word, imágenes o texto. Máximo 10 MB.</p>
