@@ -1,15 +1,32 @@
 ﻿"use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import type { GradeWithDetails } from "../types";
 import { Button, buttonVariants } from "@/components/ui/Button";
-import { Input, Field, Select, Textarea } from "@/components/ui/Input";
+import { Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/cn";
 import type { ActionResult } from "@/lib/action-result";
+
+const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+function scoreColor(n: number) {
+  if (n <= 4) return "border-red-300 text-red-700 bg-red-50 hover:bg-red-100";
+  if (n <= 6) return "border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100";
+  if (n <= 8) return "border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100";
+  return "border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100";
+}
+
+function scoreColorActive(n: number) {
+  if (n <= 4) return "border-red-500 bg-red-500 text-white";
+  if (n <= 6) return "border-amber-500 bg-amber-500 text-white";
+  if (n <= 8) return "border-blue-500 bg-blue-500 text-white";
+  return "border-emerald-500 bg-emerald-500 text-white";
+}
 
 const EVAL_TYPES = [
   { value: "parcial", label: "Parcial" },
@@ -32,6 +49,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!grade;
+  const [selectedScore, setSelectedScore] = useState<number | null>(grade?.score ? Math.round(parseFloat(String(grade.score))) : null);
 
   useEffect(() => {
     if (state?.error && !state?.fieldErrors) toast.error(state.error);
@@ -69,7 +87,28 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
           </Field>
 
           <Field label="Nota (1–10)" required id="score" error={state?.fieldErrors?.score}>
-            <Input id="score" name="score" type="number" required min={1} max={10} step={0.5} defaultValue={grade?.score ?? ""} placeholder="ej. 8.5" />
+            <input type="hidden" name="score" value={selectedScore ?? ""} />
+            <div className="flex flex-wrap gap-2 pt-0.5">
+              {SCORES.map((n) => {
+                const active = selectedScore === n;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setSelectedScore(n)}
+                    className={cn(
+                      "w-10 h-10 rounded-xl border-2 text-sm font-bold transition-all",
+                      active ? scoreColorActive(n) : scoreColor(n)
+                    )}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+            {!selectedScore && state?.fieldErrors?.score && (
+              <p className="text-xs text-danger-500 mt-1">Seleccioná una nota</p>
+            )}
           </Field>
 
           <Field label="Observaciones" id="notes" className="sm:col-span-2" error={state?.fieldErrors?.notes}>
