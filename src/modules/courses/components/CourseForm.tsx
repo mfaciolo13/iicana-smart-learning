@@ -1,16 +1,20 @@
 ﻿"use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { CourseWithTeacher } from "../types";
 import type { TeacherListItem } from "@/modules/teachers/types";
 import { Button, buttonVariants } from "@/components/ui/Button";
-import { Input, Field, Select } from "@/components/ui/Input";
+import { Field, Select } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { SchedulePicker } from "./SchedulePicker";
+import { cn } from "@/lib/cn";
 import type { ActionResult } from "@/lib/action-result";
+import { Input } from "@/components/ui/Input";
+
+const CAPACITIES = Array.from({ length: 15 }, (_, i) => i + 1);
 
 const LEVELS = [
   { value: "beginner", label: "Principiante" },
@@ -38,6 +42,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!course;
+  const [selectedCapacity, setSelectedCapacity] = useState<number>(course?.maxCapacity ?? 15);
 
   useEffect(() => {
     if (state?.error && !state?.fieldErrors) toast.error(state.error);
@@ -75,7 +80,27 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
           </Field>
 
           <Field label="Cupo máximo" required id="maxCapacity" error={state?.fieldErrors?.maxCapacity}>
-            <Input id="maxCapacity" name="maxCapacity" type="number" required min={1} max={15} defaultValue={course?.maxCapacity ?? 15} />
+            <input type="hidden" name="maxCapacity" value={selectedCapacity} />
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {CAPACITIES.map((n) => {
+                const active = selectedCapacity === n;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setSelectedCapacity(n)}
+                    className={cn(
+                      "w-9 h-9 rounded-lg border text-sm font-semibold transition-all",
+                      active
+                        ? "border-brand-600 bg-brand-600 text-white"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-brand-400 hover:text-brand-700"
+                    )}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
           </Field>
 
           <Field label="Docente" id="teacherId" error={state?.fieldErrors?.teacherId}>
