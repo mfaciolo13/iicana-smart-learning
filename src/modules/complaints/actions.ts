@@ -16,7 +16,17 @@ export async function createComplaintAction(_prev: ActionResult, formData: FormD
   };
 
   const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   await createComplaint(user.id, parsed.data);
 
@@ -36,7 +46,17 @@ export async function createComplaintAsProfesorAction(_prev: ActionResult, formD
   };
 
   const parsed = createComplaintSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   await createComplaint(user.id, parsed.data);
 
@@ -55,7 +75,17 @@ export async function updateComplaintStatusAction(_prev: ActionResult, formData:
   };
 
   const parsed = updateComplaintStatusSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   await updateComplaintStatus(parsed.data.id, parsed.data.status);
 

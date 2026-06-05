@@ -21,7 +21,17 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
   };
 
   const parsed = createTeacherSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const adminSupabase = createAdminClient();
 
@@ -78,7 +88,17 @@ export async function updateTeacherAction(_prev: ActionResult, formData: FormDat
   };
 
   const parsed = updateTeacherSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   await updateTeacher(parsed.data);
 

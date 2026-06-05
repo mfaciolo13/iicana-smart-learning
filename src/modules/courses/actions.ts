@@ -23,7 +23,17 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
   };
 
   const parsed = createCourseSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   await createCourse(parsed.data);
 
@@ -47,7 +57,17 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
   };
 
   const parsed = updateCourseSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const [prevCourse, updatedCourse] = await Promise.all([
     getCourseById(parsed.data.id),

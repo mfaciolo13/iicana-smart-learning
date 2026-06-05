@@ -33,7 +33,7 @@ export function EnrollmentForm({ students, courses, action, defaultStudentId, de
   const [state, formAction, isPending] = useActionState(action, undefined);
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
@@ -44,7 +44,7 @@ export function EnrollmentForm({ students, courses, action, defaultStudentId, de
     <form action={formAction} className="space-y-6">
       <Card title="Datos de la inscripción" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Alumno" required id="studentId">
+          <Field label="Alumno" required id="studentId" error={state?.fieldErrors?.studentId}>
             <Select id="studentId" name="studentId" required defaultValue={defaultStudentId ?? ""}>
               <option value="" disabled>Seleccioná un alumno</option>
               {students.map((s) => (
@@ -53,7 +53,7 @@ export function EnrollmentForm({ students, courses, action, defaultStudentId, de
             </Select>
           </Field>
 
-          <Field label="Curso" required id="courseId">
+          <Field label="Curso" required id="courseId" error={state?.fieldErrors?.courseId}>
             {(() => {
               const available = courses.filter(
                 (c) => c.status === "active" && c.maxCapacity - c.enrollmentCount > 0

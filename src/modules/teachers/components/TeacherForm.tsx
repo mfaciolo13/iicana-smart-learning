@@ -22,7 +22,7 @@ export function TeacherForm({ teacher, action, submitLabel = "Guardar" }: Teache
   const isEditing = !!teacher;
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
@@ -35,21 +35,21 @@ export function TeacherForm({ teacher, action, submitLabel = "Guardar" }: Teache
 
       <Card title="Datos personales" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Nombre completo" required id="fullName">
+          <Field label="Nombre completo" required id="fullName" error={state?.fieldErrors?.fullName}>
             <Input id="fullName" name="fullName" type="text" required defaultValue={teacher?.profile.fullName} placeholder="Juan Pérez" />
           </Field>
 
-          <Field label="DNI" required id="dni">
+          <Field label="DNI" required id="dni" error={state?.fieldErrors?.dni}>
             <Input id="dni" name="dni" type="text" required minLength={7} maxLength={8} defaultValue={teacher?.dni} placeholder="12345678" />
           </Field>
 
           {!isEditing && (
-            <Field label="Email" required id="email">
+            <Field label="Email" required id="email" error={state?.fieldErrors?.email}>
               <Input id="email" name="email" type="email" required autoComplete="email" placeholder="docente@email.com" />
             </Field>
           )}
 
-          <Field label="Teléfono" id="phone">
+          <Field label="Teléfono" id="phone" error={state?.fieldErrors?.phone}>
             <Input id="phone" name="phone" type="tel" defaultValue={teacher?.profile.phone ?? ""} placeholder="+54 9 351 000 0000" />
           </Field>
         </div>
@@ -57,7 +57,7 @@ export function TeacherForm({ teacher, action, submitLabel = "Guardar" }: Teache
 
       <Card title="Datos profesionales" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Especialización" id="specialization">
+          <Field label="Especialización" id="specialization" error={state?.fieldErrors?.specialization}>
             <Input id="specialization" name="specialization" type="text" defaultValue={teacher?.specialization ?? ""} placeholder="ej. Cambridge CELTA, Phonics..." />
           </Field>
         </div>

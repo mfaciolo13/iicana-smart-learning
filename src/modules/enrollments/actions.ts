@@ -23,7 +23,17 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
   };
 
   const parsed = createEnrollmentSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   const result = await validateAndCreateEnrollment(parsed.data);
   if (result.error) return { error: result.error };
@@ -74,7 +84,17 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
   };
 
   const parsed = updateEnrollmentSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
 
   await updateEnrollment(parsed.data);
 
