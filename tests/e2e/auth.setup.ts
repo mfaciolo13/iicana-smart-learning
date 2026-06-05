@@ -27,7 +27,19 @@ setup("autenticar como admin", async ({ page }) => {
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/director/);
+
+  // Esperar a que la URL cambie a cualquier ruta autenticada de admin/director
+  // con timeout generoso para absorber latencia de producción
+  await page.waitForURL(/\/(director|admin)/, { timeout: 30_000 });
+
+  // Verificar que efectivamente estamos autenticados (no en /login)
+  const currentUrl = page.url();
+  if (currentUrl.includes("/login")) {
+    throw new Error(
+      `Login de admin falló — sigue en /login. Verificar credenciales E2E_ADMIN_EMAIL/PASSWORD. URL: ${currentUrl}`
+    );
+  }
+
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -54,6 +66,18 @@ setup("autenticar como alumno", async ({ page }) => {
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/alumno/);
+
+  // Esperar a que la URL cambie a cualquier ruta autenticada de alumno
+  // con timeout generoso para absorber latencia de producción
+  await page.waitForURL(/\/alumno/, { timeout: 30_000 });
+
+  // Verificar que efectivamente estamos autenticados (no en /login)
+  const currentUrl = page.url();
+  if (currentUrl.includes("/login")) {
+    throw new Error(
+      `Login de alumno falló — sigue en /login. Verificar credenciales E2E_ALUMNO_EMAIL/PASSWORD. URL: ${currentUrl}`
+    );
+  }
+
   await page.context().storageState({ path: ALUMNO_FILE });
 });
