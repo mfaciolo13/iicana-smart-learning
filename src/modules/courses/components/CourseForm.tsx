@@ -42,7 +42,10 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!course;
-  const [selectedCapacity, setSelectedCapacity] = useState<number>(course?.maxCapacity ?? 15);
+  const [selectedCapacity, setSelectedCapacity] = useState<number>(() => {
+    const v = Number(course?.maxCapacity);
+    return v >= 1 && v <= 15 ? v : 15;
+  });
 
   useEffect(() => {
     if (state?.error && !state?.fieldErrors) toast.error(state.error);
