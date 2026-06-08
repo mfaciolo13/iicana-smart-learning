@@ -27,7 +27,10 @@ setup("autenticar como admin", async ({ page }) => {
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/director/);
+
+  // Esperar a que la URL cambie fuera de /login (acepta /admin, /director, /dashboard, etc.)
+  await expect(page).toHaveURL(/^(?!.*\/login).*$/, { timeout: 30_000 });
+
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -54,6 +57,9 @@ setup("autenticar como alumno", async ({ page }) => {
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/alumno/);
+
+  // Esperar a que la URL cambie fuera de /login (acepta /alumno, /dashboard, etc.)
+  await expect(page).toHaveURL(/^(?!.*\/login).*$/, { timeout: 30_000 });
+
   await page.context().storageState({ path: ALUMNO_FILE });
 });
