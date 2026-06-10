@@ -1,23 +1,23 @@
 ﻿import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { updateUserAction, banUserAction, unbanUserAction, resendInvitationAction } from "@/modules/users/actions";
+import { getUserDetail } from "@/modules/users/services/users.service";
 import { UserEditForm } from "@/modules/users/components/UserEditForm";
 import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import type { UserDetail } from "@/modules/users/types";
 
 const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" | "warning" | "neutral" }> = {
-  admin: { label: "director", variant: "warning" },
+  director: { label: "Director", variant: "warning" },
+  administrativo: { label: "Administrativo", variant: "warning" },
   profesor: { label: "Docente", variant: "info" },
   alumno: { label: "Alumno", variant: "success" },
 };
 
 const AVATAR_GRADIENTS: Record<string, string> = {
-  admin: "linear-gradient(135deg, #f59e0b, #d97706)",
+  director: "linear-gradient(135deg, #f59e0b, #d97706)",
+  administrativo: "linear-gradient(135deg, #f59e0b, #d97706)",
   profesor: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
   alumno: "linear-gradient(135deg, #10b981, #059669)",
 };
@@ -33,36 +33,9 @@ export default async function UserDetailPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("id, email, role, full_name, phone, avatar_url, created_at, updated_at")
-    .eq("id", id)
-    .single();
+  const user = await getUserDetail(id);
 
-  if (!profileRow) notFound();
-
-  let banned = false;
-  let emailConfirmed = false;
-  try {
-    const admin = createAdminClient();
-    const { data } = await admin.auth.admin.getUserById(id);
-    banned = !!data?.user?.banned_until && new Date(data.user.banned_until) > new Date();
-    emailConfirmed = !!data?.user?.email_confirmed_at || !!data?.user?.last_sign_in_at;
-  } catch {}
-
-  const user: UserDetail = {
-    id: profileRow.id,
-    email: profileRow.email,
-    role: profileRow.role as UserDetail["role"],
-    fullName: profileRow.full_name,
-    phone: profileRow.phone as string | null,
-    avatarUrl: profileRow.avatar_url as string | null,
-    createdAt: new Date(profileRow.created_at),
-    updatedAt: new Date(profileRow.updated_at),
-    banned,
-    emailConfirmed,
-  };
+  if (!user) notFound();
 
   const roleCfg = ROLE_CONFIG[user.role] ?? { label: user.role, variant: "neutral" as const };
 

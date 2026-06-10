@@ -4,7 +4,8 @@ import type { UserListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 
 const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" | "warning" | "neutral" }> = {
-  admin: { label: "director", variant: "warning" },
+  director: { label: "Director", variant: "warning" },
+  administrativo: { label: "Administrativo", variant: "warning" },
   profesor: { label: "Docente", variant: "info" },
   alumno: { label: "Alumno", variant: "success" },
 };
@@ -14,7 +15,8 @@ function getInitials(name: string) {
 }
 
 const AVATAR_GRADIENTS: Record<string, string> = {
-  admin: "linear-gradient(135deg, #f59e0b, #d97706)",
+  director: "linear-gradient(135deg, #f59e0b, #d97706)",
+  administrativo: "linear-gradient(135deg, #f59e0b, #d97706)",
   profesor: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
   alumno: "linear-gradient(135deg, #10b981, #059669)",
 };
