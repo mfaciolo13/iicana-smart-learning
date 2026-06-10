@@ -23,10 +23,12 @@ REVOKE EXECUTE ON FUNCTION public.current_user_role() FROM anon;
 GRANT EXECUTE ON FUNCTION public.current_user_role() TO authenticated;
 
 -- Staff (admin/director, administrativo, profesor) puede leer todos los perfiles
+-- Nota: current_user_role() envuelta en (select ...) para que Postgres la
+-- evalue una sola vez por query (initplan) y no por cada fila -> evita timeouts
 CREATE POLICY "staff_select_all_profiles"
   ON public.profiles FOR SELECT
   TO authenticated
-  USING (public.current_user_role() IN ('admin', 'administrativo', 'profesor'));
+  USING ((select public.current_user_role()) IN ('admin', 'administrativo', 'profesor'));
 
 -- Cualquier usuario autenticado puede leer perfiles de docentes
 -- (nombres de profesores no son sensibles, se muestran en cursos/evaluaciones)
