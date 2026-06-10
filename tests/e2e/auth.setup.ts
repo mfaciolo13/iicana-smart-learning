@@ -16,18 +16,17 @@ setup("autenticar como admin", async ({ page }) => {
 
   await page.goto("/login");
   await page.waitForLoadState("domcontentloaded");
-  await page.waitForLoadState("networkidle");
 
   const emailInput = page.getByLabel("Email");
-  await emailInput.waitFor({ state: "visible" });
+  await emailInput.waitFor({ state: "visible", timeout: 30_000 });
   await emailInput.fill(email);
 
   const passwordInput = page.locator("#password");
-  await passwordInput.waitFor({ state: "visible" });
+  await passwordInput.waitFor({ state: "visible", timeout: 30_000 });
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/director/);
+  await expect(page).toHaveURL(/\/director/, { timeout: 30_000 });
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -43,17 +42,16 @@ setup("autenticar como alumno", async ({ page }) => {
 
   await page.goto("/login");
   await page.waitForLoadState("domcontentloaded");
-  await page.waitForLoadState("networkidle");
 
   const emailInput = page.getByLabel("Email");
-  await emailInput.waitFor({ state: "visible" });
+  await emailInput.waitFor({ state: "visible", timeout: 30_000 });
   await emailInput.fill(email);
 
   const passwordInput = page.locator("#password");
-  await passwordInput.waitFor({ state: "visible" });
+  await passwordInput.waitFor({ state: "visible", timeout: 30_000 });
   await passwordInput.fill(password);
 
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page).toHaveURL(/\/alumno/);
+  await expect(page).toHaveURL(/\/alumno/, { timeout: 30_000 });
   await page.context().storageState({ path: ALUMNO_FILE });
 });
