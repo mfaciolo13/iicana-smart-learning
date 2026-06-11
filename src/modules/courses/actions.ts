@@ -16,7 +16,9 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
   const raw = {
     name: formData.get("name") as string,
     level: formData.get("level") as string,
-    schedule: formData.get("schedule") as string,
+    classDays: ((formData.get("classDays") as string) || "").split(",").filter(Boolean),
+    classTime: formData.get("classTime") as string,
+    classDurationMinutes: formData.get("classDurationMinutes") as string,
     classroom: (formData.get("classroom") as string) || undefined,
     maxCapacity: formData.get("maxCapacity") as string,
     teacherId: (formData.get("teacherId") as string) || undefined,
@@ -45,11 +47,15 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
 export async function updateCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director"]);
 
+  const classDays = ((formData.get("classDays") as string) || "").split(",").filter(Boolean);
+
   const raw = {
     id: formData.get("id") as string,
     name: (formData.get("name") as string) || undefined,
     level: (formData.get("level") as string) || undefined,
-    schedule: (formData.get("schedule") as string) || undefined,
+    classDays: classDays.length > 0 ? classDays : undefined,
+    classTime: (formData.get("classTime") as string) || undefined,
+    classDurationMinutes: (formData.get("classDurationMinutes") as string) || undefined,
     classroom: (formData.get("classroom") as string) || undefined,
     maxCapacity: (formData.get("maxCapacity") as string) || undefined,
     teacherId: (formData.get("teacherId") as string) || undefined,

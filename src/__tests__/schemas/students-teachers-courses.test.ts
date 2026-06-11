@@ -195,7 +195,9 @@ describe("createCourseSchema", () => {
   const valid = {
     name: "Inglés Intermedio A",
     level: "intermediate" as const,
-    schedule: "Lunes y Miércoles 18:00-19:30",
+    classDays: ["monday", "wednesday"] as const,
+    classTime: "18:00",
+    classDurationMinutes: 90,
   };
 
   it("acepta datos mínimos válidos", () => {
@@ -235,8 +237,20 @@ describe("createCourseSchema", () => {
     expect(createCourseSchema.safeParse({ ...valid, level: "native" }).success).toBe(false);
   });
 
-  it("rechaza schedule vacío", () => {
-    expect(createCourseSchema.safeParse({ ...valid, schedule: "" }).success).toBe(false);
+  it("rechaza classDays vacío", () => {
+    expect(createCourseSchema.safeParse({ ...valid, classDays: [] }).success).toBe(false);
+  });
+
+  it("rechaza classTime con formato inválido", () => {
+    expect(createCourseSchema.safeParse({ ...valid, classTime: "25:00" }).success).toBe(false);
+    expect(createCourseSchema.safeParse({ ...valid, classTime: "8:00" }).success).toBe(false);
+  });
+
+  it("classDurationMinutes tiene default 90", () => {
+    const { classDurationMinutes: _omit, ...withoutDuration } = valid;
+    const result = createCourseSchema.safeParse(withoutDuration);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.classDurationMinutes).toBe(90);
   });
 
   it("maxCapacity tiene default 15", () => {

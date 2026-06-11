@@ -4,11 +4,13 @@
   text,
   timestamp,
   date,
+  time,
   integer,
   numeric,
   boolean,
   pgEnum,
   jsonb,
+  unique,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -118,6 +120,23 @@ export const assessmentStatusEnum = pgEnum("assessment_status", [
   "archived",
 ]);
 
+export const alertTypeEnum = pgEnum("alert_type", [
+  "class_reminder",
+  "absence",
+  "payment_reminder",
+  "grade_published",
+]);
+
+export const dayOfWeekEnum = pgEnum("day_of_week", [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+]);
+
 // ─── Tables ───────────────────────────────────────────────────────────────────
 
 export const profiles = pgTable("profiles", {
@@ -169,7 +188,10 @@ export const courses = pgTable("courses", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   level: levelEnum("level").notNull(),
-  schedule: text("schedule").notNull(), // e.g. "Lun/Mié 18:00-19:30"
+  schedule: text("schedule").notNull(), // e.g. "Lun/Mié 18:00-19:30" — generado desde class_days/class_time/class_duration_minutes
+  classDays: dayOfWeekEnum("class_days").array().notNull().default([]),
+  classTime: time("class_time").notNull(),
+  classDurationMinutes: integer("class_duration_minutes").notNull().default(90),
   classroom: text("classroom"),
   maxCapacity: integer("max_capacity").notNull().default(15),
   teacherId: uuid("teacher_id").references(() => teachers.id, {
@@ -394,6 +416,35 @@ export const documents = pgTable("documents", {
     .defaultNow(),
 });
 
+export const notificationSettings = pgTable("notification_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  alertType: alertTypeEnum("alert_type").notNull().unique(),
+  enabled: boolean("enabled").notNull().default(true),
+  timingHours: integer("timing_hours").notNull().default(24), // solo aplica a class_reminder
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const userNotificationPreferences = pgTable(
+  "user_notification_preferences",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    alertType: alertTypeEnum("alert_type").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique().on(table.userId, table.alertType)]
+);
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Profile = typeof profiles.$inferSelect;
@@ -431,3 +482,11 @@ export type NewAssessment = typeof assessments.$inferInsert;
 
 export type AssessmentAttempt = typeof assessmentAttempts.$inferSelect;
 export type NewAssessmentAttempt = typeof assessmentAttempts.$inferInsert;
+
+export type NotificationSetting = typeof notificationSettings.$inferSelect;
+export type NewNotificationSetting = typeof notificationSettings.$inferInsert;
+
+export type UserNotificationPreference =
+  typeof userNotificationPreferences.$inferSelect;
+export type NewUserNotificationPreference =
+  typeof userNotificationPreferences.$inferInsert;

@@ -7,11 +7,23 @@ export type Level =
   | "upper_intermediate"
   | "advanced";
 
+export type DayOfWeek =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
 export interface CourseWithTeacher {
   id: string;
   name: string;
   level: Level;
   schedule: string;
+  classDays: DayOfWeek[];
+  classTime: string;
+  classDurationMinutes: number;
   classroom: string | null;
   maxCapacity: number;
   status: CourseStatus;

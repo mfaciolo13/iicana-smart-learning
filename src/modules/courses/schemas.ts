@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DAY_OF_WEEK_VALUES } from "./lib/schedule";
 
 export const createCourseSchema = z.object({
   name: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
@@ -10,7 +11,9 @@ export const createCourseSchema = z.object({
     "upper_intermediate",
     "advanced",
   ]),
-  schedule: z.string().min(1, "El horario es requerido"),
+  classDays: z.array(z.enum(DAY_OF_WEEK_VALUES)).min(1, "Seleccioná al menos un día"),
+  classTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida"),
+  classDurationMinutes: z.coerce.number().int("Debe ser un número entero").min(15, "La duración mínima es 15 minutos").max(240, "La duración máxima es 240 minutos").default(90),
   classroom: z.string().optional(),
   maxCapacity: z.coerce.number().int("Debe ser un número entero").min(1, "El cupo mínimo es 1 alumno").max(15, "El cupo máximo es 15 alumnos").default(15),
   teacherId: z.uuid().optional(),
