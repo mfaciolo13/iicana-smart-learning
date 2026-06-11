@@ -223,6 +223,83 @@ export async function sendPasswordResetEmail({
   });
 }
 
+export async function sendAbsenceAlertEmail({
+  to,
+  fullName,
+  courseName,
+  classDate,
+  attendancePercentage,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+  classDate: string;
+  attendancePercentage: number;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Absence alert email for ${to} — curso: ${courseName}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Ausencia registrada en ${courseName} — Smart Learning`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Te informamos que registramos tu ausencia en el siguiente curso:
+      </p>
+      <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0 0 4px;color:#475569;font-size:13px;">Fecha: ${new Date(classDate).toLocaleDateString("es-AR")}</p>
+        <p style="margin:0;color:#475569;font-size:13px;">Asistencia acumulada: ${attendancePercentage}%</p>
+      </div>
+      <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+        Recordá que se requiere un mínimo de 80% de asistencia para promocionar el curso.
+      </p>
+    `),
+  });
+}
+
+export async function sendGradePublishedEmail({
+  to,
+  fullName,
+  courseName,
+  evaluationTypeLabel,
+  score,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+  evaluationTypeLabel: string;
+  score: number;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Grade published email for ${to} — curso: ${courseName}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Nueva nota publicada en ${courseName} — Smart Learning`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Se publicó una nueva nota en tu curso:
+      </p>
+      <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 4px;color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">${courseName} · ${evaluationTypeLabel}</p>
+        <p style="margin:0;color:#1e293b;font-size:24px;font-weight:700;">${score}<span style="font-size:14px;font-weight:400;color:#94a3b8;">/10</span></p>
+      </div>
+      <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+        Ingresá a Smart Learning para ver el detalle de tus notas.
+      </p>
+    `),
+  });
+}
+
 export async function sendAssessmentPublishedEmail({
   to,
   fullName,

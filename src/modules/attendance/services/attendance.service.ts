@@ -162,6 +162,64 @@ export async function checkConsecutiveAbsences(
     .where(inArray(enrollments.id, triggered));
 }
 
+export interface AbsenceAlertInfo {
+  enrollmentId: string;
+  studentProfileId: string;
+  studentEmail: string;
+  studentName: string;
+  courseName: string;
+  attendancePct: number;
+}
+
+export async function getAbsenceAlertInfo(enrollmentIds: string[]): Promise<AbsenceAlertInfo[]> {
+  if (enrollmentIds.length === 0) return [];
+
+  const attendanceStats = db
+    .$with("att_stats")
+    .as(
+      db
+        .select({
+          enrollmentId: attendance.enrollmentId,
+          total: sql<number>`cast(count(*) as int)`,
+          present: sql<number>`cast(sum(case when ${attendance.status} in ('present', 'late') then 1 else 0 end) as int)`,
+        })
+        .from(attendance)
+        .where(inArray(attendance.enrollmentId, enrollmentIds))
+        .groupBy(attendance.enrollmentId)
+    );
+
+  const rows = await db
+    .with(attendanceStats)
+    .select({
+      enrollmentId: enrollments.id,
+      studentProfileId: students.profileId,
+      studentEmail: profiles.email,
+      studentName: profiles.fullName,
+      courseName: courses.name,
+      total: attendanceStats.total,
+      present: attendanceStats.present,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .leftJoin(attendanceStats, eq(attendanceStats.enrollmentId, enrollments.id))
+    .where(inArray(enrollments.id, enrollmentIds));
+
+  return rows.map((r) => {
+    const total = r.total ?? 0;
+    const present = r.present ?? 0;
+    return {
+      enrollmentId: r.enrollmentId,
+      studentProfileId: r.studentProfileId,
+      studentEmail: r.studentEmail,
+      studentName: r.studentName,
+      courseName: r.courseName,
+      attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
+    };
+  });
+}
+
 export async function recordBulkAttendance(
   records: { enrollmentId: string; classDate: string; status: "present" | "absent" | "late"; notes?: string | null }[]
 ) {

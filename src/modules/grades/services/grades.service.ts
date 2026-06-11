@@ -4,6 +4,36 @@ import { eq, desc, and } from "drizzle-orm";
 import type { CreateGradeInput, UpdateGradeInput } from "../schemas";
 import type { GradeWithDetails } from "../types";
 
+export interface GradeAlertInfo {
+  studentProfileId: string;
+  studentEmail: string;
+  studentName: string;
+  courseName: string;
+  evaluationType: string;
+  score: string;
+}
+
+export async function getGradeAlertInfo(gradeId: string): Promise<GradeAlertInfo | null> {
+  const [row] = await db
+    .select({
+      studentProfileId: students.profileId,
+      studentEmail: profiles.email,
+      studentName: profiles.fullName,
+      courseName: courses.name,
+      evaluationType: grades.evaluationType,
+      score: grades.score,
+    })
+    .from(grades)
+    .innerJoin(enrollments, eq(grades.enrollmentId, enrollments.id))
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(eq(grades.id, gradeId))
+    .limit(1);
+
+  return row ?? null;
+}
+
 export async function getGrades(courseId?: string): Promise<GradeWithDetails[]> {
   const query = db
     .select({

@@ -490,3 +490,5 @@ export type UserNotificationPreference =
   typeof userNotificationPreferences.$inferSelect;
 export type NewUserNotificationPreference =
   typeof userNotificationPreferences.$inferInsert;
+
+export type AlertType = (typeof alertTypeEnum.enumValues)[number];
