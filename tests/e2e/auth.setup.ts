@@ -28,8 +28,22 @@ setup("autenticar como admin", async ({ page }) => {
   await page.getByRole("button", { name: "Ingresar" }).click();
 
   // Aceptar cualquier ruta post-login del panel admin
-  await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
-  await page.waitForLoadState("networkidle");
+  await page.waitForURL(/\/(director|admin|dashboard|panel|home)/, { timeout: 60_000 });
+
+  // Esperar a que la página cargue el contenido autenticado — no usar networkidle
+  // porque en producción puede haber requests eternos (analytics, polling, etc.)
+  await page.waitForLoadState("domcontentloaded");
+
+  // Dar tiempo a que los cookies/tokens de sesión se escriban en storage
+  await page.waitForTimeout(2_000);
+
+  // Verificar que realmente estamos autenticados: debe existir algún elemento
+  // de navegación del panel admin antes de persistir el estado
+  const navOrHeading = page
+    .getByRole("navigation")
+    .or(page.getByRole("heading").first())
+    .or(page.locator("nav, aside, [data-testid='sidebar']").first());
+  await navOrHeading.waitFor({ state: "visible", timeout: 20_000 });
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -58,8 +72,20 @@ setup("autenticar como alumno", async ({ page }) => {
   await page.getByRole("button", { name: "Ingresar" }).click();
 
   // Aceptar cualquier ruta post-login del portal alumno
-  await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
-  await page.waitForLoadState("networkidle");
+  await page.waitForURL(/\/(alumno|dashboard|panel|home)/, { timeout: 60_000 });
+
+  // Esperar a que la página cargue el contenido autenticado — no usar networkidle
+  await page.waitForLoadState("domcontentloaded");
+
+  // Dar tiempo a que los cookies/tokens de sesión se escriban en storage
+  await page.waitForTimeout(2_000);
+
+  // Verificar que realmente estamos autenticados antes de persistir el estado
+  const navOrHeading = page
+    .getByRole("navigation")
+    .or(page.getByRole("heading").first())
+    .or(page.locator("nav, aside, [data-testid='sidebar']").first());
+  await navOrHeading.waitFor({ state: "visible", timeout: 20_000 });
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
