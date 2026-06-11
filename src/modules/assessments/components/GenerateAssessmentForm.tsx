@@ -27,6 +27,14 @@ interface GenerateAssessmentFormProps {
   documents?: DocumentOption[];
 }
 
+// Only PDF and images are supported by Claude's document API
+const AI_SUPPORTED_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
+
 function DocumentIcon({ mimeType }: { mimeType: string }) {
   if (mimeType === "application/pdf" || mimeType.includes("word")) {
     return <FileText className="w-3.5 h-3.5 text-red-500 shrink-0" />;
@@ -55,15 +63,6 @@ export function GenerateAssessmentForm({
       prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
     );
   }
-
-  // Only PDF and images are supported by Claude's document API
-  const supportedDocs = documents.filter(
-    (d) =>
-      d.mimeType === "application/pdf" ||
-      d.mimeType === "image/png" ||
-      d.mimeType === "image/jpeg" ||
-      d.mimeType === "image/webp"
-  );
 
   return (
     <form action={formAction} className="space-y-5 mt-2">
@@ -99,7 +98,7 @@ export function GenerateAssessmentForm({
         />
       </Field>
 
-      {supportedDocs.length > 0 && (
+      {documents.length > 0 && (
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-slate-600 mb-2">
             Material de referencia <span className="font-normal text-slate-400 normal-case">(opcional)</span>
@@ -108,21 +107,28 @@ export function GenerateAssessmentForm({
             Seleccioná documentos para que Claude los use como contexto al generar las preguntas.
           </p>
           <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-            {supportedDocs.map((doc) => {
+            {documents.map((doc) => {
+              const supported = AI_SUPPORTED_MIME_TYPES.has(doc.mimeType);
               const selected = selectedDocIds.includes(doc.id);
               return (
                 <button
                   key={doc.id}
                   type="button"
+                  disabled={!supported}
                   onClick={() => toggleDoc(doc.id)}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left text-xs transition-colors ${
-                    selected
-                      ? "border-brand-700 bg-brand-50 text-brand-800"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                    !supported
+                      ? "border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed"
+                      : selected
+                        ? "border-brand-700 bg-brand-50 text-brand-800"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                 >
                   <DocumentIcon mimeType={doc.mimeType} />
                   <span className="flex-1 truncate">{doc.name}</span>
+                  {!supported && (
+                    <span className="text-[10px] text-slate-400 shrink-0">No compatible con IA</span>
+                  )}
                   {selected && <X className="w-3 h-3 text-brand-600 shrink-0" />}
                 </button>
               );

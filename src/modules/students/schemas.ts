@@ -4,7 +4,12 @@ export const createStudentSchema = z.object({
   // Profile fields
   email: z.email("Email inválido"),
   fullName: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .trim()
+    .max(20, "El teléfono no puede superar los 20 caracteres")
+    .regex(/^[0-9+\-\s()]*$/, "El teléfono solo puede contener números, espacios, +, - y paréntesis")
+    .optional(),
   // Student fields
   dni: z.string().min(7, "DNI inválido").max(8, "DNI inválido"),
   birthDate: z

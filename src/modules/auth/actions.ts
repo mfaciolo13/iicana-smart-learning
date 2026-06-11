@@ -61,9 +61,7 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   }
 
   const role = profile?.role ?? "alumno";
-  // "admin" → legacy alias para "director"
-  const target = role === "admin" ? "director" : role;
-  redirect(`/${target}`);
+  redirect(`/${role}`);
 }
 
 export async function registerAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

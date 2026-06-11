@@ -34,10 +34,10 @@ src/
 │   ├── (auth)/                   # Páginas públicas: login, invite, update-password
 │   ├── (dashboard)/              # Páginas protegidas por rol
 │   │   ├── layout.tsx            # Layout compartido — lee perfil del usuario
-│   │   ├── admin/                # Portal administrador
+│   │   ├── director/             # Portal dirección (acceso total)
+│   │   ├── administrativo/       # Portal personal administrativo
 │   │   ├── profesor/             # Portal docente
-│   │   ├── alumno/               # Portal alumno
-│   │   └── tutor/                # Portal tutor
+│   │   └── alumno/               # Portal alumno
 │   ├── api/                      # API Routes (reportes Excel)
 │   ├── layout.tsx                # Root layout — metadata, fuentes, Toaster
 │   ├── icon.svg                  # Favicon (Next.js lo usa automáticamente)
@@ -120,7 +120,8 @@ modules/[nombre]/
 - Se ejecuta en Edge Runtime antes de cada request
 - Llama a `supabase.auth.getUser()` para validar el token (llamada de red real)
 - Redirige a `/login` si el usuario no está autenticado en rutas protegidas
-- Las rutas protegidas son: `/admin`, `/profesor`, `/alumno`, `/tutor`
+- Las rutas protegidas son: `/director`, `/administrativo`, `/profesor`, `/alumno`
+- Dentro de `/director`, bloquea al rol `administrativo` de las secciones exclusivas de dirección (usuarios, docentes, cursos, marketing, etc.) redirigiendo a `/403`
 
 ### helpers.ts
 
@@ -145,7 +146,7 @@ export async function requireRole(allowedRoles: UserRole[]) { ... }
 const profile = await getServerProfile();
 
 // En Server Actions:
-await requireRole(["admin"]); // lanza si no es admin
+await requireRole(["director", "administrativo"]); // lanza si el rol no está permitido
 
 // En páginas que necesitan el usuario:
 const user = await getServerUser();
@@ -165,7 +166,7 @@ import { requireRole } from "@/lib/auth/helpers";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createXAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["admin"]); // siempre primero
+  await requireRole(["director", "administrativo"]); // siempre primero
   
   // Validar con Zod
   const parsed = schema.safeParse(raw);
@@ -174,8 +175,9 @@ export async function createXAction(_prev: ActionResult, formData: FormData): Pr
   // Ejecutar lógica
   await service.create(parsed.data);
   
-  revalidatePath("/admin/x");
-  return { success: "Creado correctamente", redirectTo: "/admin/x" };
+  revalidatePath("/director/x");
+  revalidatePath("/administrativo/x");
+  return { success: "Creado correctamente", redirectTo: "/director/x" };
 }
 ```
 
@@ -209,7 +211,7 @@ type ActionResult = { error?: string; success?: string; redirectTo?: string } | 
 
 ```tsx
 // Back — siempre ArrowLeft de lucide-react
-<Link href="/admin/users" className="text-sm text-slate-400 hover:text-slate-600 inline-flex items-center gap-1">
+<Link href="/director/users" className="text-sm text-slate-400 hover:text-slate-600 inline-flex items-center gap-1">
   <ArrowLeft className="w-3.5 h-3.5" /> Usuarios
 </Link>
 
@@ -256,9 +258,8 @@ LEVEL_LABELS[course.level] ?? course.level
 | Tabla | Descripción |
 |-------|-------------|
 | `profiles` | Extensión de auth.users — email, role, full_name, avatar_url |
-| `students` | Alumnos — dni, birth_date, level, status, tutor_id |
+| `students` | Alumnos — dni, birth_date, level, status |
 | `teachers` | Docentes — dni, specialization |
-| `tutors` | Tutores de alumnos menores |
 | `courses` | Cursos — level, schedule, max_capacity (15), teacher_id |
 | `enrollments` | Relación alumno-curso |
 | `attendance` | Asistencia por clase — present/absent/late |
@@ -268,10 +269,20 @@ LEVEL_LABELS[course.level] ?? course.level
 | `complaints` | Sistema de reclamos/tickets |
 | `assessments` | Autoevaluaciones generadas por IA (questions en JSONB) |
 | `assessment_attempts` | Respuestas del alumno |
+| `documents` | Material/documentos compartidos por curso |
 | `marketing_campaigns` | Campañas publicitarias |
 | `inquiries` | Consultas de potenciales alumnos |
 | `teacher_surveys` | Evaluaciones anónimas de docentes |
-| `class_observations` | Observaciones de clase por directora |
+| `class_observations` | Observaciones de clase por dirección |
+
+### Roles (`role` enum)
+
+- `director` — dirección del instituto, acceso total
+- `administrativo` — personal administrativo, acceso operativo (sin usuarios, docentes, cursos, marketing, evaluaciones docentes, promociones, cierre de ciclo)
+- `profesor` — docentes
+- `alumno` — estudiantes
+
+**Nota histórica:** el rol se llamaba `admin` y fue renombrado a `director` (migración `0002_rename_admin_to_director.sql`); luego se agregó `administrativo` (migración `0001_add_administrativo_role.sql`, aplicada antes por orden de ejecución). No existe rol `tutor` — se descartó esa idea, los padres/tutores no tienen portal propio.
 
 ### Reglas de negocio en DB
 
@@ -300,12 +311,12 @@ const rows = await db
 
 ## Flujo de invitación de usuarios
 
-1. Admin crea alumno/docente → `auth.admin.createUser({ email_confirm: true })` (sin email de Supabase)
+1. Director/administrativo crea alumno/docente → `auth.admin.createUser({ email_confirm: true })` (sin email de Supabase)
 2. Nuestro action genera el link `/invite/[base64url(email)]`
 3. Resend envía el email con ese link
 4. Usuario entra a `/invite/[encoded]` → genera un recovery link via `generateLink({ type: "recovery" })`
 5. Usuario establece contraseña en `/update-password`
-6. `last_sign_in_at` queda seteado → admin ve "Activo" en el detalle del usuario
+6. `last_sign_in_at` queda seteado → dirección ve "Activo" en el detalle del usuario
 
 **Nota:** El flujo usa `type: "recovery"`, no confirmación de email. Por eso en `getUserDetail` se chequea `email_confirmed_at || last_sign_in_at` para determinar si el usuario ya activó su cuenta.
 
@@ -396,12 +407,13 @@ RESEND_FROM_EMAIL=Smart Learning <no-reply@cervantes-smart-learning.com.ar>
 ### Implementado y funcional
 
 - Auth completo (login, invite, update-password, logout)
-- Dashboard por los 4 roles con sidebar responsive
+- Dashboard por los 4 roles (`director`, `administrativo`, `profesor`, `alumno`) con sidebar responsive
 - CRUD completo: alumnos, docentes, cursos, inscripciones, notas, pagos, reclamos
 - Asistencia digital con registro por clase
 - Evaluaciones docentes (encuestas + observaciones)
 - Sistema de notificaciones internas
 - Autoevaluaciones IA por curso
+- Material/documentos por curso
 - Promociones y cierre de ciclo lectivo
 - Certificados de promoción (imprimibles)
 - Recibos de pago (imprimibles)
@@ -409,12 +421,10 @@ RESEND_FROM_EMAIL=Smart Learning <no-reply@cervantes-smart-learning.com.ar>
 - Reportes Excel (asistencia, notas, pagos)
 - Perfil de usuario con foto de avatar
 - Gestión de usuarios con ban/unban y reenvío de invitación
+- Portal `profesor`: detalle de curso (`/profesor/courses/[id]`) y carga de notas (`/profesor/grades`)
 
 ### Pendiente / en progreso
 
-- SCRUM-119: Páginas tutor (`/tutor/payments`, `/tutor/attendance`) devuelven 404
-- SCRUM-120: Profesor (`/profesor/courses/[id]`, `/profesor/grades`) no implementados
-- SCRUM-121: Tutor (`/tutor/student/[id]`) no implementado
 - SCRUM-122: Badge de notificaciones no leídas en el campana del topbar
 - SCRUM-123: DATABASE_URL en Vercel preview env usa puerto 5432 incorrecto
-- SCRUM-124: Detalle de usuario admin muestra iniciales, no avatar real
+- SCRUM-124: Detalle de usuario en portal `director` muestra iniciales, no avatar real
