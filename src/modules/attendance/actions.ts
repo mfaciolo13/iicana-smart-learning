@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
-import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences } from "./services/attendance.service";
+import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo } from "./services/attendance.service";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
+import { sendAlert } from "@/lib/notifications/send-alert";
+import { sendAbsenceAlertEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function recordAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -41,6 +43,31 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
         };
         return [sendToRole("director", payload)];
       })
+    );
+  }
+
+  if (absentIds.length > 0) {
+    const absenceAlertInfo = await getAbsenceAlertInfo(absentIds);
+    await Promise.all(
+      absenceAlertInfo.map((info) =>
+        sendAlert({
+          userId: info.studentProfileId,
+          alertType: "absence",
+          notification: {
+            type: "absence",
+            title: "Ausencia registrada",
+            body: `Registramos tu ausencia en ${info.courseName} el ${new Date(classDate).toLocaleDateString("es-AR")}. Asistencia acumulada: ${info.attendancePct}%.`,
+          },
+          sendEmail: () =>
+            sendAbsenceAlertEmail({
+              to: info.studentEmail,
+              fullName: info.studentName,
+              courseName: info.courseName,
+              classDate,
+              attendancePercentage: info.attendancePct,
+            }),
+        })
+      )
     );
   }
 

@@ -4,7 +4,41 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createGradeSchema, updateGradeSchema } from "./schemas";
+import { getGradeAlertInfo } from "./services/grades.service";
+import { sendAlert } from "@/lib/notifications/send-alert";
+import { sendGradePublishedEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
+
+const EVALUATION_TYPE_LABELS: Record<string, string> = {
+  parcial: "Parcial",
+  final: "Final",
+  oral: "Oral",
+  homework: "Tarea",
+  quiz: "Quiz",
+};
+
+async function notifyGradePublished(gradeId: string): Promise<void> {
+  const info = await getGradeAlertInfo(gradeId);
+  if (!info) return;
+
+  await sendAlert({
+    userId: info.studentProfileId,
+    alertType: "grade_published",
+    notification: {
+      type: "grade",
+      title: "Nota publicada",
+      body: `Se publicó una nota de ${EVALUATION_TYPE_LABELS[info.evaluationType] ?? info.evaluationType} en ${info.courseName}: ${info.score}/10.`,
+    },
+    sendEmail: () =>
+      sendGradePublishedEmail({
+        to: info.studentEmail,
+        fullName: info.studentName,
+        courseName: info.courseName,
+        evaluationTypeLabel: EVALUATION_TYPE_LABELS[info.evaluationType] ?? info.evaluationType,
+        score: Number(info.score),
+      }),
+  });
+}
 
 export async function createGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director", "profesor"]);
@@ -30,14 +64,20 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
   }
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from("grades").insert({
-    enrollment_id: parsed.data.enrollmentId,
-    evaluation_type: parsed.data.evaluationType,
-    score: String(parsed.data.score),
-    notes: parsed.data.notes ?? null,
-  });
+  const { data, error } = await supabase
+    .from("grades")
+    .insert({
+      enrollment_id: parsed.data.enrollmentId,
+      evaluation_type: parsed.data.evaluationType,
+      score: String(parsed.data.score),
+      notes: parsed.data.notes ?? null,
+    })
+    .select("id")
+    .single();
 
   if (error) return { error: error.message };
+
+  await notifyGradePublished(data.id);
 
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
@@ -77,6 +117,8 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
   const { error } = await supabase.from("grades").update(updateData).eq("id", parsed.data.id);
 
   if (error) return { error: error.message };
+
+  await notifyGradePublished(parsed.data.id);
 
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
