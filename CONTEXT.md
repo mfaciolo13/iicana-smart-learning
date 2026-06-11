@@ -26,15 +26,17 @@ Sistema de gestión académica e institucional para institutos de enseñanza de 
 
 ## Roles del sistema
 
-- `admin` → directora / personal administrativo
+- `director` → dirección del instituto, acceso total
+- `administrativo` → personal administrativo, acceso operativo (sin usuarios, docentes, cursos, marketing, evaluaciones docentes, promociones, cierre de ciclo)
 - `profesor` → docentes
 - `alumno` → estudiantes
-- `tutor` → padres/tutores de alumnos menores
+
+No existe rol `tutor`: los padres/tutores de alumnos menores no tienen portal propio.
 
 ## Módulos implementados
 
 1. **Auth** — login, invite, update-password, logout
-2. **Students** — CRUD alumnos con test de nivelación y tutor
+2. **Students** — CRUD alumnos con test de nivelación
 3. **Teachers** — CRUD docentes
 4. **Courses** — CRUD cursos con control de cupo (máx. 15)
 5. **Enrollments** — inscripciones alumno-curso
@@ -51,6 +53,7 @@ Sistema de gestión académica e institucional para institutos de enseñanza de 
 16. **Reports** — reportes Excel (asistencia, notas, pagos)
 17. **Profile** — foto de avatar, nombre, teléfono por rol
 18. **Users** — gestión de acceso (ban/unban, reenvío de invitación)
+19. **Documents** — material/documentos compartidos por curso
 
 ## Reglas de negocio clave
 

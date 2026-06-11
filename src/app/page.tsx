@@ -21,7 +21,5 @@ export default async function HomePage() {
     redirect("/login");
   }
 
-  // "admin" → legacy alias para "director"
-  const targetRole = profile.role === "admin" ? "director" : profile.role;
-  redirect(`/${targetRole}`);
+  redirect(`/${profile.role}`);
 }

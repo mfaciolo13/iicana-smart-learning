@@ -66,7 +66,7 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
           )}
 
           <Field label="Teléfono" id="phone" error={state?.fieldErrors?.phone}>
-            <Input id="phone" name="phone" type="tel" defaultValue={student?.profile.phone ?? ""} placeholder="+54 9 351 000 0000" />
+            <Input id="phone" name="phone" type="tel" maxLength={20} defaultValue={student?.profile.phone ?? ""} placeholder="+54 9 351 000 0000" />
           </Field>
 
           <Field label="Fecha de nacimiento" required={!isEditing} id="birthDate" error={state?.fieldErrors?.birthDate}>
