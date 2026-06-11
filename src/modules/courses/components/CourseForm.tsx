@@ -74,8 +74,18 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
             </Select>
           </Field>
 
-          <Field label="Horario" required id="schedule" className="sm:col-span-2" error={state?.fieldErrors?.schedule}>
-            <SchedulePicker defaultValue={course?.schedule} />
+          <Field
+            label="Horario"
+            required
+            id="classDays"
+            className="sm:col-span-2"
+            error={state?.fieldErrors?.classDays ?? state?.fieldErrors?.classTime ?? state?.fieldErrors?.classDurationMinutes}
+          >
+            <SchedulePicker
+              defaultDays={course?.classDays}
+              defaultTime={course?.classTime}
+              defaultDuration={course?.classDurationMinutes}
+            />
           </Field>
 
           <Field label="Aula" id="classroom" error={state?.fieldErrors?.classroom}>

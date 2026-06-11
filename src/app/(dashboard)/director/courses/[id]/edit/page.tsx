@@ -16,7 +16,7 @@ export default async function EditCoursePage({
   const [{ data: courseRow }, teachers] = await Promise.all([
     supabase
       .from("courses")
-      .select("id, name, level, schedule, classroom, max_capacity, status, created_at, updated_at, teacher_id")
+      .select("id, name, level, schedule, class_days, class_time, class_duration_minutes, classroom, max_capacity, status, created_at, updated_at, teacher_id")
       .eq("id", id)
       .single(),
     getCachedTeachers(),
@@ -33,6 +33,9 @@ export default async function EditCoursePage({
     name: courseRow.name,
     level: courseRow.level as CourseWithTeacher["level"],
     schedule: courseRow.schedule,
+    classDays: courseRow.class_days as CourseWithTeacher["classDays"],
+    classTime: courseRow.class_time,
+    classDurationMinutes: courseRow.class_duration_minutes,
     classroom: courseRow.classroom as string | null,
     maxCapacity: courseRow.max_capacity,
     status: courseRow.status as CourseWithTeacher["status"],

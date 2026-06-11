@@ -3,6 +3,7 @@ import { courses, teachers, profiles, enrollments } from "@/lib/drizzle/schema";
 import { eq, ilike, sql, and } from "drizzle-orm";
 import type { CreateCourseInput, UpdateCourseInput } from "../schemas";
 import type { CourseListItem, CourseWithTeacher } from "../types";
+import { formatSchedule } from "../lib/schedule";
 
 export async function getCourses(search?: string): Promise<CourseListItem[]> {
   const rows = await db
@@ -63,6 +64,9 @@ export async function getCourseById(id: string): Promise<CourseWithTeacher | nul
       name: courses.name,
       level: courses.level,
       schedule: courses.schedule,
+      classDays: courses.classDays,
+      classTime: courses.classTime,
+      classDurationMinutes: courses.classDurationMinutes,
       classroom: courses.classroom,
       maxCapacity: courses.maxCapacity,
       status: courses.status,
@@ -100,7 +104,10 @@ export async function createCourse(input: CreateCourseInput) {
     .values({
       name: input.name,
       level: input.level,
-      schedule: input.schedule,
+      schedule: formatSchedule(input.classDays, input.classTime, input.classDurationMinutes),
+      classDays: input.classDays,
+      classTime: input.classTime,
+      classDurationMinutes: input.classDurationMinutes,
       classroom: input.classroom ?? null,
       maxCapacity: input.maxCapacity ?? 15,
       teacherId: input.teacherId ?? null,
@@ -111,10 +118,21 @@ export async function createCourse(input: CreateCourseInput) {
 }
 
 export async function updateCourse(input: UpdateCourseInput) {
-  const { id, ...data } = input;
+  const { id, classDays, classTime, classDurationMinutes, ...data } = input;
+
+  const scheduleFields =
+    classDays && classTime && classDurationMinutes !== undefined
+      ? {
+          classDays,
+          classTime,
+          classDurationMinutes,
+          schedule: formatSchedule(classDays, classTime, classDurationMinutes),
+        }
+      : {};
+
   const [updated] = await db
     .update(courses)
-    .set({ ...data, updatedAt: new Date() })
+    .set({ ...data, ...scheduleFields, updatedAt: new Date() })
     .where(eq(courses.id, id))
     .returning();
   return updated;

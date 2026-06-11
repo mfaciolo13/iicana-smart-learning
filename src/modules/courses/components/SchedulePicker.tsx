@@ -1,53 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "@/components/ui/Input";
-
-const DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
-
-function parseSchedule(value?: string) {
-  if (!value) return { days: [] as string[], startTime: "", endTime: "" };
-  const spaceIdx = value.lastIndexOf(" ");
-  if (spaceIdx === -1) return { days: [], startTime: "", endTime: "" };
-  const daysPart = value.slice(0, spaceIdx);
-  const timesPart = value.slice(spaceIdx + 1);
-  const days = daysPart.split("/").filter((d) => (DAYS as readonly string[]).includes(d));
-  const sep = timesPart.includes("–") ? "–" : "-";
-  const [start = "", end = ""] = timesPart.split(sep).map((t) => t.trim());
-  return { days, startTime: start, endTime: end };
-}
-
-function composeSchedule(days: string[], startTime: string, endTime: string) {
-  if (days.length === 0 || !startTime || !endTime) return "";
-  return `${DAYS.filter((d) => days.includes(d)).join("/")} ${startTime}–${endTime}`;
-}
+import { Input, Select } from "@/components/ui/Input";
+import type { DayOfWeek } from "../types";
+import { DAY_LABELS_ES, SELECTABLE_DAYS, DURATION_OPTIONS, formatSchedule } from "../lib/schedule";
 
 interface SchedulePickerProps {
-  defaultValue?: string;
+  defaultDays?: DayOfWeek[];
+  defaultTime?: string;
+  defaultDuration?: number;
 }
 
-export function SchedulePicker({ defaultValue }: SchedulePickerProps) {
-  const parsed = parseSchedule(defaultValue);
-  const [selectedDays, setSelectedDays] = useState<string[]>(parsed.days);
-  const [startTime, setStartTime] = useState(parsed.startTime);
-  const [endTime, setEndTime] = useState(parsed.endTime);
+export function SchedulePicker({ defaultDays = [], defaultTime = "", defaultDuration = 90 }: SchedulePickerProps) {
+  const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(defaultDays);
+  const [time, setTime] = useState(defaultTime.slice(0, 5));
+  const [duration, setDuration] = useState(defaultDuration);
 
-  const schedule = composeSchedule(selectedDays, startTime, endTime);
+  const preview = formatSchedule(selectedDays, time, duration);
 
-  function toggleDay(day: string) {
+  function toggleDay(day: DayOfWeek) {
     setSelectedDays((prev) =>
       prev.includes(day)
         ? prev.filter((d) => d !== day)
-        : DAYS.filter((d) => [...prev, day].includes(d))
+        : SELECTABLE_DAYS.filter((d) => [...prev, day].includes(d))
     );
   }
 
   return (
     <div className="space-y-3">
-      <input type="hidden" name="schedule" value={schedule} required />
+      <input type="hidden" name="classDays" value={selectedDays.join(",")} />
 
       <div className="flex flex-wrap gap-2">
-        {DAYS.map((day) => (
+        {SELECTABLE_DAYS.map((day) => (
           <button
             key={day}
             type="button"
@@ -59,33 +43,39 @@ export function SchedulePicker({ defaultValue }: SchedulePickerProps) {
                 : "bg-white text-slate-600 border-slate-200 hover:border-brand-300 hover:text-slate-800"
             }`}
           >
-            {day}
+            {DAY_LABELS_ES[day]}
           </button>
         ))}
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-slate-400">Desde</span>
+          <span className="text-xs text-slate-400">Hora de inicio</span>
           <Input
             type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            name="classTime"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
             className="w-32"
+            required
           />
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-slate-400">Hasta</span>
-          <Input
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
+          <span className="text-xs text-slate-400">Duración</span>
+          <Select
+            name="classDurationMinutes"
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
             className="w-32"
-          />
+          >
+            {DURATION_OPTIONS.map((d) => (
+              <option key={d} value={d}>{d} min</option>
+            ))}
+          </Select>
         </div>
-        {schedule && (
+        {preview && (
           <span className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md px-2 py-2 font-mono">
-            {schedule}
+            {preview}
           </span>
         )}
       </div>
