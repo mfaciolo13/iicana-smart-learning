@@ -30,6 +30,7 @@ import {
   Archive,
   UserCircle,
   UserPlus,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -60,6 +61,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Material", href: "/director/documents", icon: BookOpen },
     { label: "Usuarios", href: "/director/users", icon: ShieldCheck },
     { label: "Autoevaluaciones IA", href: "/director/assessments", icon: Sparkles },
+    { label: "Notificaciones", href: "/director/settings/notifications", icon: Settings },
     { label: "Mi Perfil", href: "/director/profile", icon: UserCircle },
   ],
   administrativo: [

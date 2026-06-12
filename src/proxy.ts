@@ -14,6 +14,7 @@ const ADMIN_ONLY_ROUTES = [
   "/director/marketing",
   "/director/promotions",
   "/director/profile",
+  "/director/settings",
 ];
 
 export async function proxy(request: NextRequest) {
