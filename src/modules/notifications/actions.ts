@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { sendInstitutionalNotificationEmail } from "@/lib/email";
-import { sendNotificationSchema } from "./schemas";
+import { sendNotificationSchema, updateNotificationSettingSchema } from "./schemas";
 import {
   markAsRead,
   markAllAsRead,
@@ -14,6 +14,7 @@ import {
   getEmailsForCourse,
   getEmailForUser,
 } from "./services/notifications.service";
+import { updateNotificationSetting } from "./services/notification-settings.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function sendNotificationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -103,4 +104,22 @@ export async function markAllAsReadAction(_prev: ActionResult, _formData?: FormD
   revalidatePath("/profesor/notifications");
   revalidatePath("/administrativo/notifications");
   return { success: "Notificaciones marcadas como leídas" };
+}
+
+export async function updateNotificationSettingAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["director"]);
+
+  const timingHoursRaw = formData.get("timingHours") as string;
+  const parsed = updateNotificationSettingSchema.safeParse({
+    alertType: formData.get("alertType") as string,
+    enabled: formData.get("enabled") === "true",
+    timingHours: timingHoursRaw ? timingHoursRaw : undefined,
+  });
+
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await updateNotificationSetting(parsed.data);
+
+  revalidatePath("/director/settings/notifications");
+  return { success: "Configuración actualizada" };
 }

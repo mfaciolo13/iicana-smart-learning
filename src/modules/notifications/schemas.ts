@@ -12,3 +12,11 @@ export const sendNotificationSchema = z.object({
 });
 
 export type SendNotificationInput = z.infer<typeof sendNotificationSchema>;
+
+export const updateNotificationSettingSchema = z.object({
+  alertType: z.enum(["class_reminder", "absence", "payment_reminder", "grade_published"]),
+  enabled: z.boolean(),
+  timingHours: z.coerce.number().int("Debe ser un número entero").min(1, "Mínimo 1 hora").max(72, "Máximo 72 horas").optional(),
+});
+
+export type UpdateNotificationSettingInput = z.infer<typeof updateNotificationSettingSchema>;
