@@ -27,9 +27,23 @@ setup("autenticar como admin", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ingresar" }).click();
 
-  // Aceptar cualquier ruta post-login del panel admin
-  await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
+  // Esperar a que la URL cambie fuera de /login (cualquier ruta post-login)
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"), {
+    timeout: 60_000,
+  });
   await page.waitForLoadState("networkidle");
+
+  // Verificar que podemos acceder a una ruta admin protegida
+  await page.goto("/admin/students");
+  await page.waitForLoadState("networkidle");
+
+  // Si nos redirige a login, la sesión no es válida
+  const currentUrl = page.url();
+  if (currentUrl.includes("/login")) {
+    throw new Error(
+      `El admin fue redirigido a /login después de autenticarse. URL actual: ${currentUrl}`
+    );
+  }
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -57,9 +71,23 @@ setup("autenticar como alumno", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ingresar" }).click();
 
-  // Aceptar cualquier ruta post-login del portal alumno
-  await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
+  // Esperar a que la URL cambie fuera de /login (cualquier ruta post-login)
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"), {
+    timeout: 60_000,
+  });
   await page.waitForLoadState("networkidle");
+
+  // Verificar que podemos acceder a una ruta alumno protegida
+  await page.goto("/alumno/grades");
+  await page.waitForLoadState("networkidle");
+
+  // Si nos redirige a login, la sesión no es válida
+  const currentUrl = page.url();
+  if (currentUrl.includes("/login")) {
+    throw new Error(
+      `El alumno fue redirigido a /login después de autenticarse. URL actual: ${currentUrl}`
+    );
+  }
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
