@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { sendInstitutionalNotificationEmail } from "@/lib/email";
-import { sendNotificationSchema, updateNotificationSettingSchema } from "./schemas";
+import { sendNotificationSchema, updateNotificationSettingSchema, updateUserNotificationPreferenceSchema } from "./schemas";
 import {
   markAsRead,
   markAllAsRead,
@@ -15,6 +15,7 @@ import {
   getEmailForUser,
 } from "./services/notifications.service";
 import { updateNotificationSetting } from "./services/notification-settings.service";
+import { upsertUserNotificationPreference } from "./services/notification-preferences.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function sendNotificationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -122,4 +123,22 @@ export async function updateNotificationSettingAction(_prev: ActionResult, formD
 
   revalidatePath("/director/settings/notifications");
   return { success: "Configuración actualizada" };
+}
+
+export async function updateUserNotificationPreferenceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "No autenticado." };
+
+  const parsed = updateUserNotificationPreferenceSchema.safeParse({
+    alertType: formData.get("alertType") as string,
+    enabled: formData.get("enabled") === "true",
+  });
+
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await upsertUserNotificationPreference({ userId: user.id, ...parsed.data });
+
+  revalidatePath("/alumno/profile");
+  revalidatePath("/profesor/profile");
+  return { success: "Preferencia actualizada" };
 }
