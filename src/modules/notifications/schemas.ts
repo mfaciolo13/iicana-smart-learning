@@ -20,3 +20,10 @@ export const updateNotificationSettingSchema = z.object({
 });
 
 export type UpdateNotificationSettingInput = z.infer<typeof updateNotificationSettingSchema>;
+
+export const updateUserNotificationPreferenceSchema = z.object({
+  alertType: z.enum(["class_reminder", "absence", "payment_reminder", "grade_published"]),
+  enabled: z.boolean(),
+});
+
+export type UpdateUserNotificationPreferenceInput = z.infer<typeof updateUserNotificationPreferenceSchema>;
