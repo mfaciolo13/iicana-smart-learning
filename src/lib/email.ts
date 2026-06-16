@@ -300,6 +300,99 @@ export async function sendGradePublishedEmail({
   });
 }
 
+export async function sendClassReminderEmail({
+  to,
+  fullName,
+  courseName,
+  classDate,
+  classTime,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+  classDate: string;
+  classTime: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Class reminder email for ${to} — ${courseName} mañana ${classTime}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  const formattedDate = new Date(classDate).toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Recordatorio de clase mañana — ${courseName}`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Te recordamos que mañana tenés clase en Smart Learning:
+      </p>
+      <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0 0 4px;color:#475569;font-size:13px;">📅 ${formattedDate}</p>
+        <p style="margin:0;color:#475569;font-size:13px;">🕐 ${classTime} hs</p>
+      </div>
+      <p style="margin:0;color:#94a3b8;font-size:12px;">
+        Ingresá a Smart Learning para ver el material de la clase.
+      </p>
+    `),
+  });
+}
+
+export async function sendPaymentReminderEmail({
+  to,
+  fullName,
+  courseName,
+  dueDate,
+  amount,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+  dueDate: string;
+  amount: number;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Payment reminder email for ${to} — $${amount} vence ${dueDate}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const formattedAmount = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(amount);
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Recordatorio de pago — ${courseName}`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Tu cuota mensual está próxima a vencer. Podés abonarla en el instituto antes de la fecha límite.
+      </p>
+      <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0 0 4px;color:#475569;font-size:13px;">Importe: <strong>${formattedAmount}</strong></p>
+        <p style="margin:0;color:#475569;font-size:13px;">Vencimiento: <strong>${formattedDate}</strong></p>
+      </div>
+      <p style="margin:0;color:#94a3b8;font-size:12px;">
+        Ante cualquier consulta, comunicате con el equipo administrativo de Smart Learning.
+      </p>
+    `),
+  });
+}
+
 export async function sendAssessmentPublishedEmail({
   to,
   fullName,
