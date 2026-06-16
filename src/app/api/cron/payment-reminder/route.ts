@@ -1,0 +1,36 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getPaymentReminderRecipients } from "@/modules/notifications/services/cron.service";
+import { sendPaymentReminderEmail } from "@/lib/email";
+
+export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV !== "development") {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  const recipients = await getPaymentReminderRecipients();
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const r of recipients) {
+    try {
+      await sendPaymentReminderEmail({
+        to: r.email,
+        fullName: r.fullName,
+        courseName: r.courseName,
+        dueDate: r.dueDate,
+        amount: r.amount,
+      });
+      sent++;
+    } catch (err) {
+      console.error(`[cron/payment-reminder] failed for ${r.email}:`, err);
+      failed++;
+    }
+  }
+
+  console.log(`[cron/payment-reminder] sent=${sent} failed=${failed} total=${recipients.length}`);
+  return NextResponse.json({ sent, failed, total: recipients.length });
+}
