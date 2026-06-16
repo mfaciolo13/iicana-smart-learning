@@ -1,3 +1,13 @@
 {
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "crons": [
+    {
+      "path": "/api/cron/class-reminder",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/payment-reminder",
+      "schedule": "0 12 * * *"
+    }
+  ]
 }
