@@ -22,6 +22,7 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
     classroom: (formData.get("classroom") as string) || undefined,
     maxCapacity: formData.get("maxCapacity") as string,
     teacherId: (formData.get("teacherId") as string) || undefined,
+    diagnosticFrequency: formData.get("diagnosticFrequency") as string,
   };
 
   const parsed = createCourseSchema.safeParse(raw);
@@ -60,6 +61,7 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
     maxCapacity: (formData.get("maxCapacity") as string) || undefined,
     teacherId: (formData.get("teacherId") as string) || undefined,
     status: (formData.get("status") as string) || undefined,
+    diagnosticFrequency: (formData.get("diagnosticFrequency") as string) || undefined,
   };
 
   const parsed = updateCourseSchema.safeParse(raw);

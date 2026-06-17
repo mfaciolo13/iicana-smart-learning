@@ -14,6 +14,7 @@ export interface StudentWithProfile {
   level: Level | null;
   placementTestScore: number | null;
   status: StudentStatus;
+  accessRestricted: boolean;
   profileId: string;
   createdAt: Date;
   updatedAt: Date;

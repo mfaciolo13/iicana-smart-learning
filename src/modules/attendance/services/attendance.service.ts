@@ -1,6 +1,7 @@
 import { db } from "@/lib/drizzle";
 import { attendance, enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
 import { eq, and, desc, count, sql, inArray } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { AttendanceRecord, AttendanceSession } from "../types";
 
 export async function getAttendanceByCourse(
@@ -215,6 +216,94 @@ export async function getAbsenceAlertInfo(enrollmentIds: string[]): Promise<Abse
       studentEmail: r.studentEmail,
       studentName: r.studentName,
       courseName: r.courseName,
+      attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
+    };
+  });
+}
+
+const LOW_ATTENDANCE_THRESHOLD = 70;
+
+export interface LowAttendanceAlert {
+  enrollmentId: string;
+  studentName: string;
+  courseName: string;
+  teacherEmail: string;
+  teacherName: string;
+  teacherProfileId: string;
+  attendancePct: number;
+}
+
+/**
+ * Returns enrollments that just crossed below the 70% attendance threshold
+ * for the first time (was ≥70% before today's absent class, now <70%).
+ * Only fires once naturally — the crossing only happens once.
+ */
+export async function checkLowAttendanceThreshold(
+  absentEnrollmentIds: string[]
+): Promise<LowAttendanceAlert[]> {
+  if (absentEnrollmentIds.length === 0) return [];
+
+  // All attendance for these enrollments
+  const allRecords = await db
+    .select({ enrollmentId: attendance.enrollmentId, status: attendance.status, classDate: attendance.classDate })
+    .from(attendance)
+    .where(inArray(attendance.enrollmentId, absentEnrollmentIds));
+
+  const alerts: string[] = [];
+
+  const byEnrollment = new Map<string, { status: string; classDate: string }[]>();
+  for (const r of allRecords) {
+    const list = byEnrollment.get(r.enrollmentId) ?? [];
+    list.push({ status: r.status, classDate: r.classDate });
+    byEnrollment.set(r.enrollmentId, list);
+  }
+
+  for (const [enrollmentId, records] of byEnrollment) {
+    const total = records.length;
+    if (total === 0) continue;
+
+    const present = records.filter((r) => r.status === "present" || r.status === "late").length;
+    const currentPct = Math.round((present / total) * 100);
+
+    // "before today" = exclude today's absent record (1 fewer total, same present count)
+    const prevTotal = total - 1;
+    if (prevTotal === 0) continue;
+    const prevPct = Math.round((present / prevTotal) * 100);
+
+    // Only alert when crossing below the threshold for the first time
+    if (prevPct >= LOW_ATTENDANCE_THRESHOLD && currentPct < LOW_ATTENDANCE_THRESHOLD) {
+      alerts.push(enrollmentId);
+    }
+  }
+
+  if (alerts.length === 0) return [];
+
+  const teacherProfiles = alias(profiles, "teacher_profiles");
+
+  const rows = await db
+    .select({
+      enrollmentId: enrollments.id,
+      studentName: profiles.fullName,
+      courseName: courses.name,
+      teacherEmail: teacherProfiles.email,
+      teacherName: teacherProfiles.fullName,
+      teacherProfileId: teacherProfiles.id,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .innerJoin(teachers, eq(courses.teacherId, teachers.id))
+    .innerJoin(teacherProfiles, eq(teachers.profileId, teacherProfiles.id))
+    .where(inArray(enrollments.id, alerts));
+
+  // Re-compute attendance pct for the result
+  return rows.map((r) => {
+    const records = byEnrollment.get(r.enrollmentId) ?? [];
+    const total = records.length;
+    const present = records.filter((x) => x.status === "present" || x.status === "late").length;
+    return {
+      ...r,
       attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
     };
   });

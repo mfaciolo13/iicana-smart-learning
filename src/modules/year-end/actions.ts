@@ -3,12 +3,21 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
 import { consolidateYearEnd } from "./services/year-end.service";
+import { sendPromotionCongratulationsEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function consolidateYearEndAction(_prev: ActionResult, _formData?: FormData): Promise<ActionResult> {
   await requireRole(["director"]);
 
-  const { promoted, graduated } = await consolidateYearEnd();
+  const { promoted, graduated, promotedStudents } = await consolidateYearEnd();
+
+  for (const s of promotedStudents) {
+    try {
+      await sendPromotionCongratulationsEmail({ to: s.email, fullName: s.fullName, courseName: s.courseName });
+    } catch (err) {
+      console.error(`[year-end] failed sending promotion email to ${s.email}:`, err);
+    }
+  }
 
   updateTag("students");
   updateTag("enrollments");

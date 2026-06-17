@@ -121,13 +121,17 @@ export async function getYearEndReport(): Promise<{ rows: YearEndRow[]; summary:
   return { rows: result, summary };
 }
 
-export async function consolidateYearEnd(): Promise<{ promoted: number; graduated: number }> {
+export interface PromotedStudent {
+  email: string;
+  fullName: string;
+  courseName: string;
+}
+
+export async function consolidateYearEnd(): Promise<{ promoted: number; graduated: number; promotedStudents: PromotedStudent[] }> {
   const { rows } = await getYearEndReport();
 
-  // Promote all eligible active enrollments
-  const eligibleIds = rows
-    .filter((r) => r.outcome === "eligible")
-    .map((r) => r.enrollmentId);
+  const eligibleRows = rows.filter((r) => r.outcome === "eligible");
+  const eligibleIds = eligibleRows.map((r) => r.enrollmentId);
 
   if (eligibleIds.length > 0) {
     await db
@@ -136,8 +140,21 @@ export async function consolidateYearEnd(): Promise<{ promoted: number; graduate
       .where(inArray(enrollments.id, eligibleIds));
   }
 
+  // Fetch emails for promoted students
+  let promotedStudents: PromotedStudent[] = [];
+  if (eligibleIds.length > 0) {
+    const emailRows = await db
+      .select({ email: profiles.email, fullName: profiles.fullName, courseName: courses.name })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .innerJoin(profiles, eq(students.profileId, profiles.id))
+      .innerJoin(courses, eq(enrollments.courseId, courses.id))
+      .where(inArray(enrollments.id, eligibleIds));
+    promotedStudents = emailRows;
+  }
+
   // Mark students as graduated if all their enrollments are now completed
-  const affectedStudentIds = [...new Set(rows.filter((r) => r.outcome === "eligible").map((r) => r.studentId))];
+  const affectedStudentIds = [...new Set(eligibleRows.map((r) => r.studentId))];
   let graduated = 0;
 
   for (const studentId of affectedStudentIds) {
@@ -156,5 +173,5 @@ export async function consolidateYearEnd(): Promise<{ promoted: number; graduate
     }
   }
 
-  return { promoted: eligibleIds.length, graduated };
+  return { promoted: eligibleIds.length, graduated, promotedStudents };
 }

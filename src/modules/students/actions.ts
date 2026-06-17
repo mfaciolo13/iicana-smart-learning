@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import { createStudentSchema, updateStudentSchema } from "./schemas";
-import { createStudent, updateStudent, deleteStudent } from "./services/students.service";
+import { createStudent, updateStudent, deleteStudent, setStudentAccessRestricted } from "./services/students.service";
 import { sendInvitationEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -110,6 +110,21 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
   return { success: "Alumno actualizado", redirectTo: `/director/students/${parsed.data.id}` };
+}
+
+export async function toggleAccessRestrictedAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["director", "administrativo"]);
+
+  const id = formData.get("id") as string;
+  const restrict = formData.get("restrict") === "true";
+  if (!id) return { error: "ID requerido" };
+
+  await setStudentAccessRestricted(id, restrict);
+
+  updateTag("students");
+  revalidatePath(`/director/students/${id}`);
+  revalidatePath(`/administrativo/students/${id}`);
+  return { success: restrict ? "Acceso restringido" : "Restricción levantada" };
 }
 
 export async function deleteStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

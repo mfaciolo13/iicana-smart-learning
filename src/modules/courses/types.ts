@@ -26,6 +26,7 @@ export interface CourseWithTeacher {
   classDurationMinutes: number;
   classroom: string | null;
   maxCapacity: number;
+  diagnosticFrequency: number;
   status: CourseStatus;
   teacherId: string | null;
   createdAt: Date;

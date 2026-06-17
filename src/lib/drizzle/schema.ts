@@ -120,6 +120,8 @@ export const assessmentStatusEnum = pgEnum("assessment_status", [
   "archived",
 ]);
 
+export const riskLevelEnum = pgEnum("risk_level", ["none", "low", "medium", "high"]);
+
 export const alertTypeEnum = pgEnum("alert_type", [
   "class_reminder",
   "absence",
@@ -164,6 +166,7 @@ export const students = pgTable("students", {
   level: levelEnum("level"),
   placementTestScore: integer("placement_test_score"),
   status: studentStatusEnum("status").notNull().default("active"),
+  accessRestricted: boolean("access_restricted").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -197,6 +200,7 @@ export const courses = pgTable("courses", {
   teacherId: uuid("teacher_id").references(() => teachers.id, {
     onDelete: "set null",
   }),
+  diagnosticFrequency: integer("diagnostic_frequency").notNull().default(0),
   status: courseStatusEnum("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -444,6 +448,20 @@ export const userNotificationPreferences = pgTable(
   },
   (table) => [unique().on(table.userId, table.alertType)]
 );
+
+export const studentRiskAssessments = pgTable("student_risk_assessments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => students.id, { onDelete: "cascade" }),
+  riskLevel: riskLevelEnum("risk_level").notNull().default("none"),
+  signals: jsonb("signals").notNull().default([]),
+  // signals shape: { type: 'overdue' | 'low_attendance' | 'low_assessment', detail: string }[]
+  assessedAt: timestamp("assessed_at", { withTimezone: true }).notNull().defaultNow(),
+  intervenedAt: timestamp("intervened_at", { withTimezone: true }),
+  intervenedBy: uuid("intervened_by").references(() => profiles.id, { onDelete: "set null" }),
+  interventionNote: text("intervention_note"),
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

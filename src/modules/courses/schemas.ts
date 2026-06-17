@@ -17,6 +17,7 @@ export const createCourseSchema = z.object({
   classroom: z.string().optional(),
   maxCapacity: z.coerce.number().int("Debe ser un número entero").min(1, "El cupo mínimo es 1 alumno").max(15, "El cupo máximo es 15 alumnos").default(15),
   teacherId: z.uuid().optional(),
+  diagnosticFrequency: z.coerce.number().int().min(0).max(20).default(0),
 });
 
 export const updateCourseSchema = createCourseSchema.partial().extend({

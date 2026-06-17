@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getStudentById } from "@/modules/students/services/students.service";
 import { getEnrollmentsByStudent } from "@/modules/enrollments/services/enrollments.service";
 import { getPaymentsByStudent } from "@/modules/payments/services/payments.service";
-import { deleteStudentAction } from "@/modules/students/actions";
+import { deleteStudentAction, toggleAccessRestrictedAction } from "@/modules/students/actions";
 import { resendInvitationAction } from "@/modules/users/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
@@ -115,6 +115,14 @@ export default async function StudentDetailPage({
               <dt className="text-slate-500">Estado</dt>
               <dd><Badge variant={status.variant}>{status.label}</Badge></dd>
             </div>
+            <div className="flex justify-between text-sm items-center">
+              <dt className="text-slate-500">Acceso</dt>
+              <dd>
+                <Badge variant={student.accessRestricted ? "danger" : "success"} dot={false}>
+                  {student.accessRestricted ? "Restringido" : "Habilitado"}
+                </Badge>
+              </dd>
+            </div>
             <div className="flex justify-between text-sm">
               <dt className="text-slate-500">Alta</dt>
               <dd className="font-medium text-slate-800">
@@ -122,6 +130,18 @@ export default async function StudentDetailPage({
               </dd>
             </div>
           </dl>
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <FormButton
+              action={toggleAccessRestrictedAction}
+              fields={{ id: student.id, restrict: student.accessRestricted ? "false" : "true" }}
+              variant={student.accessRestricted ? "secondary" : "danger"}
+              size="sm"
+              className="w-full justify-center"
+              confirmMessage={student.accessRestricted ? "¿Levantar la restricción de acceso?" : "¿Restringir el acceso a este alumno?"}
+            >
+              {student.accessRestricted ? "Levantar restricción" : "Restringir acceso"}
+            </FormButton>
+          </div>
         </Card>
       </div>
 

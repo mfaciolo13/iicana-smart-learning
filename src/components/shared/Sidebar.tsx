@@ -31,6 +31,7 @@ import {
   UserCircle,
   UserPlus,
   Settings,
+  ShieldAlert,
   type LucideIcon,
 } from "lucide-react";
 
@@ -56,6 +57,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Eval. Docentes", href: "/director/teacher-evaluations", icon: ClipboardCheck },
     { label: "Promociones", href: "/director/promotions", icon: Medal },
     { label: "Marketing", href: "/director/marketing", icon: Megaphone },
+    { label: "Riesgo de Abandono", href: "/director/risk", icon: ShieldAlert },
     { label: "Cierre de Ciclo", href: "/director/year-end", icon: Archive },
     { label: "Reportes", href: "/director/reports", icon: BarChart2 },
     { label: "Material", href: "/director/documents", icon: BookOpen },

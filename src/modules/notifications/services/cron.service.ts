@@ -8,7 +8,7 @@ import {
   notificationSettings,
   userNotificationPreferences,
 } from "@/lib/drizzle/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, isNull } from "drizzle-orm";
 
 const DAY_MAP = [
   "sunday",
@@ -177,4 +177,57 @@ export async function getPaymentReminderRecipients(): Promise<PaymentReminderRec
       dueDate: r.dueDate,
       amount: Number(r.amount),
     }));
+}
+
+export interface OverdueAlertRecipient {
+  paymentId: string;
+  email: string;
+  fullName: string;
+  courseName: string;
+  dueDate: string;
+  amount: number;
+}
+
+export async function getOverdueAlertRecipients(): Promise<OverdueAlertRecipient[]> {
+  const rows = await db
+    .select({
+      paymentId: payments.id,
+      profileId: profiles.id,
+      email: profiles.email,
+      fullName: profiles.fullName,
+      amount: payments.amount,
+      dueDate: payments.dueDate,
+    })
+    .from(payments)
+    .innerJoin(students, eq(students.id, payments.studentId))
+    .innerJoin(profiles, eq(profiles.id, students.profileId))
+    .where(and(eq(payments.status, "overdue"), isNull(payments.overdueAlertSentAt)));
+
+  if (rows.length === 0) return [];
+
+  const profileIds = rows.map((r) => r.profileId);
+  const courseRows = await db
+    .select({ profileId: profiles.id, courseName: courses.name })
+    .from(enrollments)
+    .innerJoin(students, eq(students.id, enrollments.studentId))
+    .innerJoin(profiles, eq(profiles.id, students.profileId))
+    .innerJoin(courses, eq(courses.id, enrollments.courseId))
+    .where(
+      and(
+        eq(enrollments.status, "active"),
+        eq(courses.status, "active"),
+        inArray(profiles.id, profileIds)
+      )
+    );
+
+  const courseByProfileId = new Map(courseRows.map((r) => [r.profileId, r.courseName]));
+
+  return rows.map((r) => ({
+    paymentId: r.paymentId,
+    email: r.email,
+    fullName: r.fullName,
+    courseName: courseByProfileId.get(r.profileId) ?? "Smart Learning",
+    dueDate: r.dueDate,
+    amount: Number(r.amount),
+  }));
 }

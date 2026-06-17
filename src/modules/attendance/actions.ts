@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
-import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo } from "./services/attendance.service";
+import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo, checkLowAttendanceThreshold } from "./services/attendance.service";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import { sendAlert } from "@/lib/notifications/send-alert";
-import { sendAbsenceAlertEmail } from "@/lib/email";
+import { sendAbsenceAlertEmail, sendTeacherAttendanceAlertEmail } from "@/lib/email";
+import { checkAndTriggerDiagnosticAssessment } from "@/modules/assessments/services/auto-assessment.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function recordAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -69,6 +70,34 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
         })
       )
     );
+  }
+
+  // Alert teacher when a student first drops below 70% attendance
+  const lowAttendanceAlerts = await checkLowAttendanceThreshold(absentIds);
+  for (const alert of lowAttendanceAlerts) {
+    try {
+      await sendTeacherAttendanceAlertEmail({
+        to: alert.teacherEmail,
+        teacherName: alert.teacherName,
+        studentName: alert.studentName,
+        courseName: alert.courseName,
+        attendancePct: alert.attendancePct,
+      });
+    } catch (err) {
+      console.error(`[attendance] failed sending low-attendance email to ${alert.teacherEmail}:`, err);
+    }
+    await sendToRole("director", {
+      type: "alert" as const,
+      title: "Asistencia crítica",
+      body: `${alert.studentName} bajó a ${alert.attendancePct}% de asistencia en ${alert.courseName}.`,
+    });
+  }
+
+  // Trigger auto-diagnostic assessment if course frequency is configured (non-blocking)
+  try {
+    await checkAndTriggerDiagnosticAssessment(courseId);
+  } catch (err) {
+    console.error("[attendance] auto-assessment trigger failed:", err);
   }
 
   revalidatePath("/director/attendance");

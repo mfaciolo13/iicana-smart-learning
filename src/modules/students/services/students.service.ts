@@ -41,6 +41,7 @@ export async function getStudentById(
       level: students.level,
       placementTestScore: students.placementTestScore,
       status: students.status,
+      accessRestricted: students.accessRestricted,
       profileId: students.profileId,
       createdAt: students.createdAt,
       updatedAt: students.updatedAt,
@@ -69,6 +70,7 @@ export async function getStudentByProfileId(
       level: students.level,
       placementTestScore: students.placementTestScore,
       status: students.status,
+      accessRestricted: students.accessRestricted,
       profileId: students.profileId,
       createdAt: students.createdAt,
       updatedAt: students.updatedAt,
@@ -84,6 +86,15 @@ export async function getStudentByProfileId(
     .limit(1);
 
   return (rows[0] as StudentWithProfile) ?? null;
+}
+
+export async function isStudentAccessRestricted(profileId: string): Promise<boolean> {
+  const rows = await db
+    .select({ accessRestricted: students.accessRestricted })
+    .from(students)
+    .where(eq(students.profileId, profileId))
+    .limit(1);
+  return rows[0]?.accessRestricted ?? false;
 }
 
 export async function createStudent(
@@ -119,4 +130,11 @@ export async function updateStudent(input: UpdateStudentInput) {
 
 export async function deleteStudent(id: string) {
   await db.delete(students).where(eq(students.id, id));
+}
+
+export async function setStudentAccessRestricted(id: string, restricted: boolean) {
+  await db
+    .update(students)
+    .set({ accessRestricted: restricted, updatedAt: new Date() })
+    .where(eq(students.id, id));
 }

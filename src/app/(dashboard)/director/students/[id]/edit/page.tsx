@@ -30,6 +30,7 @@ export default async function EditStudentPage({
     level: row.level as StudentWithProfile["level"],
     placementTestScore: row.placement_test_score as number | null,
     status: row.status as StudentWithProfile["status"],
+    accessRestricted: false,
     profileId: row.profile_id,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
