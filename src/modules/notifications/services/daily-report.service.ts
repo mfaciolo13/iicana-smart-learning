@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { payments, students, profiles, attendance, enrollments, courses } from "@/lib/drizzle/schema";
-import { eq, and, sql, gte, lt } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export interface DailyReportData {
   date: string;
@@ -16,8 +16,6 @@ export async function getDailyReportData(): Promise<DailyReportData> {
   const yesterday = new Date();
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   const yesterdayStr = yesterday.toISOString().slice(0, 10);
-
-  const todayStr = new Date().toISOString().slice(0, 10);
 
   // Payments registered yesterday
   const paymentRows = await db

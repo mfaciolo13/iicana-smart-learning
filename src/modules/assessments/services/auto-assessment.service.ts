@@ -9,7 +9,7 @@ import {
   teachers,
   attendance,
 } from "@/lib/drizzle/schema";
-import { eq, and, count, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { LEVEL_LABELS } from "@/lib/level-labels";
 import type { QuizQuestion } from "../types";
 

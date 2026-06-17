@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/drizzle";
 import { payments, students } from "@/lib/drizzle/schema";
-import { eq, and, count } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 import { getOverdueAlertRecipients } from "@/modules/notifications/services/cron.service";
 import { sendPaymentOverdueAlertEmail } from "@/lib/email";
 
