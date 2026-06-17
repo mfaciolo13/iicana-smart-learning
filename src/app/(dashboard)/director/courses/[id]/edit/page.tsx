@@ -38,6 +38,7 @@ export default async function EditCoursePage({
     classDurationMinutes: courseRow.class_duration_minutes,
     classroom: courseRow.classroom as string | null,
     maxCapacity: courseRow.max_capacity,
+    diagnosticFrequency: 0,
     status: courseRow.status as CourseWithTeacher["status"],
     teacherId: courseRow.teacher_id as string | null,
     createdAt: new Date(courseRow.created_at),

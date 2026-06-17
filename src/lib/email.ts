@@ -393,6 +393,214 @@ export async function sendPaymentReminderEmail({
   });
 }
 
+export async function sendDailyReportEmail({
+  to,
+  date,
+  paymentsSummary,
+  paymentsTotal,
+  lowAttendanceStudents,
+  newStudents,
+}: {
+  to: string;
+  date: string;
+  paymentsSummary: { method: string; count: number; total: number }[];
+  paymentsTotal: number;
+  lowAttendanceStudents: { studentName: string; courseName: string; attendancePct: number }[];
+  newStudents: { fullName: string; courseName: string }[];
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Daily report email for ${to} — ${date}\n`);
+    return;
+  }
+
+  const formattedDate = new Date(date).toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const formattedTotal = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(paymentsTotal);
+
+  const paymentsRows = paymentsSummary.length > 0
+    ? paymentsSummary.map((p) => {
+        const fmt = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(p.total);
+        return `<tr><td style="padding:6px 12px;color:#475569;font-size:13px;">${p.method}</td><td style="padding:6px 12px;color:#475569;font-size:13px;text-align:center;">${p.count}</td><td style="padding:6px 12px;color:#1e293b;font-size:13px;font-weight:600;text-align:right;">${fmt}</td></tr>`;
+      }).join("")
+    : `<tr><td colspan="3" style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">Sin cobros registrados</td></tr>`;
+
+  const lowAttRows = lowAttendanceStudents.length > 0
+    ? lowAttendanceStudents.map((s) => `<tr><td style="padding:6px 12px;color:#b45309;font-size:13px;">${s.studentName}</td><td style="padding:6px 12px;color:#475569;font-size:13px;">${s.courseName}</td><td style="padding:6px 12px;color:#dc2626;font-size:13px;font-weight:600;text-align:right;">${s.attendancePct}%</td></tr>`).join("")
+    : `<tr><td colspan="3" style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">Ningún alumno en situación crítica</td></tr>`;
+
+  const newStudentRows = newStudents.length > 0
+    ? newStudents.map((s) => `<tr><td style="padding:6px 12px;color:#475569;font-size:13px;">${s.fullName}</td><td style="padding:6px 12px;color:#475569;font-size:13px;">${s.courseName}</td></tr>`).join("")
+    : `<tr><td colspan="2" style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">Sin inscripciones nuevas</td></tr>`;
+
+  const tableStyle = `width:100%;border-collapse:collapse;margin:0 0 24px;`;
+  const thStyle = `padding:6px 12px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;text-align:left;border-bottom:1px solid #e2e8f0;`;
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Resumen del día — ${formattedDate}`,
+    html: emailShell(`
+      <p style="margin:0 0 4px;color:#1e293b;font-size:16px;font-weight:700;">Resumen del día</p>
+      <p style="margin:0 0 24px;color:#94a3b8;font-size:13px;">${formattedDate}</p>
+
+      <p style="margin:0 0 8px;color:#1e293b;font-size:14px;font-weight:600;">Cobros del día</p>
+      <p style="margin:0 0 12px;color:#475569;font-size:13px;">Total recaudado: <strong>${formattedTotal}</strong></p>
+      <table style="${tableStyle}">
+        <thead><tr><th style="${thStyle}">Método</th><th style="${thStyle};text-align:center;">Cantidad</th><th style="${thStyle};text-align:right;">Total</th></tr></thead>
+        <tbody>${paymentsRows}</tbody>
+      </table>
+
+      <p style="margin:0 0 12px;color:#1e293b;font-size:14px;font-weight:600;">Alumnos con asistencia &lt; 70%</p>
+      <table style="${tableStyle}">
+        <thead><tr><th style="${thStyle}">Alumno</th><th style="${thStyle}">Curso</th><th style="${thStyle};text-align:right;">Asistencia</th></tr></thead>
+        <tbody>${lowAttRows}</tbody>
+      </table>
+
+      <p style="margin:0 0 12px;color:#1e293b;font-size:14px;font-weight:600;">Inscripciones nuevas</p>
+      <table style="${tableStyle}">
+        <thead><tr><th style="${thStyle}">Alumno</th><th style="${thStyle}">Curso</th></tr></thead>
+        <tbody>${newStudentRows}</tbody>
+      </table>
+    `),
+  });
+}
+
+export async function sendTeacherAttendanceAlertEmail({
+  to,
+  teacherName,
+  studentName,
+  courseName,
+  attendancePct,
+}: {
+  to: string;
+  teacherName: string;
+  studentName: string;
+  courseName: string;
+  attendancePct: number;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Teacher attendance alert for ${to} — ${studentName} en ${courseName}: ${attendancePct}%\n`);
+    return;
+  }
+  const firstName = teacherName.split(" ")[0];
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Alumno con asistencia crítica — ${courseName}`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Te informamos que uno de tus alumnos <strong>bajó por debajo del 70% de asistencia</strong> en tu curso:
+      </p>
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;color:#92400e;font-size:15px;font-weight:600;">${studentName}</p>
+        <p style="margin:0 0 4px;color:#b45309;font-size:13px;">Curso: ${courseName}</p>
+        <p style="margin:0;color:#b45309;font-size:13px;">Asistencia actual: <strong>${attendancePct}%</strong></p>
+      </div>
+      <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
+        Te recomendamos ponerte en contacto con el alumno para evaluar la situación.
+        Recordá que se requiere un mínimo de 80% de asistencia para que pueda promocionar el curso.
+      </p>
+    `),
+  });
+}
+
+export async function sendPromotionCongratulationsEmail({
+  to,
+  fullName,
+  courseName,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Promotion congratulations email for ${to} — ${courseName}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `¡Felicitaciones por tu promoción! — Smart Learning`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">¡Hola <strong>${firstName}</strong>!</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Es un placer comunicarte que <strong>aprobaste exitosamente</strong> el curso de inglés. Felicitaciones por tu esfuerzo y dedicación a lo largo del ciclo lectivo.
+      </p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 4px;color:#166534;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Curso aprobado</p>
+        <p style="margin:0;color:#15803d;font-size:16px;font-weight:700;">${courseName}</p>
+      </div>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Tu certificado de promoción ya está disponible en Smart Learning. Podés descargarlo ingresando a tu portal de alumno.
+      </p>
+      <p style="margin:0;color:#94a3b8;font-size:12px;">
+        ¡Seguí adelante con tu aprendizaje del inglés!
+      </p>
+    `),
+  });
+}
+
+export async function sendPaymentOverdueAlertEmail({
+  to,
+  fullName,
+  courseName,
+  dueDate,
+  amount,
+}: {
+  to: string;
+  fullName: string;
+  courseName: string;
+  dueDate: string;
+  amount: number;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Payment OVERDUE alert email for ${to} — $${amount} venció ${dueDate}\n`);
+    return;
+  }
+  const firstName = fullName.split(" ")[0];
+  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const formattedAmount = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(amount);
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Cuota vencida — ${courseName}`,
+    html: emailShell(`
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Tu cuota mensual en Smart Learning se encuentra <strong style="color:#dc2626;">vencida</strong>.
+        Te pedimos que te acerques al instituto a regularizar tu situación a la brevedad.
+      </p>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="margin:0 0 6px;color:#991b1b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0 0 4px;color:#b91c1c;font-size:13px;">Importe: <strong>${formattedAmount}</strong></p>
+        <p style="margin:0;color:#b91c1c;font-size:13px;">Venció el: <strong>${formattedDate}</strong></p>
+      </div>
+      <p style="margin:0;color:#94a3b8;font-size:12px;">
+        Ante cualquier consulta, comunicате con el equipo administrativo de Smart Learning.
+      </p>
+    `),
+  });
+}
+
 export async function sendAssessmentPublishedEmail({
   to,
   fullName,

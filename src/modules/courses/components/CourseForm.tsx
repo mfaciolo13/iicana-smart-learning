@@ -134,6 +134,22 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
               </Select>
             </Field>
           )}
+
+          <Field
+            label="Autoevaluación diagnóstica (cada N clases)"
+            id="diagnosticFrequency"
+            className="sm:col-span-2"
+            error={state?.fieldErrors?.diagnosticFrequency}
+          >
+            <Select id="diagnosticFrequency" name="diagnosticFrequency" defaultValue={String(course?.diagnosticFrequency ?? 0)}>
+              <option value="0">Desactivada</option>
+              <option value="4">Cada 4 clases</option>
+              <option value="6">Cada 6 clases</option>
+              <option value="8">Cada 8 clases</option>
+              <option value="10">Cada 10 clases</option>
+              <option value="12">Cada 12 clases</option>
+            </Select>
+          </Field>
         </div>
       </Card>
 

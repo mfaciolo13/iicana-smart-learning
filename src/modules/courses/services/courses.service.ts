@@ -69,6 +69,7 @@ export async function getCourseById(id: string): Promise<CourseWithTeacher | nul
       classDurationMinutes: courses.classDurationMinutes,
       classroom: courses.classroom,
       maxCapacity: courses.maxCapacity,
+      diagnosticFrequency: courses.diagnosticFrequency,
       status: courses.status,
       teacherId: courses.teacherId,
       createdAt: courses.createdAt,
@@ -111,6 +112,7 @@ export async function createCourse(input: CreateCourseInput) {
       classroom: input.classroom ?? null,
       maxCapacity: input.maxCapacity ?? 15,
       teacherId: input.teacherId ?? null,
+      diagnosticFrequency: input.diagnosticFrequency ?? 0,
       status: "active",
     })
     .returning();
