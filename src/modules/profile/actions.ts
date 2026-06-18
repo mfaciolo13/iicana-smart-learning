@@ -4,6 +4,7 @@ import { db } from "@/lib/drizzle";
 import { profiles } from "@/lib/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/helpers";
+import { personNameField, phoneField } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { ActionResult } from "@/lib/action-result";
@@ -12,11 +13,15 @@ export async function updateProfileAction(_prev: ActionResult, formData: FormDat
   const user = await getServerUser();
   if (!user) return { error: "No autenticado." };
 
-  const fullName = (formData.get("fullName") as string)?.trim();
-  const phone = (formData.get("phone") as string)?.trim() || null;
-  const avatarFile = formData.get("avatar") as File | null;
+  const nameResult = personNameField("El nombre").safeParse((formData.get("fullName") as string) ?? "");
+  if (!nameResult.success) return { error: nameResult.error.issues[0].message };
+  const fullName = nameResult.data;
 
-  if (!fullName) return { error: "El nombre es requerido." };
+  const phoneResult = phoneField().safeParse((formData.get("phone") as string) || undefined);
+  if (!phoneResult.success) return { error: phoneResult.error.issues[0].message };
+  const phone = phoneResult.data ?? null;
+
+  const avatarFile = formData.get("avatar") as File | null;
 
   let avatarUrl: string | undefined;
 

@@ -46,7 +46,7 @@ export async function requireRole(allowedRoles: UserRole[]) {
   const profile = await getServerProfile();
   const role = profile?.role as UserRole | undefined;
   if (!role || !allowedRoles.includes(role)) {
-    throw new Error("Unauthorized");
+    throw new Error("No autorizado");
   }
   return role;
 }

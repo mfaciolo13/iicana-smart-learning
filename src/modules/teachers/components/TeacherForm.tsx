@@ -40,7 +40,7 @@ export function TeacherForm({ teacher, action, submitLabel = "Guardar" }: Teache
           </Field>
 
           <Field label="DNI" required id="dni">
-            <Input id="dni" name="dni" type="text" required minLength={7} maxLength={8} defaultValue={teacher?.dni} placeholder="12345678" />
+            <Input id="dni" name="dni" type="text" required inputMode="numeric" pattern="\d{7,8}" title="Solo números, 7 u 8 dígitos" minLength={7} maxLength={8} defaultValue={teacher?.dni} placeholder="12345678" />
           </Field>
 
           {!isEditing && (

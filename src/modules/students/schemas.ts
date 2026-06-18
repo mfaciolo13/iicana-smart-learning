@@ -1,12 +1,13 @@
 import { z } from "zod";
+import { personNameField, dniField, phoneField } from "@/lib/validation";
 
 export const createStudentSchema = z.object({
   // Profile fields
   email: z.email("Email inválido"),
-  fullName: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
-  phone: z.string().optional(),
+  fullName: personNameField("El nombre"),
+  phone: phoneField(),
   // Student fields
-  dni: z.string().min(7, "DNI inválido").max(8, "DNI inválido"),
+  dni: dniField(),
   birthDate: z
     .string()
     .min(1, "Fecha de nacimiento requerida")
