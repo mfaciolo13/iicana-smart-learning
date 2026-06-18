@@ -24,9 +24,9 @@ export function personNameField(label = "El nombre") {
     );
 }
 
-// Fecha de nacimiento: fecha válida, no futura y con una antigüedad máxima de
-// 100 años. Devuelve mensajes específicos según el caso.
-export function birthDateField() {
+// Fecha de nacimiento: fecha válida, no futura, con una antigüedad máxima de
+// 100 años y una edad mínima configurable. Devuelve mensajes específicos.
+export function birthDateField(minAge = 0) {
   return z
     .string()
     .min(1, "Fecha de nacimiento requerida")
@@ -36,7 +36,13 @@ export function birthDateField() {
       const min = new Date();
       min.setFullYear(min.getFullYear() - 100);
       return new Date(v) >= min;
-    }, "La edad máxima permitida es 100 años");
+    }, "La edad máxima permitida es 100 años")
+    .refine((v) => {
+      if (minAge <= 0) return true;
+      const max = new Date();
+      max.setFullYear(max.getFullYear() - minAge);
+      return new Date(v) <= max;
+    }, `La edad mínima permitida es ${minAge} años`);
 }
 
 // DNI argentino: únicamente dígitos, 7 u 8.
