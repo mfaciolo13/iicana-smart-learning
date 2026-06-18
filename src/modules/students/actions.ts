@@ -5,8 +5,9 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import { createStudentSchema, updateStudentSchema } from "./schemas";
-import { createStudent, updateStudent, deleteStudent } from "./services/students.service";
+import { createStudent, updateStudent, deleteStudent, dniExists } from "./services/students.service";
 import { sendInvitationEmail } from "@/lib/email";
+import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -24,6 +25,12 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   const parsed = createStudentSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
+  // Pre-chequeo de DNI duplicado para dar un mensaje claro y evitar crear un
+  // usuario de auth que luego quedaría huérfano al fallar el insert.
+  if (await dniExists(parsed.data.dni)) {
+    return { error: "Ya existe un alumno registrado con ese DNI" };
+  }
+
   const adminSupabase = createAdminClient();
 
   const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
@@ -34,18 +41,31 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   });
 
   if (authError || !authData.user) {
-    return { error: authError?.message ?? "Error creando usuario" };
+    const duplicateEmail = /registered|already|exist/i.test(authError?.message ?? "");
+    return { error: duplicateEmail ? "Ya existe un usuario con ese email" : "No se pudo crear el usuario. Intentá de nuevo." };
   }
 
-  await adminSupabase.from("profiles").insert({
-    id: authData.user.id,
-    email: parsed.data.email,
-    full_name: parsed.data.fullName,
-    phone: parsed.data.phone ?? null,
-    role: "alumno",
-  });
+  try {
+    const { error: profileError } = await adminSupabase.from("profiles").insert({
+      id: authData.user.id,
+      email: parsed.data.email,
+      full_name: parsed.data.fullName,
+      phone: parsed.data.phone ?? null,
+      role: "alumno",
+    });
+    if (profileError) throw profileError;
 
-  await createStudent(authData.user.id, parsed.data);
+    await createStudent(authData.user.id, parsed.data);
+  } catch (err) {
+    // Rollback: borrar el perfil y el usuario de auth recién creados para no
+    // dejar registros huérfanos si falló algún insert posterior.
+    await adminSupabase.from("profiles").delete().eq("id", authData.user.id);
+    await adminSupabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
+    if (isUniqueViolation(err)) {
+      return { error: "Ya existe un alumno registrado con ese DNI o email" };
+    }
+    return { error: "No se pudo registrar el alumno. Verificá los datos e intentá de nuevo." };
+  }
 
   const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
@@ -84,7 +104,18 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
   const parsed = updateStudentSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await updateStudent(parsed.data);
+  if (parsed.data.dni && (await dniExists(parsed.data.dni, parsed.data.id))) {
+    return { error: "Ya existe otro alumno registrado con ese DNI" };
+  }
+
+  try {
+    await updateStudent(parsed.data);
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return { error: "Ya existe otro alumno registrado con ese DNI" };
+    }
+    return { error: "No se pudo actualizar el alumno. Intentá de nuevo." };
+  }
 
   updateTag("students");
   revalidatePath("/director/students");
