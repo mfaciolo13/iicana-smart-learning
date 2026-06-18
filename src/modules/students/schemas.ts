@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { personNameField, dniField, phoneField } from "@/lib/validation";
+import { personNameField, dniField, phoneField, birthDateField } from "@/lib/validation";
 
 export const createStudentSchema = z.object({
   // Profile fields
@@ -8,13 +8,7 @@ export const createStudentSchema = z.object({
   phone: phoneField(),
   // Student fields
   dni: dniField(),
-  birthDate: z
-    .string()
-    .min(1, "Fecha de nacimiento requerida")
-    .refine((v) => {
-      const d = new Date(v);
-      return !isNaN(d.getTime()) && d <= new Date() && d.getFullYear() >= 1900;
-    }, "Fecha de nacimiento inválida"),
+  birthDate: birthDateField(),
   level: z
     .enum([
       "beginner",

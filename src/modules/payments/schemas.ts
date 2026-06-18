@@ -2,7 +2,10 @@ import { z } from "zod";
 
 export const createPaymentSchema = z.object({
   studentId: z.uuid("Seleccioná un alumno"),
-  amount: z.coerce.number().positive("El monto debe ser mayor a 0"),
+  amount: z.coerce
+    .number()
+    .positive("El monto debe ser mayor a 0")
+    .max(99999999.99, "El monto es demasiado alto"),
   dueDate: z.string().min(1, "La fecha de vencimiento es requerida"),
   notes: z.string().optional(),
 });
