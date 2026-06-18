@@ -14,6 +14,7 @@ import {
   suspendStudentAndPayments,
 } from "./services/payments.service";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
+import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -48,7 +49,14 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
   const parsed = markAsPaidSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await markAsPaid(parsed.data);
+  try {
+    await markAsPaid(parsed.data);
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return { error: "Ya existe un pago con ese número de recibo" };
+    }
+    return { error: "No se pudo registrar el pago. Intentá de nuevo." };
+  }
 
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
