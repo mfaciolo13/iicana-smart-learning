@@ -9,6 +9,14 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { ActionResult } from "@/lib/action-result";
+import { NAME_DISALLOWED_CHARS } from "@/lib/validation";
+
+// Elimina en tiempo real los caracteres no permitidos en un nombre.
+function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const cleaned = el.value.replace(NAME_DISALLOWED_CHARS, "");
+  if (cleaned !== el.value) el.value = cleaned;
+}
 
 interface TeacherFormProps {
   teacher?: TeacherWithProfile;
@@ -36,7 +44,7 @@ export function TeacherForm({ teacher, action, submitLabel = "Guardar" }: Teache
       <Card title="Datos personales" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Nombre completo" required id="fullName">
-            <Input id="fullName" name="fullName" type="text" required defaultValue={teacher?.profile.fullName} placeholder="Juan Pérez" />
+            <Input id="fullName" name="fullName" type="text" required onInput={sanitizeNameInput} defaultValue={teacher?.profile.fullName} placeholder="Juan Pérez" />
           </Field>
 
           <Field label="DNI" required id="dni">

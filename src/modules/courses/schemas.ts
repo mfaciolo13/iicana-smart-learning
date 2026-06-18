@@ -12,7 +12,12 @@ export const createCourseSchema = z.object({
   ]),
   schedule: z.string().min(1, "El horario es requerido"),
   classroom: z.string().optional(),
-  maxCapacity: z.coerce.number().int().min(1).max(50).default(15),
+  maxCapacity: z.coerce
+    .number()
+    .int("El cupo debe ser un número entero")
+    .min(1, "El cupo mínimo es 1")
+    .max(15, "El cupo máximo es 15 alumnos")
+    .default(15),
   teacherId: z.uuid().optional(),
 });
 
