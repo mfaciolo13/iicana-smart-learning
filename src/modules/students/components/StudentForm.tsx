@@ -45,9 +45,11 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!student;
 
-  // Límites de la fecha de nacimiento: entre hoy y 100 años atrás.
+  // Límites de la fecha de nacimiento: edad entre 6 y 100 años.
   const today = new Date();
-  const maxBirthDate = today.toISOString().split("T")[0];
+  const maxBirthDate = new Date(today.getFullYear() - 6, today.getMonth(), today.getDate())
+    .toISOString()
+    .split("T")[0];
   const minBirthDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate())
     .toISOString()
     .split("T")[0];

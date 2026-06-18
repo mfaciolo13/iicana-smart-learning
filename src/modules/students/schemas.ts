@@ -8,7 +8,7 @@ export const createStudentSchema = z.object({
   phone: phoneField(),
   // Student fields
   dni: dniField(),
-  birthDate: birthDateField(),
+  birthDate: birthDateField(6),
   level: z
     .enum([
       "beginner",
