@@ -1,17 +1,18 @@
 ﻿import { z } from "zod";
+import { personNameField, phoneField } from "@/lib/validation";
 
 export const createAdministrativoSchema = z.object({
   email: z.email("Email inválido"),
-  fullName: z.string().min(2, "El nombre es requerido"),
-  phone: z.string().optional(),
+  fullName: personNameField("El nombre"),
+  phone: phoneField(),
 });
 
 export type CreateAdministrativoInput = z.infer<typeof createAdministrativoSchema>;
 
 export const updateUserSchema = z.object({
   id: z.uuid(),
-  fullName: z.string().min(2, "El nombre es requerido"),
-  phone: z.string().optional(),
+  fullName: personNameField("El nombre"),
+  phone: phoneField(),
   role: z.enum(["director", "administrativo", "profesor", "alumno"]),
 });
 
