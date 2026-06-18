@@ -17,19 +17,11 @@ export async function getDailyReportData(): Promise<DailyReportData> {
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
-  // Payments registered yesterday
+  // 1. Payments registered yesterday
   const paymentRows = await db
-    .select({
-      method: payments.method,
-      amount: payments.amount,
-    })
+    .select({ method: payments.method, amount: payments.amount })
     .from(payments)
-    .where(
-      and(
-        eq(payments.status, "paid"),
-        sql`${payments.paidAt}::date = ${yesterdayStr}`
-      )
-    );
+    .where(and(eq(payments.status, "paid"), sql`${payments.paidAt}::date = ${yesterdayStr}`));
 
   const methodMap = new Map<string, { count: number; total: number }>();
   for (const p of paymentRows) {
@@ -55,36 +47,30 @@ export async function getDailyReportData(): Promise<DailyReportData> {
 
   const paymentsTotal = paymentRows.reduce((sum, p) => sum + Number(p.amount), 0);
 
-  // Students with attendance < 70% (using attendance + enrollments)
-  const attStats = db
-    .$with("att_stats")
-    .as(
-      db
-        .select({
-          enrollmentId: attendance.enrollmentId,
-          total: sql<number>`cast(count(*) as int)`,
-          present: sql<number>`cast(sum(case when ${attendance.status} in ('present','late') then 1 else 0 end) as int)`,
-        })
-        .from(attendance)
-        .groupBy(attendance.enrollmentId)
-    );
-
-  const lowAttRows = await db
-    .with(attStats)
+  // 2. Low-attendance students — fetch raw records, compute in JS to avoid CTE issues
+  const attRows = await db
     .select({
+      enrollmentId: attendance.enrollmentId,
+      status: attendance.status,
       studentName: profiles.fullName,
       courseName: courses.name,
-      total: attStats.total,
-      present: attStats.present,
     })
-    .from(enrollments)
-    .innerJoin(attStats, eq(attStats.enrollmentId, enrollments.id))
+    .from(attendance)
+    .innerJoin(enrollments, eq(attendance.enrollmentId, enrollments.id))
     .innerJoin(students, eq(enrollments.studentId, students.id))
     .innerJoin(profiles, eq(students.profileId, profiles.id))
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
     .where(eq(enrollments.status, "active"));
 
-  const lowAttendanceStudents = lowAttRows
+  const statsMap = new Map<string, { studentName: string; courseName: string; total: number; present: number }>();
+  for (const r of attRows) {
+    const cur = statsMap.get(r.enrollmentId) ?? { studentName: r.studentName, courseName: r.courseName, total: 0, present: 0 };
+    cur.total++;
+    if (r.status === "present" || r.status === "late") cur.present++;
+    statsMap.set(r.enrollmentId, cur);
+  }
+
+  const lowAttendanceStudents = [...statsMap.values()]
     .filter((r) => r.total > 0 && Math.round((r.present / r.total) * 100) < 70)
     .map((r) => ({
       studentName: r.studentName,
@@ -92,7 +78,7 @@ export async function getDailyReportData(): Promise<DailyReportData> {
       attendancePct: Math.round((r.present / r.total) * 100),
     }));
 
-  // New students enrolled yesterday
+  // 3. New enrollments yesterday
   const newStudentRows = await db
     .select({ fullName: profiles.fullName, courseName: courses.name })
     .from(enrollments)
@@ -101,22 +87,18 @@ export async function getDailyReportData(): Promise<DailyReportData> {
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
     .where(sql`${enrollments.enrolledAt}::date = ${yesterdayStr}`);
 
-  const newStudents = newStudentRows;
-
-  // Get all director emails
+  // 4. Director emails
   const directorRows = await db
     .select({ email: profiles.email })
     .from(profiles)
     .where(eq(profiles.role, "director"));
-
-  const directorEmails = directorRows.map((r) => r.email);
 
   return {
     date: yesterdayStr,
     paymentsSummary,
     paymentsTotal,
     lowAttendanceStudents,
-    newStudents,
-    directorEmails,
+    newStudents: newStudentRows,
+    directorEmails: directorRows.map((r) => r.email),
   };
 }
