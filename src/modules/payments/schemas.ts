@@ -2,14 +2,25 @@ import { z } from "zod";
 
 export const createPaymentSchema = z.object({
   studentId: z.uuid("Seleccioná un alumno"),
-  amount: z.coerce.number().positive("El monto debe ser mayor a 0"),
-  dueDate: z.string().min(1, "La fecha de vencimiento es requerida"),
+  amount: z.coerce
+    .number()
+    .positive("El monto debe ser mayor a 0")
+    .max(99999999.99, "El monto es demasiado alto"),
+  dueDate: z
+    .string()
+    .min(1, "La fecha de vencimiento es requerida")
+    .refine((v) => !isNaN(new Date(v).getTime()), "Ingresá una fecha válida")
+    .refine((v) => {
+      const max = new Date();
+      max.setFullYear(max.getFullYear() + 2);
+      return new Date(v) <= max;
+    }, "La fecha no puede ser más de 2 años en el futuro"),
   notes: z.string().optional(),
 });
 
 export const markAsPaidSchema = z.object({
   id: z.uuid(),
-  method: z.enum(["cash", "transfer", "card"], "Seleccioná un método de pago"),
+  method: z.enum(["cash", "transfer", "card"], { message: "Seleccioná un método de pago" }),
   receiptNumber: z.string().optional(),
 });
 

@@ -1,24 +1,14 @@
 import { z } from "zod";
+import { personNameField, dniField, phoneField, birthDateField } from "@/lib/validation";
 
 export const createStudentSchema = z.object({
   // Profile fields
   email: z.email("Email inválido"),
-  fullName: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
-  phone: z
-    .string()
-    .trim()
-    .max(20, "El teléfono no puede superar los 20 caracteres")
-    .regex(/^[0-9+\-\s()]*$/, "El teléfono solo puede contener números, espacios, +, - y paréntesis")
-    .optional(),
+  fullName: personNameField("El nombre"),
+  phone: phoneField(),
   // Student fields
-  dni: z.string().min(7, "DNI inválido").max(8, "DNI inválido"),
-  birthDate: z
-    .string()
-    .min(1, "Fecha de nacimiento requerida")
-    .refine((v) => {
-      const d = new Date(v);
-      return !isNaN(d.getTime()) && d <= new Date() && d.getFullYear() >= 1900;
-    }, "Fecha de nacimiento inválida"),
+  dni: dniField(),
+  birthDate: birthDateField(6),
   level: z
     .enum([
       "beginner",

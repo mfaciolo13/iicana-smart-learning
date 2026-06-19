@@ -11,6 +11,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { updateUserSchema, createAdministrativoSchema } from "./schemas";
 import { updateUser, banUser, unbanUser } from "./services/users.service";
 import { sendInvitationEmail } from "@/lib/email";
+import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createAdministrativoAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -45,16 +46,27 @@ export async function createAdministrativoAction(_prev: ActionResult, formData: 
   });
 
   if (authError || !authData.user) {
-    return { error: authError?.message ?? "Error creando usuario" };
+    const duplicateEmail = /registered|already|exist/i.test(authError?.message ?? "");
+    return { error: duplicateEmail ? "Ya existe un usuario con ese email" : "No se pudo crear el usuario. Intentá de nuevo." };
   }
 
-  await db.insert(profiles).values({
-    id: authData.user.id,
-    email: parsed.data.email,
-    fullName: parsed.data.fullName,
-    phone: parsed.data.phone ?? null,
-    role: "administrativo",
-  });
+  try {
+    await db.insert(profiles).values({
+      id: authData.user.id,
+      email: parsed.data.email,
+      fullName: parsed.data.fullName,
+      phone: parsed.data.phone ?? null,
+      role: "administrativo",
+    });
+  } catch (err) {
+    // Rollback: borrar el usuario de auth recién creado para no dejar huérfanos.
+    await adminSupabase.from("profiles").delete().eq("id", authData.user.id);
+    await adminSupabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
+    if (isUniqueViolation(err)) {
+      return { error: "Ya existe un usuario con ese email" };
+    }
+    return { error: "No se pudo crear el usuario. Verificá los datos e intentá de nuevo." };
+  }
 
   const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";

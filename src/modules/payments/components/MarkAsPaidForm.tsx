@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { Field, Select, Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -16,6 +17,7 @@ export function MarkAsPaidForm({ paymentId, action }: MarkAsPaidFormProps) {
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) toast.success(state.success);
   }, [state]);
 
   return (
@@ -23,34 +25,23 @@ export function MarkAsPaidForm({ paymentId, action }: MarkAsPaidFormProps) {
       <form action={formAction} className="space-y-4">
         <input type="hidden" name="id" value={paymentId} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="method" className="block text-sm font-medium text-slate-700 mb-1">
-              Método de pago <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="method"
-              name="method"
-              required
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            >
-              <option value="">Seleccioná el método</option>
+          <Field label="Método de pago" required id="method" error={state?.fieldErrors?.method}>
+            <Select id="method" name="method" defaultValue="">
+              <option value="" disabled>Seleccioná el método</option>
               <option value="cash">Efectivo</option>
               <option value="transfer">Transferencia</option>
               <option value="card">Tarjeta</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="receiptNumber" className="block text-sm font-medium text-slate-700 mb-1">
-              Nº Recibo (opcional)
-            </label>
-            <input
+            </Select>
+          </Field>
+
+          <Field label="Nº Recibo (opcional)" id="receiptNumber">
+            <Input
               id="receiptNumber"
               name="receiptNumber"
               type="text"
               placeholder="ej. REC-00123"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
-          </div>
+          </Field>
         </div>
         <div className="flex justify-end">
           <Button type="submit" variant="primary" loading={isPending}>
@@ -79,15 +70,14 @@ export function PaymentStatusForm({ paymentId, currentStatus, action }: PaymentS
     <Card title="Cambiar estado" padding="md">
       <form action={formAction} className="space-y-3">
         <input type="hidden" name="id" value={paymentId} />
-        <select
+        <Select
           name="status"
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
           defaultValue={currentStatus}
         >
           <option value="pending">Pendiente</option>
           <option value="overdue">Vencido</option>
           <option value="suspended">Suspendido</option>
-        </select>
+        </Select>
         <Button
           type="submit"
           variant="secondary"

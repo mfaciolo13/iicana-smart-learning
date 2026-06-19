@@ -40,7 +40,7 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
       <Card title="Datos del pago" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Alumno" required id="studentId" className="sm:col-span-2" error={state?.fieldErrors?.studentId}>
-            <Select id="studentId" name="studentId" required defaultValue={defaultStudentId ?? ""}>
+            <Select id="studentId" name="studentId" defaultValue={defaultStudentId ?? ""}>
               <option value="" disabled>Seleccioná un alumno</option>
               {students.map((s) => (
                 <option key={s.id} value={s.id}>{s.fullName} — {s.dni}</option>
@@ -49,11 +49,11 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
           </Field>
 
           <Field label="Monto ($)" required id="amount" error={state?.fieldErrors?.amount}>
-            <Input id="amount" name="amount" type="number" required min={1} step={0.01} placeholder="ej. 15000" />
+            <Input id="amount" name="amount" type="number" min={1} step={0.01} placeholder="ej. 15000" />
           </Field>
 
           <Field label="Fecha de vencimiento" required id="dueDate" error={state?.fieldErrors?.dueDate}>
-            <Input id="dueDate" name="dueDate" type="date" required defaultValue={defaultDueDate()} />
+            <Input id="dueDate" name="dueDate" type="date" defaultValue={defaultDueDate()} />
           </Field>
 
           <Field label="Notas" id="notes" className="sm:col-span-2" error={state?.fieldErrors?.notes}>

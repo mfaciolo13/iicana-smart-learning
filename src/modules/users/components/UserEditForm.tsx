@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/Button";
 import { Input, Field, Select } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { ActionResult } from "@/lib/action-result";
+import { NAME_DISALLOWED_CHARS } from "@/lib/validation";
+
+function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const cleaned = el.value.replace(NAME_DISALLOWED_CHARS, "");
+  if (cleaned !== el.value) el.value = cleaned;
+}
 
 interface UserEditFormProps {
   userId: string;
@@ -29,7 +36,7 @@ export function UserEditForm({ userId, fullName, phone, role, action }: UserEdit
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Nombre completo" required id="fullName" className="sm:col-span-2" error={state?.fieldErrors?.fullName}>
-            <Input id="fullName" name="fullName" required defaultValue={fullName} />
+            <Input id="fullName" name="fullName" onInput={sanitizeNameInput} defaultValue={fullName} />
           </Field>
 
           <Field label="Teléfono" id="phone" error={state?.fieldErrors?.phone}>
@@ -37,7 +44,7 @@ export function UserEditForm({ userId, fullName, phone, role, action }: UserEdit
           </Field>
 
           <Field label="Rol" required id="role" error={state?.fieldErrors?.role}>
-            <Select id="role" name="role" required defaultValue={role}>
+            <Select id="role" name="role" defaultValue={role}>
               <option value="director">Director</option>
               <option value="administrativo">Administrativo</option>
               <option value="profesor">Docente</option>
