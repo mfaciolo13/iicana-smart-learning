@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { Camera } from "lucide-react";
 import { updateProfileAction } from "../actions";
+import { NAME_DISALLOWED_CHARS } from "@/lib/validation";
+
+// Elimina en tiempo real los caracteres no permitidos en un nombre.
+function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const cleaned = el.value.replace(NAME_DISALLOWED_CHARS, "");
+  if (cleaned !== el.value) el.value = cleaned;
+}
 
 function getInitials(name: string) {
   return name
@@ -82,6 +90,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
           id="fullName"
           name="fullName"
           required
+          onInput={sanitizeNameInput}
           defaultValue={fullName}
           placeholder="Nombre y apellido"
         />

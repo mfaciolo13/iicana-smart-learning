@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/helpers";
+import { personNameField, phoneField } from "@/lib/validation";
 import { createCampaign, createInquiry, updateInquiryStatus } from "./services/marketing.service";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -11,15 +12,18 @@ const campaignSchema = z.object({
   channel: z.enum(["social_media", "email", "flyers", "word_of_mouth", "website", "other"]),
   startDate: z.string().min(1, "Fecha de inicio requerida"),
   endDate: z.string().optional(),
-  budget: z.string().optional(),
+  budget: z
+    .string()
+    .regex(/^\d+(\.\d{1,2})?$/, "El presupuesto debe ser un número válido")
+    .optional(),
   description: z.string().optional(),
 });
 
 const inquirySchema = z.object({
   campaignId: z.uuid(),
-  name: z.string().min(2, "Nombre requerido"),
+  name: personNameField("El nombre"),
   email: z.email().optional().or(z.literal("")),
-  phone: z.string().optional(),
+  phone: phoneField(),
   notes: z.string().optional(),
   receivedAt: z.string().min(1, "Fecha requerida"),
 });

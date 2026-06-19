@@ -5,6 +5,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
+import { NAME_DISALLOWED_CHARS } from "@/lib/validation";
+
+// Elimina en tiempo real los caracteres no permitidos en un nombre.
+function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const cleaned = el.value.replace(NAME_DISALLOWED_CHARS, "");
+  if (cleaned !== el.value) el.value = cleaned;
+}
 
 interface Props {
   campaignId: string;
@@ -32,10 +40,10 @@ export function InquiryForm({ campaignId, action }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Nombre" required id="inq-name">
-          <Input id="inq-name" name="name" required placeholder="Nombre completo" />
+          <Input id="inq-name" name="name" onInput={sanitizeNameInput} placeholder="Nombre completo" />
         </Field>
         <Field label="Fecha" required id="inq-date">
-          <Input id="inq-date" type="date" name="receivedAt" required defaultValue={today} max={today} />
+          <Input id="inq-date" type="date" name="receivedAt" defaultValue={today} max={today} />
         </Field>
       </div>
 

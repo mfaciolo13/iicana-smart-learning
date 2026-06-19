@@ -97,6 +97,16 @@ export async function isStudentAccessRestricted(profileId: string): Promise<bool
   return rows[0]?.accessRestricted ?? false;
 }
 
+export async function dniExists(dni: string, excludeStudentId?: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: students.id })
+    .from(students)
+    .where(eq(students.dni, dni))
+    .limit(1);
+  if (rows.length === 0) return false;
+  return rows[0].id !== excludeStudentId;
+}
+
 export async function createStudent(
   profileId: string,
   input: CreateStudentInput

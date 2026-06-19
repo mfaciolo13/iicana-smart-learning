@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
@@ -62,11 +62,11 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
       <Card title="Datos del curso" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Nombre del curso" required id="name" error={state?.fieldErrors?.name}>
-            <Input id="name" name="name" type="text" required defaultValue={course?.name} placeholder="ej. Inglés Intermedio — Turno Tarde" />
+            <Input id="name" name="name" type="text" defaultValue={course?.name} placeholder="ej. Inglés Intermedio — Turno Tarde" />
           </Field>
 
           <Field label="Nivel" required id="level" error={state?.fieldErrors?.level}>
-            <Select id="level" name="level" required defaultValue={course?.level ?? ""}>
+            <Select id="level" name="level" defaultValue={course?.level ?? ""}>
               <option value="" disabled>Seleccioná un nivel</option>
               {LEVELS.map((l) => (
                 <option key={l.value} value={l.value}>{l.label}</option>

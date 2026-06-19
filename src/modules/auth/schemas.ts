@@ -1,4 +1,5 @@
 ﻿import { z } from "zod";
+import { personNameField } from "@/lib/validation";
 
 export const loginSchema = z.object({
   email: z.email("Email inválido"),
@@ -10,7 +11,7 @@ export const registerSchema = z
     email: z.email("Email inválido"),
     password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
     confirmPassword: z.string(),
-    fullName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+    fullName: personNameField("El nombre"),
     role: z.enum(["director", "administrativo", "profesor", "alumno"]),
   })
   .refine((data) => data.password === data.confirmPassword, {

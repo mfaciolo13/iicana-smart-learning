@@ -15,7 +15,12 @@ export const createCourseSchema = z.object({
   classTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida"),
   classDurationMinutes: z.coerce.number().int("Debe ser un número entero").min(15, "La duración mínima es 15 minutos").max(240, "La duración máxima es 240 minutos").default(90),
   classroom: z.string().optional(),
-  maxCapacity: z.coerce.number().int("Debe ser un número entero").min(1, "El cupo mínimo es 1 alumno").max(15, "El cupo máximo es 15 alumnos").default(15),
+  maxCapacity: z.coerce
+    .number()
+    .int("El cupo debe ser un número entero")
+    .min(1, "El cupo mínimo es 1")
+    .max(15, "El cupo máximo es 15 alumnos")
+    .default(15),
   teacherId: z.uuid().optional(),
   diagnosticFrequency: z.coerce.number().int().min(0).max(20).default(0),
 });

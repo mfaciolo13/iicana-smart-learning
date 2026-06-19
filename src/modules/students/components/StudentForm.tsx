@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
@@ -9,6 +9,13 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field, Select } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { ActionResult } from "@/lib/action-result";
+import { NAME_DISALLOWED_CHARS } from "@/lib/validation";
+
+function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const cleaned = el.value.replace(NAME_DISALLOWED_CHARS, "");
+  if (cleaned !== el.value) el.value = cleaned;
+}
 
 const LEVELS = [
   { value: "beginner", label: "Principiante", range: "0–20 pts" },
@@ -37,6 +44,14 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
   const [state, formAction, isPending] = useActionState(action, undefined);
   const isEditing = !!student;
 
+  const today = new Date();
+  const maxBirthDate = new Date(today.getFullYear() - 6, today.getMonth(), today.getDate())
+    .toISOString()
+    .split("T")[0];
+  const minBirthDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate())
+    .toISOString()
+    .split("T")[0];
+
   useEffect(() => {
     if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
@@ -52,16 +67,16 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
       <Card title="Datos personales" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Nombre completo" required id="fullName" error={state?.fieldErrors?.fullName}>
-            <Input id="fullName" name="fullName" type="text" required defaultValue={student?.profile.fullName} placeholder="Juan Pérez" />
+            <Input id="fullName" name="fullName" type="text" onInput={sanitizeNameInput} defaultValue={student?.profile.fullName} placeholder="Juan Pérez" />
           </Field>
 
           <Field label="DNI" required id="dni" error={state?.fieldErrors?.dni}>
-            <Input id="dni" name="dni" type="text" required minLength={7} maxLength={8} defaultValue={student?.dni} placeholder="12345678" />
+            <Input id="dni" name="dni" type="text" inputMode="numeric" maxLength={8} defaultValue={student?.dni} placeholder="12345678" />
           </Field>
 
           {!isEditing && (
             <Field label="Email" required id="email" error={state?.fieldErrors?.email}>
-              <Input id="email" name="email" type="email" required autoComplete="email" placeholder="alumno@email.com" />
+              <Input id="email" name="email" type="email" autoComplete="email" placeholder="alumno@email.com" />
             </Field>
           )}
 
@@ -70,7 +85,7 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
           </Field>
 
           <Field label="Fecha de nacimiento" required={!isEditing} id="birthDate" error={state?.fieldErrors?.birthDate}>
-            <Input id="birthDate" name="birthDate" type="date" required={!isEditing} defaultValue={student?.birthDate} min="1900-01-01" max={new Date().toISOString().split("T")[0]} />
+            <Input id="birthDate" name="birthDate" type="date" defaultValue={student?.birthDate} min={minBirthDate} max={maxBirthDate} />
           </Field>
         </div>
       </Card>

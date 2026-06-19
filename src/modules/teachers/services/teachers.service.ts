@@ -51,6 +51,18 @@ export async function getTeacherById(id: string): Promise<TeacherWithProfile | n
   return (rows[0] as TeacherWithProfile) ?? null;
 }
 
+// Devuelve true si ya existe un docente con ese DNI (opcionalmente excluyendo
+// el propio registro al editar).
+export async function dniExists(dni: string, excludeTeacherId?: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: teachers.id })
+    .from(teachers)
+    .where(eq(teachers.dni, dni))
+    .limit(1);
+  if (rows.length === 0) return false;
+  return rows[0].id !== excludeTeacherId;
+}
+
 export async function createTeacher(profileId: string, input: CreateTeacherInput) {
   const [teacher] = await db
     .insert(teachers)
