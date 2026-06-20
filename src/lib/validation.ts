@@ -1,16 +1,16 @@
 import { z } from "zod";
-
-// Validadores reutilizables para campos que deben coincidir con el formato
-// esperado por la DB y las reglas de negocio. Centralizados acá para que todos
-// los formularios apliquen las mismas reglas.
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 // Nombre de persona: empieza con letra y solo admite letras (con acentos),
 // espacios, guiones, apóstrofes y puntos. No permite dígitos ni símbolos.
-const PERSON_NAME_REGEX = /^\p{L}[\p{L}\p{M}\s'’.-]*$/u;
+const PERSON_NAME_REGEX = /^\p{L}[\p{L}\p{M}\s''.-]*$/u;
 
 // Caracteres NO permitidos en un nombre. Útil para sanitizar el input en el
 // cliente en tiempo real (replace), evitando que se tipeen caracteres especiales.
-export const NAME_DISALLOWED_CHARS = /[^\p{L}\p{M}\s'’.-]/gu;
+export const NAME_DISALLOWED_CHARS = /[^\p{L}\p{M}\s''.-]/gu;
+
+// Caracteres NO permitidos en un teléfono argentino — solo dígitos.
+export const PHONE_DISALLOWED_CHARS = /[^\d]/g;
 
 export function personNameField(label = "El nombre") {
   return z
@@ -53,14 +53,26 @@ export function dniField() {
     .regex(/^\d{7,8}$/, "El DNI debe contener solo números (7 u 8 dígitos)");
 }
 
-// Teléfono opcional: dígitos, espacios, +, guiones y paréntesis.
-const PHONE_REGEX = /^[\d\s+()-]{6,20}$/;
-
+// Teléfono argentino: solo dígitos, sin código de país (+54).
+// Validado con libphonenumber-js usando el contexto del país AR.
 export function phoneField() {
   return z
     .union([
       z.literal(""),
-      z.string().trim().regex(PHONE_REGEX, "Teléfono inválido (solo números, +, espacios y guiones)"),
+      z
+        .string()
+        .trim()
+        .regex(/^\d+$/, "Solo se permiten números, sin código de país (ej: 3516789012)")
+        .refine(
+          (v) => {
+            try {
+              return parsePhoneNumberFromString(v, "AR")?.isValid() ?? false;
+            } catch {
+              return false;
+            }
+          },
+          "Ingresá un número de teléfono argentino válido (ej: 3516789012)",
+        ),
     ])
     .optional()
     .transform((v) => (v === "" ? undefined : v));

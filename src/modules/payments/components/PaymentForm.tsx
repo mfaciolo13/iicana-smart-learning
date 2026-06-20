@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { ActionResult } from "@/lib/action-result";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 interface PaymentFormProps {
   students: StudentListItem[];
@@ -26,6 +27,7 @@ function defaultDueDate() {
 export function PaymentForm({ students, defaultStudentId, action }: PaymentFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
 
   useEffect(() => {
     if (state?.error && !state?.fieldErrors) toast.error(state.error);
@@ -36,10 +38,10 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
   }, [state, router]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onChange={handleChange} className="space-y-6">
       <Card title="Datos del pago" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Alumno" required id="studentId" className="sm:col-span-2" error={state?.fieldErrors?.studentId}>
+          <Field label="Alumno" required id="studentId" className="sm:col-span-2" error={fieldErrors.studentId}>
             <Select id="studentId" name="studentId" defaultValue={defaultStudentId ?? ""}>
               <option value="" disabled>Seleccioná un alumno</option>
               {students.map((s) => (
@@ -48,15 +50,15 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
             </Select>
           </Field>
 
-          <Field label="Monto ($)" required id="amount" error={state?.fieldErrors?.amount}>
-            <Input id="amount" name="amount" type="number" min={1} step={0.01} placeholder="ej. 15000" />
+          <Field label="Monto ($)" required id="amount" error={fieldErrors.amount}>
+            <Input id="amount" name="amount" type="number" step={0.01} placeholder="ej. 15000" />
           </Field>
 
-          <Field label="Fecha de vencimiento" required id="dueDate" error={state?.fieldErrors?.dueDate}>
+          <Field label="Fecha de vencimiento" required id="dueDate" error={fieldErrors.dueDate}>
             <Input id="dueDate" name="dueDate" type="date" defaultValue={defaultDueDate()} />
           </Field>
 
-          <Field label="Notas" id="notes" className="sm:col-span-2" error={state?.fieldErrors?.notes}>
+          <Field label="Notas" id="notes" className="sm:col-span-2" error={fieldErrors.notes}>
             <Textarea id="notes" name="notes" maxLength={500} placeholder="Descripción opcional del pago..." />
           </Field>
         </div>

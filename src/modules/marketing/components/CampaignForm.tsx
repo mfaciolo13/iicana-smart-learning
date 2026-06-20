@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input, Field, Select, Textarea } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 interface Props {
   channels: { value: string; label: string }[];
@@ -15,9 +16,12 @@ interface Props {
 export function CampaignForm({ channels, action }: Props) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
+
+  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
       if (state.redirectTo) {
@@ -27,16 +31,14 @@ export function CampaignForm({ channels, action }: Props) {
     }
   }, [state, router]);
 
-  const today = new Date().toISOString().split("T")[0];
-
   return (
-    <form action={formAction} className="space-y-4">
-      <Field label="Nombre de la campaña" required id="name">
-        <Input id="name" name="name" required placeholder="Ej: Campaña primavera 2025" />
+    <form action={formAction} onChange={handleChange} className="space-y-4">
+      <Field label="Nombre de la campaña" required id="name" error={fieldErrors.name}>
+        <Input id="name" name="name" placeholder="Ej: Campaña primavera 2025" />
       </Field>
 
-      <Field label="Canal" required id="channel">
-        <Select id="channel" name="channel" required defaultValue="">
+      <Field label="Canal" required id="channel" error={fieldErrors.channel}>
+        <Select id="channel" name="channel" defaultValue="">
           <option value="" disabled>Seleccioná un canal</option>
           {channels.map((c) => (
             <option key={c.value} value={c.value}>{c.label}</option>
@@ -45,24 +47,24 @@ export function CampaignForm({ channels, action }: Props) {
       </Field>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Inicio" required id="startDate">
-          <Input id="startDate" type="date" name="startDate" required defaultValue={today} />
+        <Field label="Inicio" required id="startDate" error={fieldErrors.startDate}>
+          <Input id="startDate" type="date" name="startDate" defaultValue={today} />
         </Field>
-        <Field label="Fin" id="endDate">
+        <Field label="Fin" id="endDate" error={fieldErrors.endDate}>
           <Input id="endDate" type="date" name="endDate" />
         </Field>
       </div>
 
-      <Field label="Presupuesto" id="budget">
-        <Input id="budget" type="number" name="budget" min="0" step="0.01" placeholder="0.00" />
+      <Field label="Presupuesto" id="budget" error={fieldErrors.budget}>
+        <Input id="budget" type="text" inputMode="decimal" name="budget" placeholder="0.00" />
       </Field>
 
-      <Field label="Descripción" id="description">
+      <Field label="Descripción" id="description" error={fieldErrors.description}>
         <Textarea id="description" name="description" rows={3} />
       </Field>
 
-      <Button type="submit" variant="primary" disabled={isPending} className="w-full justify-center">
-        {isPending ? "Guardando..." : "Registrar campaña"}
+      <Button type="submit" variant="primary" loading={isPending} className="w-full justify-center">
+        Registrar campaña
       </Button>
     </form>
   );

@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { Camera } from "lucide-react";
 import { updateProfileAction } from "../actions";
-import { NAME_DISALLOWED_CHARS } from "@/lib/validation";
+import { NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
-// Elimina en tiempo real los caracteres no permitidos en un nombre.
 function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
   const el = e.currentTarget;
   const cleaned = el.value.replace(NAME_DISALLOWED_CHARS, "");
+  if (cleaned !== el.value) el.value = cleaned;
+}
+
+function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const cleaned = el.value.replace(PHONE_DISALLOWED_CHARS, "");
   if (cleaned !== el.value) el.value = cleaned;
 }
 
@@ -33,6 +39,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState(updateProfileAction, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
   const [preview, setPreview] = useState<string | null>(avatarUrl);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -48,7 +55,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
   }
 
   return (
-    <form action={formAction} encType="multipart/form-data" className="space-y-6">
+    <form action={formAction} onChange={handleChange} encType="multipart/form-data" className="space-y-6">
       {/* Avatar picker */}
       <div className="flex flex-col items-center gap-2">
         <div className="relative group">
@@ -85,11 +92,10 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
         />
       </div>
 
-      <Field label="Nombre completo" required id="fullName">
+      <Field label="Nombre completo" required id="fullName" error={fieldErrors.fullName}>
         <Input
           id="fullName"
           name="fullName"
-          required
           onInput={sanitizeNameInput}
           defaultValue={fullName}
           placeholder="Nombre y apellido"
@@ -97,16 +103,19 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
       </Field>
 
       <Field label="Email" id="email" helper="El email no se puede cambiar desde aquí.">
-        <Input id="email" type="email" defaultValue={email} disabled />
+        <Input id="email" type="text" defaultValue={email} disabled />
       </Field>
 
-      <Field label="Teléfono" id="phone">
+      <Field label="Teléfono" id="phone" error={fieldErrors.phone}>
         <Input
           id="phone"
           name="phone"
           type="tel"
+          inputMode="numeric"
+          onInput={sanitizePhoneInput}
+          maxLength={11}
           defaultValue={phone ?? ""}
-          placeholder="Ej: +54 9 351 123 4567"
+          placeholder="Ej: 3516789012"
         />
       </Field>
 

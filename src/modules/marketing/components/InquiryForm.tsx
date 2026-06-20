@@ -5,12 +5,18 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
-import { NAME_DISALLOWED_CHARS } from "@/lib/validation";
+import { NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
-// Elimina en tiempo real los caracteres no permitidos en un nombre.
 function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
   const el = e.currentTarget;
   const cleaned = el.value.replace(NAME_DISALLOWED_CHARS, "");
+  if (cleaned !== el.value) el.value = cleaned;
+}
+
+function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const cleaned = el.value.replace(PHONE_DISALLOWED_CHARS, "");
   if (cleaned !== el.value) el.value = cleaned;
 }
 
@@ -21,10 +27,13 @@ interface Props {
 
 export function InquiryForm({ campaignId, action }: Props) {
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
   const [formKey, setFormKey] = useState(0);
 
+  const today = new Date().toISOString().split("T")[0];
+
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -32,36 +41,42 @@ export function InquiryForm({ campaignId, action }: Props) {
     }
   }, [state]);
 
-  const today = new Date().toISOString().split("T")[0];
-
   return (
-    <form key={formKey} action={formAction} className="space-y-3">
+    <form key={formKey} action={formAction} onChange={handleChange} className="space-y-3">
       <input type="hidden" name="campaignId" value={campaignId} />
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Nombre" required id="inq-name">
+        <Field label="Nombre" required id="inq-name" error={fieldErrors.name}>
           <Input id="inq-name" name="name" onInput={sanitizeNameInput} placeholder="Nombre completo" />
         </Field>
-        <Field label="Fecha" required id="inq-date">
-          <Input id="inq-date" type="date" name="receivedAt" defaultValue={today} max={today} />
+        <Field label="Fecha" required id="inq-date" error={fieldErrors.receivedAt}>
+          <Input id="inq-date" type="date" name="receivedAt" defaultValue={today} />
         </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Email" id="inq-email">
-          <Input id="inq-email" type="email" name="email" placeholder="opcional" />
+        <Field label="Email" id="inq-email" error={fieldErrors.email}>
+          <Input id="inq-email" type="text" inputMode="email" name="email" placeholder="opcional" />
         </Field>
-        <Field label="Teléfono" id="inq-phone">
-          <Input id="inq-phone" name="phone" placeholder="opcional" />
+        <Field label="Teléfono" id="inq-phone" error={fieldErrors.phone}>
+          <Input
+            id="inq-phone"
+            name="phone"
+            type="tel"
+            inputMode="numeric"
+            onInput={sanitizePhoneInput}
+            maxLength={11}
+            placeholder="Ej: 3516789012"
+          />
         </Field>
       </div>
 
-      <Field label="Notas" id="inq-notes">
+      <Field label="Notas" id="inq-notes" error={fieldErrors.notes}>
         <Input id="inq-notes" name="notes" placeholder="Observaciones..." />
       </Field>
 
-      <Button type="submit" variant="secondary" size="sm" disabled={isPending} className="w-full justify-center">
-        {isPending ? "Registrando..." : "+ Agregar consulta"}
+      <Button type="submit" variant="secondary" size="sm" loading={isPending} className="w-full justify-center">
+        + Agregar consulta
       </Button>
     </form>
   );

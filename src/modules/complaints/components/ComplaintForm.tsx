@@ -8,6 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { ActionResult } from "@/lib/action-result";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 const TYPE_OPTIONS = [
   { value: "academic", label: "Académico — notas, promedios, contenido" },
@@ -24,6 +25,7 @@ interface ComplaintFormProps {
 export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
@@ -34,11 +36,11 @@ export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
   }, [state, router]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onChange={handleChange} className="space-y-6">
       <Card title="Datos del reclamo" padding="md">
         <div className="space-y-4">
-          <Field label="Categoría" required id="type">
-            <Select id="type" name="type" required defaultValue="">
+          <Field label="Categoría" required id="type" error={fieldErrors.type}>
+            <Select id="type" name="type" defaultValue="">
               <option value="" disabled>Seleccioná la categoría</option>
               {TYPE_OPTIONS.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -46,12 +48,10 @@ export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
             </Select>
           </Field>
 
-          <Field label="Descripción" required id="description">
+          <Field label="Descripción" required id="description" error={fieldErrors.description}>
             <Textarea
               id="description"
               name="description"
-              required
-              minLength={20}
               maxLength={1000}
               placeholder="Describí el problema con el mayor detalle posible (mín. 20 caracteres)..."
               className="min-h-[140px]"

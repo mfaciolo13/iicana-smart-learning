@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { FileText, FileImage, File, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 interface Course {
   id: string;
@@ -52,10 +53,11 @@ export function GenerateAssessmentForm({
   documents = [],
 }: GenerateAssessmentFormProps) {
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
   }, [state]);
 
   function toggleDoc(id: string) {
@@ -65,12 +67,12 @@ export function GenerateAssessmentForm({
   }
 
   return (
-    <form action={formAction} className="space-y-5 mt-2">
+    <form action={formAction} onChange={handleChange} className="space-y-5 mt-2">
       <input type="hidden" name="documentIds" value={selectedDocIds.join(",")} />
 
-      <Field label="Curso" required id="courseId">
-        <Select id="courseId" name="courseId" required>
-          <option value="">Seleccioná un curso...</option>
+      <Field label="Curso" required id="courseId" error={fieldErrors.courseId}>
+        <Select id="courseId" name="courseId" defaultValue="">
+          <option value="" disabled>Seleccioná un curso...</option>
           {courses.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name} — {c.level}
@@ -79,20 +81,18 @@ export function GenerateAssessmentForm({
         </Select>
       </Field>
 
-      <Field label="Semana" required id="weekLabel" helper="Ej: Semana 3 — Mayo 2026">
+      <Field label="Semana" required id="weekLabel" helper="Ej: Semana 3 — Mayo 2026" error={fieldErrors.weekLabel}>
         <Input
           id="weekLabel"
           name="weekLabel"
-          required
           placeholder="Semana 3 — Mayo 2026"
         />
       </Field>
 
-      <Field label="Tema de la semana" required id="topic" helper="Describí el contenido dado: gramática, vocabulario, función comunicativa, etc.">
+      <Field label="Tema de la semana" required id="topic" helper="Describí el contenido dado: gramática, vocabulario, función comunicativa, etc." error={fieldErrors.topic}>
         <Textarea
           id="topic"
           name="topic"
-          required
           rows={3}
           placeholder="Ej: Present Perfect — usos con 'already', 'yet' y 'just'. Vocabulario de viajes."
         />

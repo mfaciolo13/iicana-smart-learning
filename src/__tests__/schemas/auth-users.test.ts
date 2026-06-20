@@ -75,7 +75,7 @@ describe("updateUserSchema", () => {
   });
 
   it("acepta phone opcional", () => {
-    const result = updateUserSchema.safeParse({ ...valid, phone: "+54 351 123 4567" });
+    const result = updateUserSchema.safeParse({ ...valid, phone: "3511234567" });
     expect(result.success).toBe(true);
   });
 
