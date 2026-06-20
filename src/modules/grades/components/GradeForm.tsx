@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import { Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import type { ActionResult } from "@/lib/action-result";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -48,6 +49,7 @@ interface GradeFormProps {
 export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar", cancelHref = "/director/grades", redirectTo }: GradeFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
   const isEditing = !!grade;
   const [selectedScore, setSelectedScore] = useState<number | null>(grade?.score ? Math.round(parseFloat(String(grade.score))) : null);
 
@@ -60,15 +62,15 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
   }, [state, router]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onChange={handleChange} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={grade.id} />}
       {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
 
       <Card title="Datos de la evaluación" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {!isEditing && (
-            <Field label="Alumno / Inscripción" required id="enrollmentId" className="sm:col-span-2" error={state?.fieldErrors?.enrollmentId}>
-              <Select id="enrollmentId" name="enrollmentId" required defaultValue="">
+            <Field label="Alumno / Inscripción" required id="enrollmentId" className="sm:col-span-2" error={fieldErrors.enrollmentId}>
+              <Select id="enrollmentId" name="enrollmentId" defaultValue="">
                 <option value="" disabled>Seleccioná un alumno</option>
                 {enrollments.map((e) => (
                   <option key={e.id} value={e.id}>{e.studentName} — {e.courseName}</option>
@@ -77,8 +79,8 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
             </Field>
           )}
 
-          <Field label="Tipo de evaluación" required id="evaluationType" error={state?.fieldErrors?.evaluationType}>
-            <Select id="evaluationType" name="evaluationType" required defaultValue={grade?.evaluationType ?? "parcial"}>
+          <Field label="Tipo de evaluación" required id="evaluationType" error={fieldErrors.evaluationType}>
+            <Select id="evaluationType" name="evaluationType" defaultValue={grade?.evaluationType ?? "parcial"}>
               <option value="" disabled>Seleccioná el tipo</option>
               {EVAL_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -86,7 +88,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
             </Select>
           </Field>
 
-          <Field label="Nota (1–10)" required id="score" error={state?.fieldErrors?.score}>
+          <Field label="Nota (1–10)" required id="score" error={fieldErrors.score}>
             <input type="hidden" name="score" value={selectedScore ?? ""} />
             <div className="flex flex-wrap gap-2 pt-0.5">
               {SCORES.map((n) => {
@@ -106,12 +108,12 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
                 );
               })}
             </div>
-            {!selectedScore && state?.fieldErrors?.score && (
+            {!selectedScore && fieldErrors.score && (
               <p className="text-xs text-danger-500 mt-1">Seleccioná una nota</p>
             )}
           </Field>
 
-          <Field label="Observaciones" id="notes" className="sm:col-span-2" error={state?.fieldErrors?.notes}>
+          <Field label="Observaciones" id="notes" className="sm:col-span-2" error={fieldErrors.notes}>
             <Textarea id="notes" name="notes" defaultValue={grade?.notes ?? ""} placeholder="Comentarios opcionales sobre la evaluación..." />
           </Field>
         </div>

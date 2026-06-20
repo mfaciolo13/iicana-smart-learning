@@ -24,7 +24,7 @@ describe("createStudentSchema", () => {
   it("acepta todos los campos opcionales", () => {
     const full = {
       ...valid,
-      phone: "+54 9 351 000 0000",
+      phone: "3510000000",
       level: "intermediate" as const,
       placementTestScore: 65,
     };
@@ -94,7 +94,7 @@ describe("createStudentSchema", () => {
   });
 
   it("acepta phone opcional", () => {
-    expect(createStudentSchema.safeParse({ ...valid, phone: "+54 9 351 000 0000" }).success).toBe(true);
+    expect(createStudentSchema.safeParse({ ...valid, phone: "3510000000" }).success).toBe(true);
     expect(createStudentSchema.safeParse(valid).success).toBe(true);
   });
 });
@@ -146,7 +146,7 @@ describe("createTeacherSchema", () => {
   });
 
   it("acepta phone opcional", () => {
-    expect(createTeacherSchema.safeParse({ ...valid, phone: "351-123456" }).success).toBe(true);
+    expect(createTeacherSchema.safeParse({ ...valid, phone: "3511234567" }).success).toBe(true);
     expect(createTeacherSchema.safeParse(valid).success).toBe(true);
   });
 

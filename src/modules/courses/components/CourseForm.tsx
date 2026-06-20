@@ -7,12 +7,12 @@ import { toast } from "sonner";
 import type { CourseWithTeacher } from "../types";
 import type { TeacherListItem } from "@/modules/teachers/types";
 import { Button, buttonVariants } from "@/components/ui/Button";
-import { Field, Select } from "@/components/ui/Input";
+import { Field, Select, Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { SchedulePicker } from "./SchedulePicker";
 import { cn } from "@/lib/cn";
 import type { ActionResult } from "@/lib/action-result";
-import { Input } from "@/components/ui/Input";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 const CAPACITIES = Array.from({ length: 15 }, (_, i) => i + 1);
 
@@ -41,6 +41,7 @@ interface CourseFormProps {
 export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }: CourseFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
   const isEditing = !!course;
   const [selectedCapacity, setSelectedCapacity] = useState<number>(() => {
     const v = Number(course?.maxCapacity);
@@ -56,16 +57,16 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
   }, [state, router]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onChange={handleChange} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={course.id} />}
 
       <Card title="Datos del curso" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Nombre del curso" required id="name" error={state?.fieldErrors?.name}>
+          <Field label="Nombre del curso" required id="name" error={fieldErrors.name}>
             <Input id="name" name="name" type="text" defaultValue={course?.name} placeholder="ej. Inglés Intermedio — Turno Tarde" />
           </Field>
 
-          <Field label="Nivel" required id="level" error={state?.fieldErrors?.level}>
+          <Field label="Nivel" required id="level" error={fieldErrors.level}>
             <Select id="level" name="level" defaultValue={course?.level ?? ""}>
               <option value="" disabled>Seleccioná un nivel</option>
               {LEVELS.map((l) => (
@@ -79,7 +80,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
             required
             id="classDays"
             className="sm:col-span-2"
-            error={state?.fieldErrors?.classDays ?? state?.fieldErrors?.classTime ?? state?.fieldErrors?.classDurationMinutes}
+            error={fieldErrors.classDays ?? fieldErrors.classTime ?? fieldErrors.classDurationMinutes}
           >
             <SchedulePicker
               defaultDays={course?.classDays}
@@ -88,11 +89,11 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
             />
           </Field>
 
-          <Field label="Aula" id="classroom" error={state?.fieldErrors?.classroom}>
+          <Field label="Aula" id="classroom" error={fieldErrors.classroom}>
             <Input id="classroom" name="classroom" type="text" defaultValue={course?.classroom ?? ""} placeholder="ej. Aula 3" />
           </Field>
 
-          <Field label="Cupo máximo" required id="maxCapacity" error={state?.fieldErrors?.maxCapacity}>
+          <Field label="Cupo máximo" required id="maxCapacity" error={fieldErrors.maxCapacity}>
             <input type="hidden" name="maxCapacity" value={selectedCapacity} />
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {CAPACITIES.map((n) => {
@@ -116,7 +117,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
             </div>
           </Field>
 
-          <Field label="Docente" id="teacherId" error={state?.fieldErrors?.teacherId}>
+          <Field label="Docente" id="teacherId" error={fieldErrors.teacherId}>
             <Select id="teacherId" name="teacherId" defaultValue={course?.teacherId ?? ""}>
               <option value="">Sin asignar</option>
               {teachers.map((t) => (
@@ -126,7 +127,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
           </Field>
 
           {isEditing && (
-            <Field label="Estado" id="status" error={state?.fieldErrors?.status}>
+            <Field label="Estado" id="status" error={fieldErrors.status}>
               <Select id="status" name="status" defaultValue={course?.status}>
                 {STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -139,7 +140,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
             label="Autoevaluación diagnóstica (cada N clases)"
             id="diagnosticFrequency"
             className="sm:col-span-2"
-            error={state?.fieldErrors?.diagnosticFrequency}
+            error={fieldErrors.diagnosticFrequency}
           >
             <Select id="diagnosticFrequency" name="diagnosticFrequency" defaultValue={String(course?.diagnosticFrequency ?? 0)}>
               <option value="0">Desactivada</option>

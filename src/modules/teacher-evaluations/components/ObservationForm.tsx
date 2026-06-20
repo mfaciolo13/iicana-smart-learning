@@ -1,10 +1,13 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { StarRating } from "./StarRating";
 import { Button } from "@/components/ui/Button";
+import { Field, Select, Input, Textarea } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 interface Props {
   teachers: { id: string; fullName: string }[];
@@ -13,95 +16,87 @@ interface Props {
 }
 
 export function ObservationForm({ teachers, courses, action }: Props) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
-  }, [state]);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
+    if (state?.success) {
+      toast.success(state.success);
+      if (state.redirectTo) router.push(state.redirectTo);
+    }
+  }, [state, router]);
 
   const filteredCourses = selectedTeacherId
     ? courses.filter((c) => c.teacherId === selectedTeacherId)
     : courses;
 
   return (
-    <form action={formAction} className="space-y-5">
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Docente</label>
-        <select
+    <form action={formAction} onChange={handleChange} className="space-y-5">
+      <Field label="Docente" required id="teacherId" error={fieldErrors.teacherId}>
+        <Select
+          id="teacherId"
           name="teacherId"
-          required
           value={selectedTeacherId}
           onChange={(e) => setSelectedTeacherId(e.target.value)}
-          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300"
+          defaultValue=""
         >
-          <option value="">Seleccioná un docente</option>
+          <option value="" disabled>Seleccioná un docente</option>
           {teachers.map((t) => (
             <option key={t.id} value={t.id}>{t.fullName}</option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Curso</label>
-        <select
-          name="courseId"
-          required
-          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300"
-        >
-          <option value="">Seleccioná un curso</option>
+      <Field label="Curso" required id="courseId" error={fieldErrors.courseId}>
+        <Select id="courseId" name="courseId" defaultValue="">
+          <option value="" disabled>Seleccioná un curso</option>
           {filteredCourses.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Fecha de observación</label>
-        <input
-          type="date"
-          name="observedAt"
-          required
-          max={new Date().toISOString().split("T")[0]}
-          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300"
-        />
-      </div>
+      <Field label="Fecha de observación" required id="observedAt" error={fieldErrors.observedAt}>
+        <Input id="observedAt" type="date" name="observedAt" />
+      </Field>
 
       <StarRating name="overallRating" label="Calificación general" />
+      {fieldErrors.overallRating && (
+        <p className="text-xs text-red-500 -mt-3">{fieldErrors.overallRating}</p>
+      )}
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Observaciones generales *</label>
-        <textarea
+      <Field label="Observaciones generales" required id="observations" error={fieldErrors.observations}>
+        <Textarea
+          id="observations"
           name="observations"
           rows={4}
-          required
           placeholder="Describí las observaciones de la clase..."
-          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
         />
-      </div>
+      </Field>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Fortalezas observadas</label>
-        <textarea
+      <Field label="Fortalezas observadas" id="strengths" error={fieldErrors.strengths}>
+        <Textarea
+          id="strengths"
           name="strengths"
           rows={2}
           placeholder="Aspectos destacados del docente..."
-          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
         />
-      </div>
+      </Field>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Áreas de mejora</label>
-        <textarea
+      <Field label="Áreas de mejora" id="improvements" error={fieldErrors.improvements}>
+        <Textarea
+          id="improvements"
           name="improvements"
           rows={2}
           placeholder="Sugerencias para mejorar..."
-          className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
         />
-      </div>
+      </Field>
 
-      <Button type="submit" variant="primary" disabled={isPending} className="w-full justify-center">
-        {isPending ? "Guardando..." : "Registrar observación"}
+      <Button type="submit" variant="primary" loading={isPending} className="w-full justify-center">
+        Registrar observación
       </Button>
     </form>
   );

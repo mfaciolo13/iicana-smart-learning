@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { ActionResult } from "@/lib/action-result";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 const TYPE_OPTIONS = [
   { value: "general", label: "General" },
@@ -28,10 +29,11 @@ interface NotificationFormProps {
 export function NotificationForm({ courses, users, action }: NotificationFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
   const [targetGroup, setTargetGroup] = useState<"role" | "course" | "user">("role");
 
   useEffect(() => {
-    if (state?.error) toast.error(state.error);
+    if (state?.error && !state?.fieldErrors) toast.error(state.error);
     if (state?.success) {
       toast.success(state.success);
       if (state.redirectTo) router.push(state.redirectTo);
@@ -39,7 +41,7 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
   }, [state, router]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onChange={handleChange} className="space-y-6">
       <Card title="Destinatario" padding="md">
         <div className="space-y-4">
           <div className="flex gap-2 flex-wrap">
@@ -60,8 +62,8 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
           </div>
 
           {targetGroup === "role" && (
-            <Field label="Rol destinatario" required id="targetId">
-              <Select id="targetId" name="targetId" required defaultValue="">
+            <Field label="Rol destinatario" required id="targetId" error={fieldErrors.targetId}>
+              <Select id="targetId" name="targetId" defaultValue="">
                 <option value="" disabled>Seleccioná un rol</option>
                 <option value="role:alumno">Todos los alumnos</option>
                 <option value="role:profesor">Todos los docentes</option>
@@ -71,8 +73,8 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
           )}
 
           {targetGroup === "course" && (
-            <Field label="Curso" required id="targetId">
-              <Select id="targetId" name="targetId" required defaultValue="">
+            <Field label="Curso" required id="targetId" error={fieldErrors.targetId}>
+              <Select id="targetId" name="targetId" defaultValue="">
                 <option value="" disabled>Seleccioná un curso</option>
                 {courses.map((c) => (
                   <option key={c.id} value={`course:${c.id}`}>{c.name}</option>
@@ -82,8 +84,8 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
           )}
 
           {targetGroup === "user" && (
-            <Field label="Usuario" required id="targetId">
-              <Select id="targetId" name="targetId" required defaultValue="">
+            <Field label="Usuario" required id="targetId" error={fieldErrors.targetId}>
+              <Select id="targetId" name="targetId" defaultValue="">
                 <option value="" disabled>Seleccioná un usuario</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>{u.fullName} ({u.role})</option>
@@ -96,20 +98,20 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
 
       <Card title="Mensaje" padding="md">
         <div className="space-y-4">
-          <Field label="Tipo" required id="type">
-            <Select id="type" name="type" required defaultValue="general">
+          <Field label="Tipo" required id="type" error={fieldErrors.type}>
+            <Select id="type" name="type" defaultValue="general">
               {TYPE_OPTIONS.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </Select>
           </Field>
 
-          <Field label="Título" required id="title">
-            <Input id="title" name="title" required maxLength={100} placeholder="Ej: Recordatorio de pago" />
+          <Field label="Título" required id="title" error={fieldErrors.title}>
+            <Input id="title" name="title" maxLength={100} placeholder="Ej: Recordatorio de pago" />
           </Field>
 
-          <Field label="Mensaje" required id="body">
-            <Textarea id="body" name="body" required maxLength={500} placeholder="Escribí el contenido de la notificación..." className="min-h-[100px]" />
+          <Field label="Mensaje" required id="body" error={fieldErrors.body}>
+            <Textarea id="body" name="body" maxLength={500} placeholder="Escribí el contenido de la notificación..." className="min-h-[100px]" />
           </Field>
         </div>
       </Card>

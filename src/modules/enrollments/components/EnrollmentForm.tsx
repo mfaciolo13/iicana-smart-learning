@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect } from "react";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { Field, Select } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { ActionResult } from "@/lib/action-result";
+import { useFieldErrors } from "@/lib/use-field-errors";
 
 interface EnrollmentFormProps {
   students: StudentListItem[];
@@ -31,6 +32,7 @@ const LEVEL_LABELS: Record<string, string> = {
 export function EnrollmentForm({ students, courses, action, defaultStudentId, defaultCourseId }: EnrollmentFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
+  const { fieldErrors, handleChange } = useFieldErrors(state);
 
   useEffect(() => {
     if (state?.error && !state?.fieldErrors) toast.error(state.error);
@@ -41,11 +43,11 @@ export function EnrollmentForm({ students, courses, action, defaultStudentId, de
   }, [state, router]);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onChange={handleChange} className="space-y-6">
       <Card title="Datos de la inscripción" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Alumno" required id="studentId" error={state?.fieldErrors?.studentId}>
-            <Select id="studentId" name="studentId" required defaultValue={defaultStudentId ?? ""}>
+          <Field label="Alumno" required id="studentId" error={fieldErrors.studentId}>
+            <Select id="studentId" name="studentId" defaultValue={defaultStudentId ?? ""}>
               <option value="" disabled>Seleccioná un alumno</option>
               {students.map((s) => (
                 <option key={s.id} value={s.id}>{s.fullName} — {s.dni}</option>
@@ -53,7 +55,7 @@ export function EnrollmentForm({ students, courses, action, defaultStudentId, de
             </Select>
           </Field>
 
-          <Field label="Curso" required id="courseId" error={state?.fieldErrors?.courseId}>
+          <Field label="Curso" required id="courseId" error={fieldErrors.courseId}>
             {(() => {
               const available = courses.filter(
                 (c) => c.status === "active" && c.maxCapacity - c.enrollmentCount > 0
@@ -66,7 +68,7 @@ export function EnrollmentForm({ students, courses, action, defaultStudentId, de
                 );
               }
               return (
-                <Select id="courseId" name="courseId" required defaultValue={defaultCourseId ?? ""}>
+                <Select id="courseId" name="courseId" defaultValue={defaultCourseId ?? ""}>
                   <option value="" disabled>Seleccioná un curso</option>
                   {available.map((c) => {
                     const spots = c.maxCapacity - c.enrollmentCount;
