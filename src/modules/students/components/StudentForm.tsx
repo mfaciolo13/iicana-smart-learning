@@ -49,7 +49,7 @@ interface StudentFormProps {
 export function StudentForm({ student, action, submitLabel = "Guardar" }: StudentFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const isEditing = !!student;
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
   }, [state, router]);
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-6">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={student.id} />}
 
       <Card title="Datos personales" padding="md">

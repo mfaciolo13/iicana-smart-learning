@@ -53,7 +53,7 @@ export function GenerateAssessmentForm({
   documents = [],
 }: GenerateAssessmentFormProps) {
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function GenerateAssessmentForm({
   }
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-5 mt-2">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-5 mt-2">
       <input type="hidden" name="documentIds" value={selectedDocIds.join(",")} />
 
       <Field label="Curso" required id="courseId" error={fieldErrors.courseId}>

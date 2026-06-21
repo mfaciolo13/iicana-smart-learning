@@ -27,7 +27,7 @@ function defaultDueDate() {
 export function PaymentForm({ students, defaultStudentId, action }: PaymentFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
 
   useEffect(() => {
     if (state?.error && !state?.fieldErrors) toast.error(state.error);
@@ -38,7 +38,7 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
   }, [state, router]);
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-6">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-6">
       <Card title="Datos del pago" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Alumno" required id="studentId" className="sm:col-span-2" error={fieldErrors.studentId}>
