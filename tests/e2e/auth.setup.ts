@@ -31,6 +31,12 @@ setup("autenticar como admin", async ({ page }) => {
   await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
   await page.waitForLoadState("networkidle");
 
+  // Verificar que no estamos en login (la autenticación fue exitosa)
+  expect(page.url()).not.toMatch(/\/login/);
+
+  // Esperar a que la app hidrate completamente antes de guardar el state
+  await page.waitForTimeout(2_000);
+
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -60,6 +66,12 @@ setup("autenticar como alumno", async ({ page }) => {
   // Aceptar cualquier ruta post-login del portal alumno
   await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
   await page.waitForLoadState("networkidle");
+
+  // Verificar que no estamos en login (la autenticación fue exitosa)
+  expect(page.url()).not.toMatch(/\/login/);
+
+  // Esperar a que la app hidrate completamente antes de guardar el state
+  await page.waitForTimeout(2_000);
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
