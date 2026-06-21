@@ -39,7 +39,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState(updateProfileAction, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const [preview, setPreview] = useState<string | null>(avatarUrl);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -55,7 +55,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
   }
 
   return (
-    <form action={formAction} onChange={handleChange} encType="multipart/form-data" className="space-y-6">
+    <form ref={formRef} action={formAction} onChange={handleChange} encType="multipart/form-data" className="space-y-6">
       {/* Avatar picker */}
       <div className="flex flex-col items-center gap-2">
         <div className="relative group">

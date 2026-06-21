@@ -29,7 +29,7 @@ interface NotificationFormProps {
 export function NotificationForm({ courses, users, action }: NotificationFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const [targetGroup, setTargetGroup] = useState<"role" | "course" | "user">("role");
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
   }, [state, router]);
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-6">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-6">
       <Card title="Destinatario" padding="md">
         <div className="space-y-4">
           <div className="flex gap-2 flex-wrap">

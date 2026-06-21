@@ -16,7 +16,7 @@ interface Props {
 export function CampaignForm({ channels, action }: Props) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -32,7 +32,7 @@ export function CampaignForm({ channels, action }: Props) {
   }, [state, router]);
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-4">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-4">
       <Field label="Nombre de la campaña" required id="name" error={fieldErrors.name}>
         <Input id="name" name="name" placeholder="Ej: Campaña primavera 2025" />
       </Field>

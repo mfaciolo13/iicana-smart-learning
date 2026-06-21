@@ -25,7 +25,7 @@ interface ComplaintFormProps {
 export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
@@ -36,7 +36,7 @@ export function ComplaintForm({ cancelHref, action }: ComplaintFormProps) {
   }, [state, router]);
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-6">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-6">
       <Card title="Datos del reclamo" padding="md">
         <div className="space-y-4">
           <Field label="Categoría" required id="type" error={fieldErrors.type}>

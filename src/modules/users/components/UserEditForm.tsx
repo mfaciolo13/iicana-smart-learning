@@ -31,7 +31,7 @@ interface UserEditFormProps {
 
 export function UserEditForm({ userId, fullName, phone, role, action }: UserEditFormProps) {
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
 
   useEffect(() => {
     if (state?.error && !state?.fieldErrors) toast.error(state.error);
@@ -39,7 +39,7 @@ export function UserEditForm({ userId, fullName, phone, role, action }: UserEdit
 
   return (
     <Card title="Editar usuario" padding="md">
-      <form action={formAction} onChange={handleChange} className="space-y-4">
+      <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-4">
         <input type="hidden" name="id" value={userId} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -18,7 +18,7 @@ interface Props {
 export function ObservationForm({ teachers, courses, action }: Props) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export function ObservationForm({ teachers, courses, action }: Props) {
     : courses;
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-5">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-5">
       <Field label="Docente" required id="teacherId" error={fieldErrors.teacherId}>
         <Select
           id="teacherId"

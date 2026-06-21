@@ -1,14 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ActionResult } from "./action-result";
 
 export function useFieldErrors(state: ActionResult) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
+    const errors = state?.fieldErrors ?? {};
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFieldErrors(state?.fieldErrors ?? {});
+    setFieldErrors(errors);
+
+    const names = Object.keys(errors);
+    if (names.length > 0 && formRef.current) {
+      const selector = names.map((n) => `[name="${n}"]`).join(", ");
+      const first = formRef.current.querySelector<HTMLElement>(selector);
+      first?.focus();
+    }
   }, [state]);
 
   function handleChange(e: React.FormEvent<HTMLFormElement>) {
@@ -23,5 +32,5 @@ export function useFieldErrors(state: ActionResult) {
     });
   }
 
-  return { fieldErrors, handleChange };
+  return { fieldErrors, handleChange, formRef };
 }

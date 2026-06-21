@@ -49,7 +49,7 @@ interface GradeFormProps {
 export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar", cancelHref = "/director/grades", redirectTo }: GradeFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const isEditing = !!grade;
   const [selectedScore, setSelectedScore] = useState<number | null>(grade?.score ? Math.round(parseFloat(String(grade.score))) : null);
 
@@ -62,7 +62,7 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
   }, [state, router]);
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-6">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={grade.id} />}
       {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
 

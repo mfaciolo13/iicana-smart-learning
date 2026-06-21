@@ -27,7 +27,7 @@ interface Props {
 
 export function InquiryForm({ campaignId, action }: Props) {
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const [formKey, setFormKey] = useState(0);
 
   const today = new Date().toISOString().split("T")[0];
@@ -42,7 +42,7 @@ export function InquiryForm({ campaignId, action }: Props) {
   }, [state]);
 
   return (
-    <form key={formKey} action={formAction} onChange={handleChange} className="space-y-3">
+    <form key={formKey} ref={formRef} action={formAction} onChange={handleChange} className="space-y-3">
       <input type="hidden" name="campaignId" value={campaignId} />
 
       <div className="grid grid-cols-2 gap-3">

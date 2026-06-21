@@ -41,7 +41,7 @@ interface CourseFormProps {
 export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }: CourseFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange } = useFieldErrors(state);
+  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const isEditing = !!course;
   const [selectedCapacity, setSelectedCapacity] = useState<number>(() => {
     const v = Number(course?.maxCapacity);
@@ -57,7 +57,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
   }, [state, router]);
 
   return (
-    <form action={formAction} onChange={handleChange} className="space-y-6">
+    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={course.id} />}
 
       <Card title="Datos del curso" padding="md">
