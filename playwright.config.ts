@@ -17,6 +17,11 @@ export default defineConfig({
   // Timeout global por test: 60s para absorber la latencia de producción
   timeout: 60_000,
 
+  // Timeout global para expects (evita tener que repetir { timeout } en cada assertion)
+  expect: {
+    timeout: 20_000,
+  },
+
   use: {
     baseURL,
     trace: "on-first-retry",
