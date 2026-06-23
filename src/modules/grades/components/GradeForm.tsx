@@ -1,17 +1,18 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import type { z } from "zod";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import type { GradeWithDetails } from "../types";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Field, Select, Textarea } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
+import { createGradeSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
-import { useFieldErrors } from "@/lib/use-field-errors";
+import { useFormAction } from "@/lib/use-form-action";
 
 const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -37,6 +38,10 @@ const EVAL_TYPES = [
   { value: "quiz", label: "Quiz" },
 ];
 
+// Edit schema: enrollmentId not shown, everything optional
+const editClientSchema = createGradeSchema.omit({ enrollmentId: true }).partial();
+type CreateValues = z.infer<typeof createGradeSchema>;
+
 interface GradeFormProps {
   enrollments: EnrollmentListItem[];
   grade?: GradeWithDetails;
@@ -47,30 +52,32 @@ interface GradeFormProps {
 }
 
 export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar", cancelHref = "/director/grades", redirectTo }: GradeFormProps) {
-  const router = useRouter();
-  const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const isEditing = !!grade;
-  const [selectedScore, setSelectedScore] = useState<number | null>(grade?.score ? Math.round(parseFloat(String(grade.score))) : null);
+  const initialScore = grade?.score ? Math.round(parseFloat(String(grade.score))) : undefined;
 
-  useEffect(() => {
-    if (state?.error && !state?.fieldErrors) toast.error(state.error);
-    if (state?.success) {
-      toast.success(state.success);
-      if (state.redirectTo) router.push(state.redirectTo);
-    }
-  }, [state, router]);
+  const form = useForm<CreateValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(isEditing ? editClientSchema : createGradeSchema) as any,
+    defaultValues: {
+      enrollmentId: "",
+      evaluationType: (grade?.evaluationType ?? "parcial") as CreateValues["evaluationType"],
+      score: initialScore,
+      notes: grade?.notes ?? "",
+    },
+  });
+  const { register, control, formState: { errors } } = form;
+  const { formRef, onSubmit, isPending } = useFormAction(form, action);
 
   return (
-    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-6">
+    <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={grade.id} />}
       {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
 
       <Card title="Datos de la evaluación" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {!isEditing && (
-            <Field label="Alumno / Inscripción" required id="enrollmentId" className="sm:col-span-2" error={fieldErrors.enrollmentId}>
-              <Select id="enrollmentId" name="enrollmentId" defaultValue="">
+            <Field label="Alumno / Inscripción" required id="enrollmentId" className="sm:col-span-2" error={errors.enrollmentId?.message}>
+              <Select id="enrollmentId" {...register("enrollmentId")} defaultValue="">
                 <option value="" disabled>Seleccioná un alumno</option>
                 {enrollments.map((e) => (
                   <option key={e.id} value={e.id}>{e.studentName} — {e.courseName}</option>
@@ -79,42 +86,44 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
             </Field>
           )}
 
-          <Field label="Tipo de evaluación" required id="evaluationType" error={fieldErrors.evaluationType}>
-            <Select id="evaluationType" name="evaluationType" defaultValue={grade?.evaluationType ?? "parcial"}>
-              <option value="" disabled>Seleccioná el tipo</option>
+          <Field label="Tipo de evaluación" required id="evaluationType" error={errors.evaluationType?.message}>
+            <Select id="evaluationType" {...register("evaluationType")}>
               {EVAL_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </Select>
           </Field>
 
-          <Field label="Nota (1–10)" required id="score" error={fieldErrors.score}>
-            <input type="hidden" name="score" value={selectedScore ?? ""} />
-            <div className="flex flex-wrap gap-2 pt-0.5">
-              {SCORES.map((n) => {
-                const active = selectedScore === n;
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setSelectedScore(n)}
-                    className={cn(
-                      "w-10 h-10 rounded-xl border-2 text-sm font-bold transition-all",
-                      active ? scoreColorActive(n) : scoreColor(n)
-                    )}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-            </div>
-            {!selectedScore && fieldErrors.score && (
-              <p className="text-xs text-danger-500 mt-1">Seleccioná una nota</p>
+          <Controller
+            name="score"
+            control={control}
+            render={({ field }) => (
+              <Field label="Nota (1–10)" required id="score" error={errors.score?.message}>
+                <input type="hidden" name="score" value={field.value ?? ""} />
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {SCORES.map((n) => {
+                    const active = field.value === n;
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => field.onChange(n)}
+                        className={cn(
+                          "w-10 h-10 rounded-xl border-2 text-sm font-bold transition-all",
+                          active ? scoreColorActive(n) : scoreColor(n)
+                        )}
+                      >
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
             )}
-          </Field>
+          />
 
-          <Field label="Observaciones" id="notes" className="sm:col-span-2" error={fieldErrors.notes}>
-            <Textarea id="notes" name="notes" defaultValue={grade?.notes ?? ""} placeholder="Comentarios opcionales sobre la evaluación..." />
+          <Field label="Observaciones" id="notes" className="sm:col-span-2" error={errors.notes?.message}>
+            <Textarea id="notes" placeholder="Comentarios opcionales sobre la evaluación..." {...register("notes")} />
           </Field>
         </div>
       </Card>

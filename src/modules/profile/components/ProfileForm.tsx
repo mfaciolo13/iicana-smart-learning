@@ -1,13 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRef, useState } from "react";
+import { z } from "zod";
+import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
-import { Camera } from "lucide-react";
 import { updateProfileAction } from "../actions";
-import { NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
-import { useFieldErrors } from "@/lib/use-field-errors";
+import { personNameField, phoneField, NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
+import { useFormAction } from "@/lib/use-form-action";
+import type { Resolver } from "react-hook-form";
 
 function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
   const el = e.currentTarget;
@@ -22,13 +25,14 @@ function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
 }
 
 function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+  return name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
 }
+
+const profileSchema = z.object({
+  fullName: personNameField("El nombre"),
+  phone: phoneField(),
+});
+type FormValues = z.infer<typeof profileSchema>;
 
 interface ProfileFormProps {
   fullName: string;
@@ -38,15 +42,15 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormProps) {
-  const [state, formAction, isPending] = useActionState(updateProfileAction, undefined);
-  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(profileSchema) as Resolver<FormValues>,
+    defaultValues: { fullName, phone: phone ?? "" },
+  });
+  const { register, formState: { errors } } = form;
+  const { formRef, onSubmit, isPending } = useFormAction(form, updateProfileAction);
+
   const [preview, setPreview] = useState<string | null>(avatarUrl);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (state?.error) toast.error(state.error);
-    if (state?.success) toast.success(state.success);
-  }, [state]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -55,8 +59,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
   }
 
   return (
-    <form ref={formRef} action={formAction} onChange={handleChange} encType="multipart/form-data" className="space-y-6">
-      {/* Avatar picker */}
+    <form ref={formRef} onSubmit={onSubmit} encType="multipart/form-data" className="space-y-6">
       <div className="flex flex-col items-center gap-2">
         <div className="relative group">
           <button
@@ -82,41 +85,19 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
           </button>
         </div>
         <p className="text-xs text-slate-400">Tocá la imagen para cambiarla · JPG, PNG o WebP · máx. 2 MB</p>
-        <input
-          ref={fileRef}
-          type="file"
-          name="avatar"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        <input ref={fileRef} type="file" name="avatar" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileChange} />
       </div>
 
-      <Field label="Nombre completo" required id="fullName" error={fieldErrors.fullName}>
-        <Input
-          id="fullName"
-          name="fullName"
-          onInput={sanitizeNameInput}
-          defaultValue={fullName}
-          placeholder="Nombre y apellido"
-        />
+      <Field label="Nombre completo" required id="fullName" error={errors.fullName?.message}>
+        <Input id="fullName" onInput={sanitizeNameInput} placeholder="Nombre y apellido" {...register("fullName")} />
       </Field>
 
       <Field label="Email" id="email" helper="El email no se puede cambiar desde aquí.">
         <Input id="email" type="text" defaultValue={email} disabled />
       </Field>
 
-      <Field label="Teléfono" id="phone" error={fieldErrors.phone}>
-        <Input
-          id="phone"
-          name="phone"
-          type="tel"
-          inputMode="numeric"
-          onInput={sanitizePhoneInput}
-          maxLength={11}
-          defaultValue={phone ?? ""}
-          placeholder="Ej: 3516789012"
-        />
+      <Field label="Teléfono" id="phone" error={errors.phone?.message}>
+        <Input id="phone" type="tel" inputMode="numeric" onInput={sanitizePhoneInput} maxLength={11} placeholder="Ej: 3516789012" {...register("phone")} />
       </Field>
 
       <div className="flex justify-end">

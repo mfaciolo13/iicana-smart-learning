@@ -6,10 +6,16 @@ interface StarRatingProps {
   name: string;
   label: string;
   defaultValue?: number;
+  onChange?: (value: number) => void;
 }
 
-export function StarRating({ name, label, defaultValue = 0 }: StarRatingProps) {
+export function StarRating({ name, label, defaultValue = 0, onChange }: StarRatingProps) {
   const [value, setValue] = useState(defaultValue);
+
+  function handleClick(star: number) {
+    setValue(star);
+    onChange?.(star);
+  }
   const [hovered, setHovered] = useState(0);
 
   const active = hovered || value;
@@ -22,7 +28,7 @@ export function StarRating({ name, label, defaultValue = 0 }: StarRatingProps) {
           <button
             key={star}
             type="button"
-            onClick={() => setValue(star)}
+            onClick={() => handleClick(star)}
             onMouseEnter={() => setHovered(star)}
             onMouseLeave={() => setHovered(0)}
             className={`text-2xl transition-colors ${
