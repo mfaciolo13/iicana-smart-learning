@@ -1,12 +1,15 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
-import { NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
-import { useFieldErrors } from "@/lib/use-field-errors";
+import { useFormAction } from "@/lib/use-form-action";
+import type { Resolver } from "react-hook-form";
+import { personNameField, phoneField, NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
 
 function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
   const el = e.currentTarget;
@@ -20,59 +23,62 @@ function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
   if (cleaned !== el.value) el.value = cleaned;
 }
 
+const inquiryClientSchema = z.object({
+  name: personNameField("El nombre"),
+  receivedAt: z.string().min(1, "Fecha requerida"),
+  email: z.string().optional(),
+  phone: phoneField(),
+  notes: z.string().optional(),
+});
+type FormValues = z.infer<typeof inquiryClientSchema>;
+
 interface Props {
   campaignId: string;
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
 }
 
 export function InquiryForm({ campaignId, action }: Props) {
-  const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
+  const today = new Date().toISOString().split("T")[0];
   const [formKey, setFormKey] = useState(0);
 
-  const today = new Date().toISOString().split("T")[0];
-
-  useEffect(() => {
-    if (state?.error && !state?.fieldErrors) toast.error(state.error);
-    if (state?.success) {
-      toast.success(state.success);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+  const form = useForm<FormValues>({
+    resolver: zodResolver(inquiryClientSchema) as Resolver<FormValues>,
+    defaultValues: { name: "", receivedAt: today, email: "", phone: "", notes: "" },
+  });
+  const { register, formState: { errors }, reset } = form;
+  const { formRef, onSubmit: baseSubmit, isPending } = useFormAction(form, async (prev, fd) => {
+    const result = await action(prev, fd);
+    if (result?.success) {
+      reset({ name: "", receivedAt: today, email: "", phone: "", notes: "" });
       setFormKey((k) => k + 1);
     }
-  }, [state]);
+    return result;
+  });
 
   return (
-    <form key={formKey} ref={formRef} action={formAction} onChange={handleChange} className="space-y-3">
+    <form key={formKey} ref={formRef} onSubmit={baseSubmit} className="space-y-3">
       <input type="hidden" name="campaignId" value={campaignId} />
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Nombre" required id="inq-name" error={fieldErrors.name}>
-          <Input id="inq-name" name="name" onInput={sanitizeNameInput} placeholder="Nombre completo" />
+        <Field label="Nombre" required id="inq-name" error={errors.name?.message}>
+          <Input id="inq-name" onInput={sanitizeNameInput} placeholder="Nombre completo" {...register("name")} />
         </Field>
-        <Field label="Fecha" required id="inq-date" error={fieldErrors.receivedAt}>
-          <Input id="inq-date" type="date" name="receivedAt" defaultValue={today} />
+        <Field label="Fecha" required id="inq-date" error={errors.receivedAt?.message}>
+          <Input id="inq-date" type="date" {...register("receivedAt")} />
         </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Email" id="inq-email" error={fieldErrors.email}>
-          <Input id="inq-email" type="text" inputMode="email" name="email" placeholder="opcional" />
+        <Field label="Email" id="inq-email" error={errors.email?.message}>
+          <Input id="inq-email" type="text" inputMode="email" placeholder="opcional" {...register("email")} />
         </Field>
-        <Field label="Teléfono" id="inq-phone" error={fieldErrors.phone}>
-          <Input
-            id="inq-phone"
-            name="phone"
-            type="tel"
-            inputMode="numeric"
-            onInput={sanitizePhoneInput}
-            maxLength={11}
-            placeholder="Ej: 3516789012"
-          />
+        <Field label="Teléfono" id="inq-phone" error={errors.phone?.message}>
+          <Input id="inq-phone" type="tel" inputMode="numeric" onInput={sanitizePhoneInput} maxLength={11} placeholder="Ej: 3516789012" {...register("phone")} />
         </Field>
       </div>
 
-      <Field label="Notas" id="inq-notes" error={fieldErrors.notes}>
-        <Input id="inq-notes" name="notes" placeholder="Observaciones..." />
+      <Field label="Notas" id="inq-notes" error={errors.notes?.message}>
+        <Input id="inq-notes" placeholder="Observaciones..." {...register("notes")} />
       </Field>
 
       <Button type="submit" variant="secondary" size="sm" loading={isPending} className="w-full justify-center">

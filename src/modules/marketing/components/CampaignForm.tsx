@@ -1,12 +1,22 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input, Field, Select, Textarea } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
-import { useFieldErrors } from "@/lib/use-field-errors";
+import { useFormAction } from "@/lib/use-form-action";
+
+const campaignClientSchema = z.object({
+  name: z.string().min(2, "Nombre requerido"),
+  channel: z.enum(["social_media", "email", "flyers", "word_of_mouth", "website", "other"], { message: "Seleccioná un canal" }),
+  startDate: z.string().min(1, "Fecha de inicio requerida"),
+  endDate: z.string().optional(),
+  budget: z.string().regex(/^\d+(\.\d{1,2})?$/, "Ingresá un número válido (ej: 5000.00)").optional().or(z.literal("")),
+  description: z.string().optional(),
+});
+type FormValues = z.infer<typeof campaignClientSchema>;
 
 interface Props {
   channels: { value: string; label: string }[];
@@ -14,31 +24,22 @@ interface Props {
 }
 
 export function CampaignForm({ channels, action }: Props) {
-  const router = useRouter();
-  const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
-
   const today = new Date().toISOString().split("T")[0];
-
-  useEffect(() => {
-    if (state?.error && !state?.fieldErrors) toast.error(state.error);
-    if (state?.success) {
-      toast.success(state.success);
-      if (state.redirectTo) {
-        router.push(state.redirectTo);
-        router.refresh();
-      }
-    }
-  }, [state, router]);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(campaignClientSchema),
+    defaultValues: { name: "", channel: undefined, startDate: today, endDate: "", budget: "", description: "" },
+  });
+  const { register, formState: { errors } } = form;
+  const { formRef, onSubmit, isPending } = useFormAction(form, action);
 
   return (
-    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-4">
-      <Field label="Nombre de la campaña" required id="name" error={fieldErrors.name}>
-        <Input id="name" name="name" placeholder="Ej: Campaña primavera 2025" />
+    <form ref={formRef} onSubmit={onSubmit} className="space-y-4">
+      <Field label="Nombre de la campaña" required id="name" error={errors.name?.message}>
+        <Input id="name" placeholder="Ej: Campaña primavera 2025" {...register("name")} />
       </Field>
 
-      <Field label="Canal" required id="channel" error={fieldErrors.channel}>
-        <Select id="channel" name="channel" defaultValue="">
+      <Field label="Canal" required id="channel" error={errors.channel?.message}>
+        <Select id="channel" {...register("channel")} defaultValue="">
           <option value="" disabled>Seleccioná un canal</option>
           {channels.map((c) => (
             <option key={c.value} value={c.value}>{c.label}</option>
@@ -47,20 +48,20 @@ export function CampaignForm({ channels, action }: Props) {
       </Field>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Inicio" required id="startDate" error={fieldErrors.startDate}>
-          <Input id="startDate" type="date" name="startDate" defaultValue={today} />
+        <Field label="Inicio" required id="startDate" error={errors.startDate?.message}>
+          <Input id="startDate" type="date" {...register("startDate")} />
         </Field>
-        <Field label="Fin" id="endDate" error={fieldErrors.endDate}>
-          <Input id="endDate" type="date" name="endDate" />
+        <Field label="Fin" id="endDate" error={errors.endDate?.message}>
+          <Input id="endDate" type="date" {...register("endDate")} />
         </Field>
       </div>
 
-      <Field label="Presupuesto" id="budget" error={fieldErrors.budget}>
-        <Input id="budget" type="text" inputMode="decimal" name="budget" placeholder="0.00" />
+      <Field label="Presupuesto" id="budget" error={errors.budget?.message}>
+        <Input id="budget" type="text" inputMode="decimal" placeholder="0.00" {...register("budget")} />
       </Field>
 
-      <Field label="Descripción" id="description" error={fieldErrors.description}>
-        <Textarea id="description" name="description" rows={3} />
+      <Field label="Descripción" id="description" error={errors.description?.message}>
+        <Textarea id="description" rows={3} {...register("description")} />
       </Field>
 
       <Button type="submit" variant="primary" loading={isPending} className="w-full justify-center">

@@ -1,16 +1,17 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import type { z } from "zod";
 import type { TeacherWithProfile } from "../types";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { createTeacherSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
+import { useFormAction } from "@/lib/use-form-action";
 import { NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
-import { useFieldErrors } from "@/lib/use-field-errors";
 
 function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
   const el = e.currentTarget;
@@ -24,6 +25,11 @@ function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
   if (cleaned !== el.value) el.value = cleaned;
 }
 
+const editClientSchema = createTeacherSchema.omit({ email: true }).partial();
+
+type CreateValues = z.infer<typeof createTeacherSchema>;
+type EditValues = z.infer<typeof editClientSchema>;
+
 interface TeacherFormProps {
   teacher?: TeacherWithProfile;
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
@@ -31,49 +37,53 @@ interface TeacherFormProps {
 }
 
 export function TeacherForm({ teacher, action, submitLabel = "Guardar" }: TeacherFormProps) {
-  const router = useRouter();
-  const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const isEditing = !!teacher;
 
-  useEffect(() => {
-    if (state?.error && !state?.fieldErrors) toast.error(state.error);
-    if (state?.success) {
-      toast.success(state.success);
-      if (state.redirectTo) router.push(state.redirectTo);
-    }
-  }, [state, router]);
+  const form = useForm<CreateValues | EditValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(isEditing ? editClientSchema : createTeacherSchema) as any,
+    defaultValues: {
+      fullName: teacher?.profile.fullName ?? "",
+      email: "",
+      phone: teacher?.profile.phone ?? "",
+      dni: teacher?.dni ?? "",
+      specialization: teacher?.specialization ?? "",
+    },
+  });
+  const { register, formState: { errors } } = form;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { formRef, onSubmit, isPending } = useFormAction(form as any, action);
 
   return (
-    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-6">
+    <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
       {isEditing && <input type="hidden" name="id" value={teacher.id} />}
 
       <Card title="Datos personales" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Nombre completo" required id="fullName" error={fieldErrors.fullName}>
-            <Input id="fullName" name="fullName" type="text" onInput={sanitizeNameInput} defaultValue={teacher?.profile.fullName} placeholder="Juan Pérez" />
+          <Field label="Nombre completo" required id="fullName" error={(errors as Record<string, { message?: string }>).fullName?.message}>
+            <Input id="fullName" type="text" onInput={sanitizeNameInput} placeholder="Juan Pérez" {...register("fullName")} />
           </Field>
 
-          <Field label="DNI" required id="dni" error={fieldErrors.dni}>
-            <Input id="dni" name="dni" type="text" inputMode="numeric" maxLength={8} defaultValue={teacher?.dni} placeholder="12345678" />
+          <Field label="DNI" required id="dni" error={(errors as Record<string, { message?: string }>).dni?.message}>
+            <Input id="dni" type="text" inputMode="numeric" maxLength={8} placeholder="12345678" {...register("dni")} />
           </Field>
 
           {!isEditing && (
-            <Field label="Email" required id="email" error={fieldErrors.email}>
-              <Input id="email" name="email" type="text" inputMode="email" autoComplete="email" placeholder="docente@email.com" />
+            <Field label="Email" required id="email" error={(errors as Record<string, { message?: string }>).email?.message}>
+              <Input id="email" type="text" inputMode="email" autoComplete="email" placeholder="docente@email.com" {...register("email")} />
             </Field>
           )}
 
-          <Field label="Teléfono" id="phone" error={fieldErrors.phone}>
-            <Input id="phone" name="phone" type="tel" inputMode="numeric" onInput={sanitizePhoneInput} maxLength={11} defaultValue={teacher?.profile.phone ?? ""} placeholder="Ej: 3516789012" />
+          <Field label="Teléfono" id="phone" error={(errors as Record<string, { message?: string }>).phone?.message}>
+            <Input id="phone" type="tel" inputMode="numeric" onInput={sanitizePhoneInput} maxLength={11} placeholder="Ej: 3516789012" {...register("phone")} />
           </Field>
         </div>
       </Card>
 
       <Card title="Datos profesionales" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Especialización" id="specialization" error={fieldErrors.specialization}>
-            <Input id="specialization" name="specialization" type="text" defaultValue={teacher?.specialization ?? ""} placeholder="ej. Cambridge CELTA, Phonics..." />
+          <Field label="Especialización" id="specialization" error={(errors as Record<string, { message?: string }>).specialization?.message}>
+            <Input id="specialization" type="text" placeholder="ej. Cambridge CELTA, Phonics..." {...register("specialization")} />
           </Field>
         </div>
       </Card>

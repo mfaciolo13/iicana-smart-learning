@@ -1,13 +1,18 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import type { z } from "zod";
 import { StarRating } from "./StarRating";
 import { Button } from "@/components/ui/Button";
 import { Field, Select, Input, Textarea } from "@/components/ui/Input";
+import { observationSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
-import { useFieldErrors } from "@/lib/use-field-errors";
+import { useFormAction } from "@/lib/use-form-action";
+import type { Resolver } from "react-hook-form";
+
+type FormValues = z.infer<typeof observationSchema>;
 
 interface Props {
   teachers: { id: string; fullName: string }[];
@@ -16,31 +21,29 @@ interface Props {
 }
 
 export function ObservationForm({ teachers, courses, action }: Props) {
-  const router = useRouter();
-  const [state, formAction, isPending] = useActionState(action, undefined);
-  const { fieldErrors, handleChange, formRef } = useFieldErrors(state);
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
-
-  useEffect(() => {
-    if (state?.error && !state?.fieldErrors) toast.error(state.error);
-    if (state?.success) {
-      toast.success(state.success);
-      if (state.redirectTo) router.push(state.redirectTo);
-    }
-  }, [state, router]);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(observationSchema) as Resolver<FormValues>,
+    defaultValues: { teacherId: "", courseId: "", observedAt: "", overallRating: undefined, observations: "", strengths: "", improvements: "" },
+  });
+  const { register, formState: { errors }, setValue } = form;
+  const { formRef, onSubmit, isPending } = useFormAction(form, action);
 
   const filteredCourses = selectedTeacherId
     ? courses.filter((c) => c.teacherId === selectedTeacherId)
     : courses;
 
   return (
-    <form ref={formRef} action={formAction} onChange={handleChange} className="space-y-5">
-      <Field label="Docente" required id="teacherId" error={fieldErrors.teacherId}>
+    <form ref={formRef} onSubmit={onSubmit} className="space-y-5">
+      <Field label="Docente" required id="teacherId" error={errors.teacherId?.message}>
         <Select
           id="teacherId"
-          name="teacherId"
-          value={selectedTeacherId}
-          onChange={(e) => setSelectedTeacherId(e.target.value)}
+          {...register("teacherId")}
+          onChange={(e) => {
+            setValue("teacherId", e.target.value, { shouldValidate: true });
+            setSelectedTeacherId(e.target.value);
+            setValue("courseId", "", { shouldValidate: false });
+          }}
           defaultValue=""
         >
           <option value="" disabled>Seleccioná un docente</option>
@@ -50,8 +53,8 @@ export function ObservationForm({ teachers, courses, action }: Props) {
         </Select>
       </Field>
 
-      <Field label="Curso" required id="courseId" error={fieldErrors.courseId}>
-        <Select id="courseId" name="courseId" defaultValue="">
+      <Field label="Curso" required id="courseId" error={errors.courseId?.message}>
+        <Select id="courseId" {...register("courseId")} defaultValue="">
           <option value="" disabled>Seleccioná un curso</option>
           {filteredCourses.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
@@ -59,40 +62,31 @@ export function ObservationForm({ teachers, courses, action }: Props) {
         </Select>
       </Field>
 
-      <Field label="Fecha de observación" required id="observedAt" error={fieldErrors.observedAt}>
-        <Input id="observedAt" type="date" name="observedAt" />
+      <Field label="Fecha de observación" required id="observedAt" error={errors.observedAt?.message}>
+        <Input id="observedAt" type="date" {...register("observedAt")} />
       </Field>
 
-      <StarRating name="overallRating" label="Calificación general" />
-      {fieldErrors.overallRating && (
-        <p className="text-xs text-red-500 -mt-3">{fieldErrors.overallRating}</p>
-      )}
-
-      <Field label="Observaciones generales" required id="observations" error={fieldErrors.observations}>
-        <Textarea
-          id="observations"
-          name="observations"
-          rows={4}
-          placeholder="Describí las observaciones de la clase..."
+      <div>
+        <StarRating
+          name="overallRating"
+          label="Calificación general"
+          onChange={(v) => setValue("overallRating", v, { shouldValidate: true })}
         />
+        {errors.overallRating && (
+          <p className="text-xs text-red-500 mt-1">{errors.overallRating.message}</p>
+        )}
+      </div>
+
+      <Field label="Observaciones generales" required id="observations" error={errors.observations?.message}>
+        <Textarea id="observations" rows={4} placeholder="Describí las observaciones de la clase..." {...register("observations")} />
       </Field>
 
-      <Field label="Fortalezas observadas" id="strengths" error={fieldErrors.strengths}>
-        <Textarea
-          id="strengths"
-          name="strengths"
-          rows={2}
-          placeholder="Aspectos destacados del docente..."
-        />
+      <Field label="Fortalezas observadas" id="strengths" error={errors.strengths?.message}>
+        <Textarea id="strengths" rows={2} placeholder="Aspectos destacados del docente..." {...register("strengths")} />
       </Field>
 
-      <Field label="Áreas de mejora" id="improvements" error={fieldErrors.improvements}>
-        <Textarea
-          id="improvements"
-          name="improvements"
-          rows={2}
-          placeholder="Sugerencias para mejorar..."
-        />
+      <Field label="Áreas de mejora" id="improvements" error={errors.improvements?.message}>
+        <Textarea id="improvements" rows={2} placeholder="Sugerencias para mejorar..." {...register("improvements")} />
       </Field>
 
       <Button type="submit" variant="primary" loading={isPending} className="w-full justify-center">
