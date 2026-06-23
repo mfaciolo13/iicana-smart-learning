@@ -1,8 +1,14 @@
 import { test as setup, expect } from "@playwright/test";
 import path from "path";
+import fs from "fs";
 
-const ADMIN_FILE = path.join(__dirname, ".auth/admin.json");
-const ALUMNO_FILE = path.join(__dirname, ".auth/alumno.json");
+const AUTH_DIR = path.join(__dirname, ".auth");
+const ADMIN_FILE = path.join(AUTH_DIR, "admin.json");
+const ALUMNO_FILE = path.join(AUTH_DIR, "alumno.json");
+
+// Garantizar que el directorio .auth/ existe antes de que Playwright intente escribir en él.
+// En CI el workspace es limpio y el directorio no está commiteado (está en .gitignore).
+fs.mkdirSync(AUTH_DIR, { recursive: true });
 
 setup("autenticar como admin", async ({ page }) => {
   const email = process.env.E2E_ADMIN_EMAIL;
