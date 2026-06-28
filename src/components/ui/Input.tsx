@@ -17,11 +17,9 @@ interface FieldProps {
 }
 
 export function Field({ label, required, helper, error, className, children, id }: FieldProps) {
-  const childrenWithError = error
-    ? Children.map(children, (child) =>
-        isValidElement(child) ? cloneElement(child as React.ReactElement<{ error?: boolean }>, { error: true }) : child
-      )
-    : children;
+  const childrenWithProps = Children.map(children, (child) =>
+    isValidElement(child) ? cloneElement(child as React.ReactElement<{ error?: boolean }>, { error: !!error }) : child
+  );
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
@@ -34,7 +32,7 @@ export function Field({ label, required, helper, error, className, children, id 
           {required && <span className="text-danger-500 ml-0.5">*</span>}
         </label>
       )}
-      {childrenWithError}
+      {childrenWithProps}
       {error ? (
         <p className="text-xs text-danger-500" role="alert" aria-live="polite">
           {error}
