@@ -31,6 +31,20 @@ setup("autenticar como admin", async ({ page }) => {
   await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
   await page.waitForLoadState("networkidle");
 
+  // Verificar que la sesión es válida navegando a una ruta protegida
+  await page.goto("/admin/courses");
+  await page.waitForLoadState("domcontentloaded");
+
+  // Si redirigió a login, la autenticación falló
+  const currentUrl = page.url();
+  if (/\/login/.test(currentUrl)) {
+    throw new Error(
+      `Setup de admin falló: redirigió a /login en lugar de /admin/courses. ` +
+        `Verificar credenciales E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD.`
+    );
+  }
+
+  await page.waitForLoadState("networkidle");
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -61,5 +75,19 @@ setup("autenticar como alumno", async ({ page }) => {
   await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
   await page.waitForLoadState("networkidle");
 
+  // Verificar que la sesión es válida navegando a una ruta protegida
+  await page.goto("/alumno/grades");
+  await page.waitForLoadState("domcontentloaded");
+
+  // Si redirigió a login, la autenticación falló
+  const currentUrl = page.url();
+  if (/\/login/.test(currentUrl)) {
+    throw new Error(
+      `Setup de alumno falló: redirigió a /login en lugar de /alumno/grades. ` +
+        `Verificar credenciales E2E_ALUMNO_EMAIL / E2E_ALUMNO_PASSWORD.`
+    );
+  }
+
+  await page.waitForLoadState("networkidle");
   await page.context().storageState({ path: ALUMNO_FILE });
 });
