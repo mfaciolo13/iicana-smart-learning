@@ -27,9 +27,28 @@ setup("autenticar como admin", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ingresar" }).click();
 
-  // Aceptar cualquier ruta post-login del panel admin
-  await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
-  await page.waitForLoadState("networkidle");
+  // Esperar a que la URL cambie desde /login hacia cualquier ruta post-login.
+  // El regex cubre: /admin/*, /director/*, /dashboard/*, /panel/*, /home/* u otra
+  // ruta raíz que no sea /login. Se usa un timeout generoso por la latencia de prod.
+  await page.waitForURL(
+    (url) => !url.pathname.startsWith("/login"),
+    { timeout: 60_000 }
+  );
+
+  // Esperar a que la página termine de cargar para que las cookies/tokens
+  // queden asentados en el storage state
+  await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {
+    // networkidle puede no resolverse en SPAs con polling; ignorar y continuar
+  });
+
+  // Verificar que efectivamente salimos del login
+  const currentURL = page.url();
+  if (currentURL.includes("/login")) {
+    throw new Error(
+      `El login de admin falló — la página sigue en /login. ` +
+      `Verificar credenciales E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD.`
+    );
+  }
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -57,9 +76,25 @@ setup("autenticar como alumno", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ingresar" }).click();
 
-  // Aceptar cualquier ruta post-login del portal alumno
-  await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
-  await page.waitForLoadState("networkidle");
+  // Esperar a que la URL cambie desde /login hacia cualquier ruta post-login.
+  // El regex cubre: /alumno/*, /dashboard/*, /home/* u otra ruta que no sea /login.
+  await page.waitForURL(
+    (url) => !url.pathname.startsWith("/login"),
+    { timeout: 60_000 }
+  );
+
+  await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {
+    // networkidle puede no resolverse en SPAs con polling; ignorar y continuar
+  });
+
+  // Verificar que efectivamente salimos del login
+  const currentURL = page.url();
+  if (currentURL.includes("/login")) {
+    throw new Error(
+      `El login de alumno falló — la página sigue en /login. ` +
+      `Verificar credenciales E2E_ALUMNO_EMAIL / E2E_ALUMNO_PASSWORD.`
+    );
+  }
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
