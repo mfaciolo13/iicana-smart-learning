@@ -31,6 +31,16 @@ setup("autenticar como admin", async ({ page }) => {
   await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
   await page.waitForLoadState("networkidle");
 
+  // Verificar que realmente estamos autenticados: debe haber algún elemento
+  // de la UI admin (nav, header, o cualquier contenido protegido).
+  // Esto asegura que las cookies/tokens están activos antes de serializar.
+  await expect(page.locator("body")).not.toContainText("Ingresar", { timeout: 10_000 });
+
+  // Navegar a una ruta admin conocida y confirmar que no redirige a login
+  await page.goto("/admin/students");
+  await page.waitForLoadState("networkidle");
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 });
+
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -60,6 +70,14 @@ setup("autenticar como alumno", async ({ page }) => {
   // Aceptar cualquier ruta post-login del portal alumno
   await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
   await page.waitForLoadState("networkidle");
+
+  // Verificar que realmente estamos autenticados antes de serializar el estado
+  await expect(page.locator("body")).not.toContainText("Ingresar", { timeout: 10_000 });
+
+  // Navegar a una ruta alumno conocida y confirmar que no redirige a login
+  await page.goto("/alumno/grades");
+  await page.waitForLoadState("networkidle");
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 });
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
