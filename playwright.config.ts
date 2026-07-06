@@ -31,6 +31,13 @@ export default defineConfig({
     {
       name: "setup",
       testMatch: /auth\.setup\.ts/,
+      // El setup necesita más tiempo: hace login + navegación de validación en producción
+      use: {
+        ...devices["Desktop Chrome"],
+        actionTimeout: 60_000,
+        navigationTimeout: 60_000,
+      },
+      timeout: 120_000,
     },
     {
       name: "admin",
