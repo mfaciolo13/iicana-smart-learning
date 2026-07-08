@@ -31,6 +31,14 @@ setup("autenticar como admin", async ({ page }) => {
   await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
   await page.waitForLoadState("networkidle");
 
+  // Verificar que realmente estamos autenticados (no redirigimos de vuelta a /login)
+  const currentURL = page.url();
+  if (currentURL.includes("/login")) {
+    throw new Error(
+      `Setup admin falló: redirigió a login en lugar del panel. URL actual: ${currentURL}`
+    );
+  }
+
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -60,6 +68,14 @@ setup("autenticar como alumno", async ({ page }) => {
   // Aceptar cualquier ruta post-login del portal alumno
   await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
   await page.waitForLoadState("networkidle");
+
+  // Verificar que realmente estamos autenticados (no redirigimos de vuelta a /login)
+  const currentURL = page.url();
+  if (currentURL.includes("/login")) {
+    throw new Error(
+      `Setup alumno falló: redirigió a login en lugar del portal. URL actual: ${currentURL}`
+    );
+  }
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
