@@ -50,12 +50,18 @@ test.describe("Gestión de Cursos", () => {
   test("listado de cursos muestra los cursos existentes", async ({ page }) => {
     await page.goto("/admin/courses");
     await page.waitForURL(/\/admin\/courses/, { timeout: 30_000 });
+    // Guardia: si la sesión expiró y fuimos redirigidos a login, fallar con mensaje claro
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 5_000 });
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("heading", { name: "Cursos" })).toBeVisible({ timeout: 20_000 });
+
+    // El heading puede ser "Cursos" o un título compuesto; buscar el primero que matchee
+    await expect(
+      page.getByRole("heading", { name: /cursos/i }).first()
+    ).toBeVisible({ timeout: 20_000 });
 
     // Esperar a que la tabla o el mensaje vacío sean visibles
     const table = page.locator("table");
-    const empty = page.getByText("No hay cursos");
+    const empty = page.getByText(/no hay cursos/i);
     await expect(table.or(empty)).toBeVisible({ timeout: 20_000 });
   });
 });
