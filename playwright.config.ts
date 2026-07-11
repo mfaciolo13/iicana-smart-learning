@@ -31,6 +31,9 @@ export default defineConfig({
     {
       name: "setup",
       testMatch: /auth\.setup\.ts/,
+      // Usar el mismo browser/device que los proyectos dependientes para que
+      // las cookies del storageState sean compatibles
+      use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "admin",
