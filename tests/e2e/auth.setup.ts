@@ -27,9 +27,18 @@ setup("autenticar como admin", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ingresar" }).click();
 
-  // Aceptar cualquier ruta post-login del panel admin
-  await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
+  // Esperar a que la URL cambie a cualquier ruta del panel (excluye /login)
+  await page.waitForURL(/\/(director|admin|dashboard|panel)/, { timeout: 60_000 });
+
+  // Esperar a que la página esté completamente cargada y el DOM estabilizado
+  await page.waitForLoadState("domcontentloaded");
   await page.waitForLoadState("networkidle");
+
+  // Confirmar que NO estamos en /login (sesión establecida realmente)
+  expect(page.url()).not.toMatch(/\/login/);
+
+  // Dar tiempo extra para que las cookies/tokens de sesión se persistan en el storage
+  await page.waitForTimeout(1_000);
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -57,9 +66,18 @@ setup("autenticar como alumno", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ingresar" }).click();
 
-  // Aceptar cualquier ruta post-login del portal alumno
-  await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
+  // Esperar a que la URL cambie a cualquier ruta del portal alumno (excluye /login)
+  await page.waitForURL(/\/(alumno|dashboard|panel)/, { timeout: 60_000 });
+
+  // Esperar a que la página esté completamente cargada y el DOM estabilizado
+  await page.waitForLoadState("domcontentloaded");
   await page.waitForLoadState("networkidle");
+
+  // Confirmar que NO estamos en /login (sesión establecida realmente)
+  expect(page.url()).not.toMatch(/\/login/);
+
+  // Dar tiempo extra para que las cookies/tokens de sesión se persistan en el storage
+  await page.waitForTimeout(1_000);
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
