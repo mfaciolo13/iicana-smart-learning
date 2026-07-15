@@ -27,9 +27,20 @@ setup("autenticar como admin", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ingresar" }).click();
 
-  // Aceptar cualquier ruta post-login del panel admin
-  await page.waitForURL(/\/(director|admin|dashboard)/, { timeout: 60_000 });
+  // Esperar a que la URL cambie a cualquier cosa que NO sea /login
+  // para cubrir cualquier ruta post-login posible (/director, /admin, /dashboard, /, etc.)
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"), {
+    timeout: 60_000,
+  });
   await page.waitForLoadState("networkidle");
+
+  // Verificar que realmente obtuvimos sesión (no volvimos a /login por error de credenciales)
+  const currentURL = page.url();
+  if (currentURL.includes("/login")) {
+    throw new Error(
+      `El login admin falló — sigue en /login. Verificá E2E_ADMIN_EMAIL y E2E_ADMIN_PASSWORD. URL actual: ${currentURL}`
+    );
+  }
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -57,9 +68,19 @@ setup("autenticar como alumno", async ({ page }) => {
 
   await page.getByRole("button", { name: "Ingresar" }).click();
 
-  // Aceptar cualquier ruta post-login del portal alumno
-  await page.waitForURL(/\/(alumno|dashboard)/, { timeout: 60_000 });
+  // Esperar a que la URL cambie a cualquier cosa que NO sea /login
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"), {
+    timeout: 60_000,
+  });
   await page.waitForLoadState("networkidle");
+
+  // Verificar que realmente obtuvimos sesión
+  const currentURL = page.url();
+  if (currentURL.includes("/login")) {
+    throw new Error(
+      `El login alumno falló — sigue en /login. Verificá E2E_ALUMNO_EMAIL y E2E_ALUMNO_PASSWORD. URL actual: ${currentURL}`
+    );
+  }
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
