@@ -9,7 +9,7 @@ test.describe("Gestión de Cursos", () => {
     test.skip(!!process.env.CI, "Escribe datos en producción — solo correr localmente");
     const name = `Inglés Test ${slug()}`;
 
-    await page.goto("/admin/courses/new");
+    await page.goto("/admin/courses/new", { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle");
 
     await page.getByLabel("Nombre del curso").fill(name);
@@ -48,14 +48,14 @@ test.describe("Gestión de Cursos", () => {
   });
 
   test("listado de cursos muestra los cursos existentes", async ({ page }) => {
-    await page.goto("/admin/courses");
+    await page.goto("/admin/courses", { waitUntil: "domcontentloaded" });
     await page.waitForURL(/\/admin\/courses/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("heading", { name: "Cursos" })).toBeVisible({ timeout: 20_000 });
 
     // Esperar a que la tabla o el mensaje vacío sean visibles
+    const heading = page.getByRole("heading", { name: "Cursos" });
     const table = page.locator("table");
     const empty = page.getByText("No hay cursos");
+    await expect(heading).toBeVisible({ timeout: 20_000 });
     await expect(table.or(empty)).toBeVisible({ timeout: 20_000 });
   });
 });
