@@ -1,16 +1,26 @@
 import { test, expect } from "@playwright/test";
 
+/** Verifica que no hubo redirect a /login (sesión expirada / sin auth) */
+async function assertNotRedirectedToLogin(page: import("@playwright/test").Page) {
+  const url = page.url();
+  expect(url, `Redirigido a /login — la sesión admin no está disponible (URL: ${url})`).not.toMatch(
+    /\/login/
+  );
+}
+
 test.describe("Pagos", () => {
   test("listado de pagos carga correctamente", async ({ page }) => {
     await page.goto("/admin/payments");
-    await page.waitForURL(/\/admin\/payments/, { timeout: 30_000 });
+    await page.waitForURL(/\/admin\/payments|\/login/, { timeout: 30_000 });
+    await assertNotRedirectedToLogin(page);
     await page.waitForLoadState("networkidle");
     await expect(page.getByRole("heading", { name: "Pagos" })).toBeVisible({ timeout: 20_000 });
   });
 
   test("formulario de nuevo pago tiene fecha de vencimiento pre-calculada", async ({ page }) => {
     await page.goto("/admin/payments/new");
-    await page.waitForURL(/\/admin\/payments\/new/, { timeout: 30_000 });
+    await page.waitForURL(/\/admin\/payments\/new|\/login/, { timeout: 30_000 });
+    await assertNotRedirectedToLogin(page);
     await page.waitForLoadState("networkidle");
 
     const dueDateInput = page.getByLabel("Fecha de vencimiento");
@@ -23,7 +33,8 @@ test.describe("Pagos", () => {
 
   test("formulario de pago muestra selector de alumno y campo de monto", async ({ page }) => {
     await page.goto("/admin/payments/new");
-    await page.waitForURL(/\/admin\/payments\/new/, { timeout: 30_000 });
+    await page.waitForURL(/\/admin\/payments\/new|\/login/, { timeout: 30_000 });
+    await assertNotRedirectedToLogin(page);
     await page.waitForLoadState("networkidle");
     await expect(page.getByLabel("Alumno")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByLabel(/monto/i)).toBeVisible({ timeout: 20_000 });
@@ -32,7 +43,8 @@ test.describe("Pagos", () => {
 
   test("campo de notas del pago tiene maxLength de 500", async ({ page }) => {
     await page.goto("/admin/payments/new");
-    await page.waitForURL(/\/admin\/payments\/new/, { timeout: 30_000 });
+    await page.waitForURL(/\/admin\/payments\/new|\/login/, { timeout: 30_000 });
+    await assertNotRedirectedToLogin(page);
     await page.waitForLoadState("networkidle");
     const notesField = page.getByLabel("Notas");
     await expect(notesField).toBeVisible({ timeout: 20_000 });

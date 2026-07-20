@@ -2,10 +2,19 @@ import { test, expect } from "@playwright/test";
 
 const slug = () => Date.now().toString().slice(-6);
 
+/** Verifica que no hubo redirect a /login (sesión expirada / sin auth) */
+async function assertNotRedirectedToLogin(page: import("@playwright/test").Page) {
+  const url = page.url();
+  expect(url, `Redirigido a /login — la sesión admin no está disponible (URL: ${url})`).not.toMatch(
+    /\/login/
+  );
+}
+
 test.describe("Marketing — Campañas", () => {
   test("listado de campañas carga correctamente", async ({ page }) => {
     await page.goto("/admin/marketing");
-    await page.waitForURL(/\/admin\/marketing/, { timeout: 30_000 });
+    await page.waitForURL(/\/admin\/marketing|\/login/, { timeout: 30_000 });
+    await assertNotRedirectedToLogin(page);
     await page.waitForLoadState("networkidle");
     await expect(page.getByRole("heading", { name: "Marketing" })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/campañas/i).first()).toBeVisible({ timeout: 20_000 });
@@ -31,7 +40,8 @@ test.describe("Marketing — Campañas", () => {
 
   test("formulario de campaña tiene fechas con type=date", async ({ page }) => {
     await page.goto("/admin/marketing/new");
-    await page.waitForURL(/\/admin\/marketing\/new/, { timeout: 30_000 });
+    await page.waitForURL(/\/admin\/marketing\/new|\/login/, { timeout: 30_000 });
+    await assertNotRedirectedToLogin(page);
     await page.waitForLoadState("networkidle");
     const startDate = page.getByLabel("Inicio");
     const endDate = page.getByLabel("Fin");
@@ -43,7 +53,8 @@ test.describe("Marketing — Campañas", () => {
 
   test("detalle de campaña muestra formulario de consulta", async ({ page }) => {
     await page.goto("/admin/marketing");
-    await page.waitForURL(/\/admin\/marketing/, { timeout: 30_000 });
+    await page.waitForURL(/\/admin\/marketing|\/login/, { timeout: 30_000 });
+    await assertNotRedirectedToLogin(page);
     await page.waitForLoadState("networkidle");
 
     const verLink = page.getByText("Ver →").first();

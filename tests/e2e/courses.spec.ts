@@ -2,6 +2,14 @@ import { test, expect } from "@playwright/test";
 
 const slug = () => Date.now().toString().slice(-6);
 
+/** Verifica que no hubo redirect a /login (sesión expirada / sin auth) */
+async function assertNotRedirectedToLogin(page: import("@playwright/test").Page) {
+  const url = page.url();
+  expect(url, `Redirigido a /login — la sesión admin no está disponible (URL: ${url})`).not.toMatch(
+    /\/login/
+  );
+}
+
 test.describe("Gestión de Cursos", () => {
   test("crear curso con SchedulePicker muestra toast de éxito y aparece en listado", async ({
     page,
@@ -49,7 +57,9 @@ test.describe("Gestión de Cursos", () => {
 
   test("listado de cursos muestra los cursos existentes", async ({ page }) => {
     await page.goto("/admin/courses");
-    await page.waitForURL(/\/admin\/courses/, { timeout: 30_000 });
+    // Esperar a que la navegación se resuelva (puede redirigir a /login si no hay sesión)
+    await page.waitForURL(/\/admin\/courses|\/login/, { timeout: 30_000 });
+    await assertNotRedirectedToLogin(page);
     await page.waitForLoadState("networkidle");
     await expect(page.getByRole("heading", { name: "Cursos" })).toBeVisible({ timeout: 20_000 });
 
