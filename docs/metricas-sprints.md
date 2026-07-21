@@ -13,8 +13,9 @@ Datos extraídos del board de Jira el **21/07/2026**.
 >   fuente autoritativa de esa métrica es el **Sprint Report nativo de Jira**
 >   (Board → Reports → Sprint Report), que sí guarda la foto al cierre. Para la
 >   presentación, conviene sacar captura de ese report por cada sprint.
-> - **No hay story points cargados** en casi ningún issue (§4), así que no hay velocity
->   chart ni burndown por puntos. Las métricas de abajo son por **cantidad de issues**.
+> - **Story points cargados el 21/07/2026** en los ~150 issues de los sprints 1–8 (§4).
+>   Con eso el Velocity Chart y el Burndown nativos de Jira ya se pueden ver. Las tablas
+>   de abajo mantienen el conteo por issues, pero ahora hay puntos para el gráfico.
 
 ---
 
@@ -76,26 +77,43 @@ retrospectiva, no algo que ocultar.
 
 ---
 
-## 4. ⚠️ Deuda de gestión: story points sin cargar
+## 4. Story points — cargados retroactivamente
 
-De todos los issues del proyecto, **solo `SCRUM-231` y `SCRUM-232` tienen story points**
-(3 cada uno). El resto está en `null`.
+El 21/07/2026 se cargaron story points en **todos** los issues de los sprints 1–8
+(~150 issues), con una escala simple y uniforme para que la velocidad sea comparable
+entre sprints:
 
-**Consecuencia:** Jira no puede dibujar el **Velocity Chart** ni el **Burndown por
-puntos** — esas dos gráficas, que son las que un docente espera ver en la columna de
-gestión, van a salir vacías o planas.
+| Tipo de issue | Puntos |
+|---|---|
+| Historia (Story) | 3 |
+| Tarea (Task) | 2 |
+| Bug | 2 |
 
-**Dos caminos:**
+Verificado: **0 issues sin puntos** en los 8 sprints tras la carga.
 
-1. **Dejarlo así** y presentar las métricas por cantidad de issues (esta tabla). Honesto,
-   menos vistoso.
-2. **Cargar story points retroactivos** a los issues de los sprints cerrados con una escala
-   simple (p. ej. tarea chica = 2, historia mediana = 3, grande/épica = 5). Con eso, el
-   Velocity Chart y el Burndown nativos de Jira se llenan solos. Es la métrica que la hoja
-   de ruta insinúa cuando pide "muestra métricas".
+**Velocidad por sprint** (suma de puntos, comparable entre sprints):
 
-> Si se elige el camino 2, hay que hacerlo sobre **todos** los sprints con el mismo
-> criterio, para que la velocidad sea comparable entre sprints.
+| Sprint | Puntos | Issues |
+|---|---:|---:|
+| 1 | 30 | 13 |
+| 2 | 106 | 39 |
+| 3 | 80 | 30 |
+| 4 | 35 | 15 |
+| 5 | 25 | 10 |
+| 6 | 77 | 33 |
+| 7 | 69 | 31 |
+| 8 | 45 | 17 |
+
+> **Salvedad honesta sobre esta escala.** Los puntos se asignaron por **tipo de issue**,
+> no por complejidad real estimada en su momento (el equipo no estimó durante los sprints).
+> Es una reconstrucción razonable y consistente, pero la velocidad resultante es casi
+> proporcional al conteo de issues. Si en el coloquio preguntan por el criterio de
+> estimación, hay que decir esto: se estimó retroactivamente con una escala por tipo,
+> porque no se había hecho story-point planning en su momento. Es la deuda de gestión que
+> el equipo reconoce en la [retrospectiva del Sprint 8](retrospectiva-sprint-8.md).
+
+Los números de la tabla son un cálculo derivado de la escala; el **Velocity Report nativo
+de Jira** es ahora la fuente autoritativa y coincidirá con estos valores.
 
 ---
 
