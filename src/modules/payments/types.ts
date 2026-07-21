@@ -1,4 +1,4 @@
-export type PaymentStatus = "pending" | "paid" | "overdue" | "suspended";
+export type PaymentStatus = "pending" | "paid" | "overdue" | "suspended" | "cancelled";
 export type PaymentMethod = "cash" | "transfer" | "card";
 
 export interface PaymentWithStudent {
@@ -12,6 +12,8 @@ export interface PaymentWithStudent {
   receiptNumber: string | null;
   notes: string | null;
   createdAt: Date;
+  cancelledAt: Date | null;
+  cancellationReason: string | null;
   studentName: string;
   studentDni: string;
 }

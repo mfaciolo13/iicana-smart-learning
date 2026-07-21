@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getPaymentById } from "@/modules/payments/services/payments.service";
 import { markAsPaidAction, updatePaymentStatusAction } from "@/modules/payments/actions";
 import { MarkAsPaidForm, PaymentStatusForm } from "@/modules/payments/components/MarkAsPaidForm";
+import { PaymentEditForm, PaymentCancelForm } from "@/modules/payments/components/PaymentEditForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 
@@ -12,6 +13,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutr
   paid: { label: "Pagado", variant: "success" },
   overdue: { label: "Vencido", variant: "danger" },
   suspended: { label: "Suspendido", variant: "neutral" },
+  cancelled: { label: "Anulado", variant: "neutral" },
 };
 
 const METHOD_LABELS: Record<string, string> = {
@@ -38,6 +40,7 @@ export default async function PaymentDetailPage({
   const statusKey = isOverdue && payment.status !== "paid" ? "overdue" : payment.status;
   const statusCfg = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pending;
   const isPendingOrOverdue = payment.status === "pending" || payment.status === "overdue";
+  const isCancelled = payment.status === "cancelled";
 
   return (
     <div>
@@ -106,11 +109,27 @@ export default async function PaymentDetailPage({
                 <dt className="text-slate-400 font-medium mb-0.5">Creado</dt>
                 <dd className="text-slate-500">{new Date(payment.createdAt).toLocaleDateString("es-AR")}</dd>
               </div>
+              {isCancelled && (
+                <div className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <dt className="text-slate-400 font-medium mb-0.5">
+                    Anulado{payment.cancelledAt && ` el ${new Date(payment.cancelledAt).toLocaleDateString("es-AR")}`}
+                  </dt>
+                  <dd className="text-slate-700">{payment.cancellationReason ?? "Sin motivo registrado"}</dd>
+                </div>
+              )}
             </dl>
           </Card>
 
           {isPendingOrOverdue && (
-            <MarkAsPaidForm paymentId={payment.id} action={markAsPaidAction} />
+            <>
+              <MarkAsPaidForm paymentId={payment.id} action={markAsPaidAction} />
+              <PaymentEditForm
+                paymentId={payment.id}
+                amount={payment.amount}
+                dueDate={payment.dueDate}
+                notes={payment.notes}
+              />
+            </>
           )}
         </div>
 
@@ -130,6 +149,8 @@ export default async function PaymentDetailPage({
               action={updatePaymentStatusAction}
             />
           )}
+
+          {!isCancelled && <PaymentCancelForm paymentId={payment.id} />}
         </div>
       </div>
     </div>

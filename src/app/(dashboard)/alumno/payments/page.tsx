@@ -7,6 +7,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutr
   pending: { label: "Pendiente", variant: "warning" },
   overdue: { label: "Vencido", variant: "danger" },
   suspended: { label: "Suspendido", variant: "neutral" },
+  cancelled: { label: "Anulado", variant: "neutral" },
 };
 
 export default async function AlumnoPaymentsPage() {

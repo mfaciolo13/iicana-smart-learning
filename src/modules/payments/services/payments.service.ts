@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { payments, students, profiles } from "@/lib/drizzle/schema";
-import { eq, desc, and, lt, sql, inArray, isNull } from "drizzle-orm";
+import { eq, ne, desc, and, lt, sql, inArray, isNull } from "drizzle-orm";
 import type { CreatePaymentInput, MarkAsPaidInput } from "../schemas";
 import type { PaymentListItem, PaymentWithStudent } from "../types";
 
@@ -80,6 +80,8 @@ export async function getPaymentById(id: string): Promise<PaymentWithStudent | n
       receiptNumber: payments.receiptNumber,
       notes: payments.notes,
       createdAt: payments.createdAt,
+      cancelledAt: payments.cancelledAt,
+      cancellationReason: payments.cancellationReason,
       studentName: profiles.fullName,
       studentDni: students.dni,
     })
@@ -118,6 +120,47 @@ export async function markAsPaid(input: MarkAsPaidInput) {
     .where(eq(payments.id, input.id))
     .returning();
   return updated;
+}
+
+/**
+ * Edita los datos de un pago. Solo se permite sobre pagos no cobrados: una vez
+ * abonado, el monto y el vencimiento ya se plasmaron en un recibo entregado al
+ * alumno, así que corregirlos silenciosamente falsearía ese comprobante. Para
+ * corregir un pago cobrado hay que anularlo y registrar uno nuevo.
+ */
+export async function updatePayment(
+  id: string,
+  input: { amount: number; dueDate: string; notes?: string | null }
+) {
+  const [updated] = await db
+    .update(payments)
+    .set({
+      amount: String(input.amount),
+      dueDate: input.dueDate,
+      notes: input.notes ?? null,
+    })
+    .where(and(eq(payments.id, id), inArray(payments.status, ["pending", "overdue"])))
+    .returning();
+  return updated ?? null;
+}
+
+/**
+ * Anula un pago. No lo borra: conserva el registro con el motivo, quién lo anuló
+ * y cuándo. Un pago anulado queda fuera de los totales de recaudación y de mora,
+ * y no vuelve a dispararse contra él ninguna automatización de cobranza.
+ */
+export async function cancelPayment(id: string, reason: string, cancelledBy: string) {
+  const [cancelled] = await db
+    .update(payments)
+    .set({
+      status: "cancelled",
+      cancelledAt: new Date(),
+      cancelledBy,
+      cancellationReason: reason,
+    })
+    .where(and(eq(payments.id, id), ne(payments.status, "cancelled")))
+    .returning();
+  return cancelled ?? null;
 }
 
 export async function updatePaymentStatus(id: string, status: "pending" | "overdue" | "suspended") {

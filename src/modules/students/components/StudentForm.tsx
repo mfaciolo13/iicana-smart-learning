@@ -25,6 +25,22 @@ function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
   if (cleaned !== el.value) el.value = cleaned;
 }
 
+function sanitizeScoreInput(e: React.FormEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  const cleaned = el.value.replace(PHONE_DISALLOWED_CHARS, "");
+  if (cleaned !== el.value) el.value = cleaned;
+}
+
+function dateYearsAgo(years: number) {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - years);
+  return d.toISOString().split("T")[0];
+}
+
+// El calendario nativo no debe ofrecer fechas fuera del rango válido (RN: edad mínima 6, máxima 100)
+const MIN_BIRTH_DATE = dateYearsAgo(100);
+const MAX_BIRTH_DATE = dateYearsAgo(6);
+
 const LEVELS = [
   { value: "beginner", label: "Principiante", range: "0–20 pts" },
   { value: "elementary", label: "Elemental", range: "21–40 pts" },
@@ -104,15 +120,15 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
           </Field>
 
           <Field label="Fecha de nacimiento" required={!isEditing} id="birthDate" error={(errors as Record<string, { message?: string }>).birthDate?.message}>
-            <Input id="birthDate" type="date" {...register("birthDate")} />
+            <Input id="birthDate" type="date" min={MIN_BIRTH_DATE} max={MAX_BIRTH_DATE} {...register("birthDate")} />
           </Field>
         </div>
       </Card>
 
       <Card title="Test de nivelación" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Puntaje del test" id="placementTestScore" helper="De 0 a 100. El nivel se asigna automáticamente como referencia.">
-            <Input id="placementTestScore" type="number" placeholder="Ej: 65" {...register("placementTestScore")} />
+          <Field label="Puntaje del test" id="placementTestScore" helper="De 0 a 100. El nivel se asigna automáticamente como referencia." error={(errors as Record<string, { message?: string }>).placementTestScore?.message}>
+            <Input id="placementTestScore" type="text" inputMode="numeric" maxLength={3} onInput={sanitizeScoreInput} placeholder="Ej: 65" {...register("placementTestScore")} />
           </Field>
 
           <Field label="Nivel asignado" id="level">

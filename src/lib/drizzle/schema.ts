@@ -52,6 +52,7 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "paid",
   "overdue",
   "suspended",
+  "cancelled",
 ]);
 
 export const paymentMethodEnum = pgEnum("payment_method", [
@@ -225,18 +226,25 @@ export const enrollments = pgTable("enrollments", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
 });
 
-export const attendance = pgTable("attendance", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  enrollmentId: uuid("enrollment_id")
-    .notNull()
-    .references(() => enrollments.id, { onDelete: "cascade" }),
-  classDate: date("class_date").notNull(),
-  status: attendanceStatusEnum("status").notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const attendance = pgTable(
+  "attendance",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "cascade" }),
+    classDate: date("class_date").notNull(),
+    status: attendanceStatusEnum("status").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    // Trazabilidad de correcciones — null mientras el registro sea el original
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
+    updatedBy: uuid("updated_by").references(() => profiles.id, { onDelete: "set null" }),
+  },
+  (table) => [unique("attendance_enrollment_date_unique").on(table.enrollmentId, table.classDate)]
+);
 
 export const grades = pgTable("grades", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -264,6 +272,10 @@ export const payments = pgTable("payments", {
   receiptNumber: text("receipt_number").unique(),
   notes: text("notes"),
   overdueAlertSentAt: timestamp("overdue_alert_sent_at", { withTimezone: true }),
+  // Anulación — el registro se conserva por trazabilidad contable, nunca se borra
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  cancelledBy: uuid("cancelled_by").references(() => profiles.id, { onDelete: "set null" }),
+  cancellationReason: text("cancellation_reason"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

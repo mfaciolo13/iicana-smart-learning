@@ -29,6 +29,21 @@ export const updatePaymentStatusSchema = z.object({
   status: z.enum(["pending", "paid", "overdue", "suspended"]),
 });
 
+export const updatePaymentSchema = createPaymentSchema
+  .omit({ studentId: true })
+  .extend({ id: z.uuid() });
+
+export const cancelPaymentSchema = z.object({
+  id: z.uuid(),
+  reason: z
+    .string()
+    .trim()
+    .min(10, "Explicá el motivo de la anulación (mínimo 10 caracteres)")
+    .max(500, "El motivo no puede superar los 500 caracteres"),
+});
+
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
 export type MarkAsPaidInput = z.infer<typeof markAsPaidSchema>;
 export type UpdatePaymentStatusInput = z.infer<typeof updatePaymentStatusSchema>;
+export type UpdatePaymentInput = z.infer<typeof updatePaymentSchema>;
+export type CancelPaymentInput = z.infer<typeof cancelPaymentSchema>;

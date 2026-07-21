@@ -11,6 +11,7 @@ const STATUS_TABS = [
   { value: "overdue", label: "Vencidos" },
   { value: "paid", label: "Pagados" },
   { value: "suspended", label: "Suspendidos" },
+  { value: "cancelled", label: "Anulados" },
 ];
 
 export default async function PaymentsPage({
