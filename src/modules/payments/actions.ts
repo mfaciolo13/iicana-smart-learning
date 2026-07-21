@@ -1,11 +1,13 @@
 ﻿"use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/lib/auth/helpers";
-import { createPaymentSchema, markAsPaidSchema, updatePaymentStatusSchema } from "./schemas";
+import { requireRole, getServerProfile } from "@/lib/auth/helpers";
+import { createPaymentSchema, markAsPaidSchema, updatePaymentStatusSchema, updatePaymentSchema, cancelPaymentSchema } from "./schemas";
 import {
   createPayment,
   markAsPaid,
+  updatePayment,
+  cancelPayment,
   updatePaymentStatus,
   markOverduePayments,
   getOverdueAlertTargets,
@@ -81,6 +83,65 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   return { success: "Pago registrado como abonado" };
+}
+
+export async function updatePaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["director", "administrativo"]);
+
+  const raw = {
+    id: formData.get("id") as string,
+    amount: formData.get("amount") as string,
+    dueDate: formData.get("dueDate") as string,
+    notes: (formData.get("notes") as string) || undefined,
+  };
+
+  const parsed = updatePaymentSchema.safeParse(raw);
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return {
+      error: parsed.error.issues[0].message,
+      fieldErrors: Object.fromEntries(
+        Object.entries(flat)
+          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+          .filter(([, v]) => v)
+      ) as Record<string, string>,
+    };
+  }
+
+  const { id, ...data } = parsed.data;
+  const updated = await updatePayment(id, data);
+  if (!updated) {
+    return { error: "Solo se puede editar un pago pendiente o vencido. Anulá el pago y registrá uno nuevo." };
+  }
+
+  revalidatePath("/director/payments");
+  revalidatePath("/administrativo/payments");
+  return { success: "Pago actualizado correctamente" };
+}
+
+export async function cancelPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["director", "administrativo"]);
+
+  const profile = await getServerProfile();
+  if (!profile) return { error: "No autorizado" };
+
+  const parsed = cancelPaymentSchema.safeParse({
+    id: formData.get("id") as string,
+    reason: (formData.get("reason") as string) ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const cancelled = await cancelPayment(parsed.data.id, parsed.data.reason, profile.id);
+  if (!cancelled) {
+    return { error: "El pago ya estaba anulado" };
+  }
+
+  revalidatePath("/director/payments");
+  revalidatePath("/administrativo/payments");
+  revalidatePath("/alumno/payments");
+  return { success: "Pago anulado correctamente" };
 }
 
 export async function updatePaymentStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
