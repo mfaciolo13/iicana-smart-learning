@@ -225,18 +225,22 @@ export const enrollments = pgTable("enrollments", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
 });
 
-export const attendance = pgTable("attendance", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  enrollmentId: uuid("enrollment_id")
-    .notNull()
-    .references(() => enrollments.id, { onDelete: "cascade" }),
-  classDate: date("class_date").notNull(),
-  status: attendanceStatusEnum("status").notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const attendance = pgTable(
+  "attendance",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    enrollmentId: uuid("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, { onDelete: "cascade" }),
+    classDate: date("class_date").notNull(),
+    status: attendanceStatusEnum("status").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("attendance_enrollment_date_unique").on(table.enrollmentId, table.classDate)]
+);
 
 export const grades = pgTable("grades", {
   id: uuid("id").primaryKey().defaultRandom(),

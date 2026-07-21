@@ -313,12 +313,17 @@ export async function recordBulkAttendance(
   records: { enrollmentId: string; classDate: string; status: "present" | "absent" | "late"; notes?: string | null }[]
 ) {
   if (records.length === 0) return;
-  await db.insert(attendance).values(
-    records.map((r) => ({
-      enrollmentId: r.enrollmentId,
-      classDate: r.classDate,
-      status: r.status,
-      notes: r.notes ?? null,
-    }))
-  );
+  // onConflictDoNothing: red de seguridad ante envíos concurrentes/duplicados del mismo
+  // formulario — el constraint único (enrollment_id, class_date) es lo que realmente lo impide.
+  await db
+    .insert(attendance)
+    .values(
+      records.map((r) => ({
+        enrollmentId: r.enrollmentId,
+        classDate: r.classDate,
+        status: r.status,
+        notes: r.notes ?? null,
+      }))
+    )
+    .onConflictDoNothing({ target: [attendance.enrollmentId, attendance.classDate] });
 }
