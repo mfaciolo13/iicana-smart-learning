@@ -238,6 +238,9 @@ export const attendance = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // Trazabilidad de correcciones — null mientras el registro sea el original
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
+    updatedBy: uuid("updated_by").references(() => profiles.id, { onDelete: "set null" }),
   },
   (table) => [unique("attendance_enrollment_date_unique").on(table.enrollmentId, table.classDate)]
 );
