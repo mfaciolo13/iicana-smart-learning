@@ -52,6 +52,7 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "paid",
   "overdue",
   "suspended",
+  "cancelled",
 ]);
 
 export const paymentMethodEnum = pgEnum("payment_method", [
@@ -271,6 +272,10 @@ export const payments = pgTable("payments", {
   receiptNumber: text("receipt_number").unique(),
   notes: text("notes"),
   overdueAlertSentAt: timestamp("overdue_alert_sent_at", { withTimezone: true }),
+  // Anulación — el registro se conserva por trazabilidad contable, nunca se borra
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  cancelledBy: uuid("cancelled_by").references(() => profiles.id, { onDelete: "set null" }),
+  cancellationReason: text("cancellation_reason"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

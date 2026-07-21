@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createEnrollmentSchema, updateEnrollmentSchema } from "@/modules/enrollments/schemas";
 import { recordAttendanceSchema, attendanceStatusEnum } from "@/modules/attendance/schemas";
 import { createGradeSchema } from "@/modules/grades/schemas";
-import { createPaymentSchema, markAsPaidSchema } from "@/modules/payments/schemas";
+import { createPaymentSchema, markAsPaidSchema, updatePaymentSchema, cancelPaymentSchema } from "@/modules/payments/schemas";
 
 // SCRUM-104: Tests unitarios — schemas de inscripciones, asistencia, notas y pagos
 
@@ -136,5 +136,53 @@ describe("markAsPaidSchema", () => {
 
   it("rechaza método inválido", () => {
     expect(markAsPaidSchema.safeParse({ id: UUID, method: "crypto" }).success).toBe(false);
+  });
+});
+
+// SCRUM-233: edición y anulación de pagos
+
+describe("updatePaymentSchema", () => {
+  const valid = { id: UUID, amount: 5000, dueDate: "2026-06-10" };
+
+  it("acepta datos válidos sin studentId", () => {
+    expect(updatePaymentSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("no requiere studentId — el pago no cambia de alumno al editarse", () => {
+    const result = updatePaymentSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+    if (result.success) expect("studentId" in result.data).toBe(false);
+  });
+
+  it("hereda las validaciones de monto de createPaymentSchema", () => {
+    expect(updatePaymentSchema.safeParse({ ...valid, amount: 0 }).success).toBe(false);
+    expect(updatePaymentSchema.safeParse({ ...valid, amount: -100 }).success).toBe(false);
+  });
+
+  it("rechaza id no UUID", () => {
+    expect(updatePaymentSchema.safeParse({ ...valid, id: "abc" }).success).toBe(false);
+  });
+});
+
+describe("cancelPaymentSchema", () => {
+  it("acepta un motivo suficientemente explicativo", () => {
+    const result = cancelPaymentSchema.safeParse({ id: UUID, reason: "Cuota duplicada por error de carga" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rechaza motivo vacío — la anulación debe quedar justificada", () => {
+    expect(cancelPaymentSchema.safeParse({ id: UUID, reason: "" }).success).toBe(false);
+  });
+
+  it("rechaza motivo demasiado corto", () => {
+    expect(cancelPaymentSchema.safeParse({ id: UUID, reason: "error" }).success).toBe(false);
+  });
+
+  it("rechaza motivo que solo tiene espacios", () => {
+    expect(cancelPaymentSchema.safeParse({ id: UUID, reason: "              " }).success).toBe(false);
+  });
+
+  it("rechaza motivo de más de 500 caracteres", () => {
+    expect(cancelPaymentSchema.safeParse({ id: UUID, reason: "a".repeat(501) }).success).toBe(false);
   });
 });
