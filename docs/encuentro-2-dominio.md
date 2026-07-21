@@ -290,6 +290,77 @@ que el cliente decidió dar de baja en el relevamiento de mayo"*.
 
 ---
 
+## 5.4 Story Map inicial
+
+Requisito del encuentro. Organizado como *actividades del usuario* (columnas) →
+*tareas* (filas), priorizadas de arriba (imprescindible) hacia abajo.
+
+```mermaid
+graph TB
+    subgraph "INGRESAR"
+        A1[Iniciar sesión]
+        A2[Recuperar contraseña]
+    end
+    subgraph "GESTIONAR ALUMNOS"
+        B1[Inscribir alumno]
+        B2[Editar / dar de baja]
+        B3[Ver historial del alumno]
+    end
+    subgraph "CURSAR"
+        C1[Tomar asistencia]
+        C2[Cargar notas]
+        C3[Compartir material]
+        C4[Autoevaluación IA]
+    end
+    subgraph "COBRAR"
+        D1[Registrar pago]
+        D2[Gestionar mora]
+        D3[Emitir recibo]
+    end
+    subgraph "CERRAR CICLO"
+        E1[Promover]
+        E2[Emitir certificado]
+        E3[Reportes]
+    end
+
+    A1 -.imprescindible.-> B1 -.-> C1 -.-> D1 -.-> E1
+```
+
+| Actividad | Release 1 (MVP) | Release 2 | Práctica III |
+|---|---|---|---|
+| Ingresar | Login, invitación | — | — |
+| Alumnos | Inscribir, editar, baja | Historial unificado | — |
+| Cursar | Asistencia, notas | Material, autoevaluación IA | Chatbot |
+| Cobrar | Registrar pago, recibo | Mora automática, anulación | Pago online, ARCA, matrícula |
+| Cerrar ciclo | Promover, certificado | Reportes Excel, cierre | — |
+
+## 5.5 Template de User Story
+
+Formato adoptado por el equipo para el backlog en Jira:
+
+```
+Como <rol/actor del negocio>
+quiero <acción concreta en el sistema>
+para <valor/objetivo de negocio>
+
+Criterios de aceptación:
+- [ ] <condición verificable 1>
+- [ ] <condición verificable 2>
+- [ ] pnpm tsc --noEmit sin errores
+
+Origen: <requerimiento / issue / sección del relevamiento>
+```
+
+**Ejemplo real** (`SCRUM-233`, creado en este proyecto):
+
+> *Como* administrativa, *quiero* que un alumno pueda quedar en lista de espera cuando el
+> curso está lleno, *para* no perder al interesado y avisarle apenas se libere una vacante.
+> — con sus criterios de aceptación y origen en el flujograma del relevamiento.
+
+Las 12 historias hijas de `SCRUM-191` siguen este mismo template.
+
+---
+
 ## 6. ⚠️ Divergencias a resolver antes de los encuentros
 
 ### 6.1 Reglas de negocio que cambiaron entre relevamientos
