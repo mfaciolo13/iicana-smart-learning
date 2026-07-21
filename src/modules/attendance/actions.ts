@@ -1,8 +1,8 @@
 ﻿"use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole } from "@/lib/auth/helpers";
-import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo, checkLowAttendanceThreshold } from "./services/attendance.service";
+import { requireRole, getServerProfile } from "@/lib/auth/helpers";
+import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo, checkLowAttendanceThreshold, updateAttendanceSession, deleteAttendanceSession } from "./services/attendance.service";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import { sendAlert } from "@/lib/notifications/send-alert";
 import { sendAbsenceAlertEmail, sendTeacherAttendanceAlertEmail } from "@/lib/email";
@@ -105,4 +105,68 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
   revalidatePath("/administrativo/attendance");
   const redirectTo = (formData.get("redirectTo") as string) || "/director/attendance";
   return { success: "Asistencia registrada correctamente", redirectTo };
+}
+
+/**
+ * Corrige una toma de lista ya registrada.
+ *
+ * Decisión de diseño: la corrección NO vuelve a disparar las alertas de ausencia
+ * (email al alumno, aviso al docente, alerta de 2 faltas seguidas). Esas alertas
+ * se emiten cuando la ausencia se registra por primera vez; reenviarlas al corregir
+ * un error de carga notificaría al alumno de una falta que justamente se está dando
+ * de baja. El % de asistencia sí queda recalculado, porque se lee de la BD.
+ */
+export async function updateAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["director", "administrativo", "profesor"]);
+
+  const profile = await getServerProfile();
+  if (!profile) return { error: "No autorizado" };
+
+  const courseId = formData.get("courseId") as string;
+  const classDate = formData.get("classDate") as string;
+  const enrollmentIds = ((formData.get("enrollmentIds") as string) ?? "").split(",").filter(Boolean);
+
+  if (!courseId || !classDate || enrollmentIds.length === 0) {
+    return { error: "Datos incompletos" };
+  }
+
+  const records = enrollmentIds.map((enrollmentId) => ({
+    enrollmentId,
+    status: (formData.get(`status_${enrollmentId}`) as "present" | "absent" | "late") ?? "present",
+    notes: (formData.get(`notes_${enrollmentId}`) as string) || null,
+  }));
+
+  const updated = await updateAttendanceSession(courseId, classDate, records, profile.id);
+  if (updated === 0) {
+    return { error: "No se encontraron registros de asistencia para esa fecha" };
+  }
+
+  revalidatePath("/director/attendance");
+  revalidatePath("/profesor/attendance");
+  revalidatePath("/administrativo/attendance");
+  revalidatePath("/alumno/attendance");
+  const redirectTo = (formData.get("redirectTo") as string) || "/director/attendance";
+  return { success: `Asistencia corregida (${updated} registros)`, redirectTo };
+}
+
+/** Elimina una toma de lista completa — clase no dictada o cargada sobre el curso equivocado. */
+export async function deleteAttendanceSessionAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["director", "administrativo", "profesor"]);
+
+  const courseId = formData.get("courseId") as string;
+  const classDate = formData.get("classDate") as string;
+
+  if (!courseId || !classDate) return { error: "Datos incompletos" };
+
+  const deleted = await deleteAttendanceSession(courseId, classDate);
+  if (deleted === 0) {
+    return { error: "No se encontraron registros de asistencia para esa fecha" };
+  }
+
+  revalidatePath("/director/attendance");
+  revalidatePath("/profesor/attendance");
+  revalidatePath("/administrativo/attendance");
+  revalidatePath("/alumno/attendance");
+  const redirectTo = (formData.get("redirectTo") as string) || "/director/attendance";
+  return { success: `Asistencia eliminada (${deleted} registros)`, redirectTo };
 }

@@ -19,9 +19,20 @@ interface AttendanceTakerProps {
   classDate: string;
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
   redirectTo?: string;
+  /** Estado ya registrado por alumno — presente solo al corregir una toma de lista existente. */
+  initialStatuses?: Record<string, string>;
+  submitLabel?: string;
 }
 
-export function AttendanceTaker({ enrollments, courseId, classDate, action, redirectTo }: AttendanceTakerProps) {
+export function AttendanceTaker({
+  enrollments,
+  courseId,
+  classDate,
+  action,
+  redirectTo,
+  initialStatuses,
+  submitLabel,
+}: AttendanceTakerProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(action, undefined);
 
@@ -66,7 +77,7 @@ export function AttendanceTaker({ enrollments, courseId, classDate, action, redi
                     type="radio"
                     name={`status_${enrollment.id}`}
                     value={opt.value}
-                    defaultChecked={opt.value === "present"}
+                    defaultChecked={(initialStatuses?.[enrollment.id] ?? "present") === opt.value}
                     className="sr-only peer"
                   />
                   <span className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all peer-checked:ring-2 peer-checked:ring-offset-1 cursor-pointer ${opt.color} peer-checked:ring-current`}>
@@ -81,7 +92,7 @@ export function AttendanceTaker({ enrollments, courseId, classDate, action, redi
 
       <div className="flex justify-end pt-4">
         <Button type="submit" variant="primary" loading={isPending}>
-          Guardar asistencia ({enrollments.length} alumnos)
+          {submitLabel ?? `Guardar asistencia (${enrollments.length} alumnos)`}
         </Button>
       </div>
     </form>

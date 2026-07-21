@@ -313,12 +313,101 @@ export async function recordBulkAttendance(
   records: { enrollmentId: string; classDate: string; status: "present" | "absent" | "late"; notes?: string | null }[]
 ) {
   if (records.length === 0) return;
-  await db.insert(attendance).values(
-    records.map((r) => ({
-      enrollmentId: r.enrollmentId,
-      classDate: r.classDate,
-      status: r.status,
-      notes: r.notes ?? null,
-    }))
-  );
+  // onConflictDoNothing: red de seguridad ante envíos concurrentes/duplicados del mismo
+  // formulario — el constraint único (enrollment_id, class_date) es lo que realmente lo impide.
+  await db
+    .insert(attendance)
+    .values(
+      records.map((r) => ({
+        enrollmentId: r.enrollmentId,
+        classDate: r.classDate,
+        status: r.status,
+        notes: r.notes ?? null,
+      }))
+    )
+    .onConflictDoNothing({ target: [attendance.enrollmentId, attendance.classDate] });
+}
+
+/**
+ * Corrige una toma de lista ya registrada. Sobrescribe el estado de cada alumno y
+ * deja traza de quién corrigió y cuándo (columnas updated_at / updated_by).
+ *
+ * Solo toca los registros de la sesión (curso + fecha) indicada: si un alumno se
+ * inscribió después de la toma original, no se le inventa un registro retroactivo.
+ */
+export async function updateAttendanceSession(
+  courseId: string,
+  classDate: string,
+  records: { enrollmentId: string; status: "present" | "absent" | "late"; notes?: string | null }[],
+  updatedBy: string
+): Promise<number> {
+  if (records.length === 0) return 0;
+
+  // Solo se pueden corregir enrollments que pertenezcan a este curso — evita que un
+  // enrollmentId manipulado en el formulario escriba sobre la asistencia de otro curso.
+  const validRows = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .where(
+      and(
+        eq(enrollments.courseId, courseId),
+        inArray(
+          enrollments.id,
+          records.map((r) => r.enrollmentId)
+        )
+      )
+    );
+  const validIds = new Set(validRows.map((r) => r.id));
+
+  let updated = 0;
+  for (const record of records) {
+    if (!validIds.has(record.enrollmentId)) continue;
+    const result = await db
+      .update(attendance)
+      .set({
+        status: record.status,
+        notes: record.notes ?? null,
+        updatedAt: new Date(),
+        updatedBy,
+      })
+      .where(
+        and(
+          eq(attendance.enrollmentId, record.enrollmentId),
+          eq(attendance.classDate, classDate)
+        )
+      )
+      .returning({ id: attendance.id });
+    updated += result.length;
+  }
+
+  return updated;
+}
+
+/**
+ * Elimina por completo una toma de lista (curso + fecha). Se usa cuando la clase
+ * no llegó a dictarse o se cargó sobre el curso equivocado: en esos casos corregir
+ * alumno por alumno no aplica, porque la sesión entera no debería existir.
+ */
+export async function deleteAttendanceSession(courseId: string, classDate: string): Promise<number> {
+  const sessionEnrollments = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .where(eq(enrollments.courseId, courseId));
+
+  if (sessionEnrollments.length === 0) return 0;
+
+  const deleted = await db
+    .delete(attendance)
+    .where(
+      and(
+        inArray(
+          attendance.enrollmentId,
+          sessionEnrollments.map((e) => e.id)
+        ),
+        eq(attendance.classDate, classDate)
+      )
+    )
+    .returning({ id: attendance.id });
+
+  return deleted.length;
 }
