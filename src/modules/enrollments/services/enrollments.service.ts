@@ -1,6 +1,7 @@
 import { db } from "@/lib/drizzle";
 import { enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
 import { eq, and, ilike, or, count } from "drizzle-orm";
+import { isUniqueViolation } from "@/lib/db-errors";
 import type { CreateEnrollmentInput, UpdateEnrollmentInput } from "../schemas";
 import type { EnrollmentListItem, EnrollmentWithDetails } from "../types";
 
@@ -236,7 +237,7 @@ export async function validateAndCreateEnrollment(input: CreateEnrollmentInput) 
   } catch (err) {
     // Red de seguridad final: el índice único parcial de la migración 0011 rechaza
     // cualquier duplicado que igual llegara a pasar (ej. si el lock de curso no aplicara).
-    if (err && typeof err === "object" && "code" in err && err.code === "23505") {
+    if (isUniqueViolation(err)) {
       return { error: "El alumno ya está inscripto en este curso" };
     }
     throw err;

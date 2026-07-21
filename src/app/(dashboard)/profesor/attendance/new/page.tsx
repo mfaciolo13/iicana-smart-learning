@@ -3,18 +3,12 @@ import { getServerUser } from "@/lib/auth/helpers";
 import { createClient } from "@/lib/supabase/server";
 import { recordAttendanceAction } from "@/modules/attendance/actions";
 import { AttendanceTaker } from "@/modules/attendance/components/AttendanceTaker";
+import { AttendanceSessionEditor } from "@/modules/attendance/components/AttendanceSessionEditor";
 import { Input, Field, Select } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
 import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollments.service";
 import { getAttendanceByCourse, isAttendanceRecorded } from "@/modules/attendance/services/attendance.service";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import type { AttendanceRecord } from "@/modules/attendance/types";
-
-const STATUS_LABELS: Record<string, { label: string; variant: "success" | "warning" | "danger" }> = {
-  present: { label: "Presente", variant: "success" },
-  absent: { label: "Ausente", variant: "danger" },
-  late: { label: "Tarde", variant: "warning" },
-};
 
 export default async function ProfesorTakeAttendancePage({
   searchParams,
@@ -89,31 +83,16 @@ export default async function ProfesorTakeAttendancePage({
       {courseId && isOwnCourse && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
           {alreadyRecorded ? (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-slate-900">
-                  Asistencia del {new Date(classDate).toLocaleDateString("es-AR")}
-                </h3>
-                <Badge variant="info" dot={false}>Ya registrada</Badge>
-              </div>
-              <div className="space-y-1">
-                {existingRecords.map((r) => {
-                  const cfg = STATUS_LABELS[r.status] ?? { label: r.status, variant: "neutral" as const };
-                  return (
-                    <div key={r.id} className="flex items-center justify-between px-4 py-3 rounded-lg border border-slate-100">
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{r.studentName}</p>
-                        <p className="text-xs text-slate-400 font-mono">{r.studentDni}</p>
-                      </div>
-                      <Badge variant={cfg.variant} dot={false}>{cfg.label}</Badge>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-slate-400 mt-4 text-center">
-                Para corregir, comunicate con el administrador del sistema.
-              </p>
-            </div>
+            <AttendanceSessionEditor
+              enrollments={enrollments}
+              existingRecords={existingRecords.map((r) => ({
+                enrollmentId: r.enrollmentId,
+                status: r.status,
+              }))}
+              courseId={courseId}
+              classDate={classDate}
+              redirectTo="/profesor/attendance"
+            />
           ) : (
             <>
               <h3 className="text-base font-semibold text-slate-900 mb-1">
