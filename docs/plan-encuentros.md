@@ -278,9 +278,22 @@ Rama: `fix/abm-completo-encuentros`.
 
 ---
 
-## Los 4 riesgos que hay que atacar primero
+## Los riesgos que hay que atacar primero
 
 1. **La columna FN está casi vacía.** Es la que más pesa y la que menos tenemos. Todo el bloque A.
-2. **ABM incompleto en asistencia y pagos.** Es el único requisito DEV que se puede demostrar como incumplido en vivo, y el docente tiene consigna explícita de pedirlo.
-3. **Sprint 8 vencido y abierto.** Señal de gestión descuidada, cuesta 5 minutos arreglarla.
-4. **Trabajo hecho sin commitear** con issues abiertos. Se lee como backlog desactualizado cuando en realidad está resuelto.
+   → Avance: [encuentro-2-dominio.md](encuentro-2-dominio.md) ya cubre el Encuentro 2 completo.
+2. **ABM incompleto en asistencia y pagos.** ✅ Resuelto (B2, B3).
+3. **Reglas de negocio desactualizadas.** El sistema usa 80% de asistencia y escala 1–10;
+   la Directora pidió 70% y 0–100% en mayo 2026 (`SCRUM-190`, `SCRUM-188`). El Encuentro 5
+   pide defender cada regla desde el cliente. Son cambios chicos — hacerlos antes.
+4. **El stack no es el del anteproyecto.** El relevamiento de Práctica I propuso
+   C#/.NET/SQL Server/IIS y WhatsApp Business API; se construyó Next.js/TypeScript/
+   PostgreSQL/Vercel y email. El Encuentro 1 pide "tecnologías elegidas y justificadas":
+   hay que llevar esa justificación por escrito. Detalle en
+   [encuentro-2-dominio.md](encuentro-2-dominio.md) §6.3.
+5. **Errores internos en el documento de relevamiento.** Contradicciones entre sus propias
+   secciones (2 vs 3 administrativas, 10 vs 20 docentes, ≥6 vs ≥7 en el flujograma de
+   promoción, funciones del docente pegadas en las de la Directora). Corregirlas antes de
+   volver a presentarlo — ver §6.4.
+6. **Sprint 8 vencido y abierto.** Señal de gestión descuidada, cuesta 5 minutos arreglarla.
+7. **Trabajo hecho sin commitear** con issues abiertos. ✅ Resuelto (B1).
