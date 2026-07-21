@@ -341,12 +341,35 @@ es el del anteproyecto.**
 | IA | Servicio Python con ML entrenado | **Claude API (`@anthropic-ai/sdk`)** |
 | Notificaciones | WhatsApp Business API | **Email (Resend) + notificación interna** |
 
-Hay que llevar la justificación escrita. Argumentos defendibles: un stack unificado en
-TypeScript reduce la superficie a mantener por un equipo de 4; Vercel + Supabase
-eliminan la administración de servidor que el anteproyecto asumía; usar un modelo de
-lenguaje ya entrenado evita necesitar el dataset histórico que el instituto no tiene
-(justamente porque no había sistema); WhatsApp Business API requiere aprobación de Meta
-y costo por mensaje, mientras que el email cubre el mismo requisito de trazabilidad.
+**La justificación real, y hay que contarla así:** el equipo arrancó con 4 integrantes y
+**se fueron dos**. Con la mitad del equipo y el mismo alcance comprometido, sostener el
+stack del anteproyecto (C#/.NET + SQL Server + IIS, tres capas separadas, servidor
+propio a administrar) no era viable en el tiempo restante. Se eligió un stack más
+rápido de desarrollar y más confiable de operar.
+
+Cada decisión se desprende de esa restricción:
+
+| Cambio | Por qué, con medio equipo |
+|---|---|
+| C#/.NET → **TypeScript en toda la pila** | Un solo lenguaje de frontend a backend: no hay que mantener dos bases de código ni una API REST intermedia. Menos superficie para dos personas |
+| IIS/servidor Windows → **Vercel + Supabase** | Elimina por completo la administración de servidor, backups y despliegue que el anteproyecto asumía como trabajo del equipo |
+| SQL Server → **PostgreSQL (Supabase)** | Viene con Auth, Storage y RLS integrados. El anteproyecto los daba por construir a mano |
+| Python + modelo de ML entrenado → **Claude API** | El modelo del anteproyecto necesitaba un **dataset histórico que el instituto no tiene**, justamente porque no había sistema. Un modelo ya entrenado resuelve el requisito sin ese dato |
+| WhatsApp Business API → **email (Resend)** | WhatsApp Business requiere aprobación de Meta y costo por mensaje. El email cumple el mismo requisito de trazabilidad institucional sin dependencia externa ni costo |
+
+**Esta misma restricción explica otras tres cosas** — conviene presentarlas juntas, como
+una sola decisión de gestión y no como tres carencias sueltas:
+
+- La **reducción de alcance** del portal de tutores (F-08) y del chatbot SmartEnglish (F-07).
+- El **Sprint 8 vencido**: el equipo se redujo a la mitad a mitad del cuatrimestre.
+- La priorización de **automatizaciones** por sobre features manuales: con menos gente,
+  que el sistema decida solo vale más que una pantalla más.
+
+> **Para el SM:** la pérdida de dos integrantes es un **impedimento del proyecto**, que es
+> exactamente lo que un Scrum Master documenta y gestiona. Presentado así, deja de ser una
+> debilidad y pasa a ser evidencia de gestión: se detectó, se reajustó el alcance y se
+> eligió una tecnología acorde a la nueva capacidad del equipo. Registrarlo en la
+> retrospectiva del sprint correspondiente.
 
 **Fuera de alcance en Fase 1 que después entró:** el anteproyecto excluía
 explícitamente *"facturación electrónica AFIP"*, y `SCRUM-184` la pide como

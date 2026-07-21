@@ -18,8 +18,8 @@ relevamiento con la Directora (`SCRUM-191`) · `[COD]` código del repositorio.
 
 | ID | Hallazgo | Evidencia | Acción |
 |---|---|---|---|
-| 🔴 **A-01** | Las migraciones `0012` y `0013` **no están aplicadas** en la base. El código compila pero falla en runtime. | `src/lib/drizzle/migrations/` | Aplicarlas. **Ojo:** la 0013 usa `ALTER TYPE ... ADD VALUE`, que en Postgres **no puede ejecutarse dentro de una transacción** — correrla suelta. |
-| 🔴 **A-02** | El **Sprint 8 sigue `active`** con fecha de cierre 25/06/2026 — 26 días vencido. | Board SCRUM | Cerrarlo y abrir Sprint 9. Es lo primero que mira un docente al evaluar gestión. |
+| ✅ **A-01** | Migraciones `0012` y `0013` — **aplicadas y verificadas el 21/07/2026** en PostgreSQL 17.6. Las 0010 y 0011 ya estaban. Sin datos que violaran los constraints nuevos. | `src/lib/drizzle/migrations/` | Hecho. Nota: se aplicaron por el pooler en **modo sesión (5432)**, no el de transacción (6543), porque el DDL sobre el pooler transaccional es problemático. |
+| 🟡 **A-02** | Sprint 8 **ya cerrado**. Falta abrir el Sprint 9 — hoy no hay sprint activo ni futuro en el board. | Board SCRUM | Crear Sprint 9. El cierre tardío se explica por la pérdida de dos integrantes: documentarlo en la retrospectiva, no disimularlo. |
 | 🟡 **A-03** | `SCRUM-231` y `SCRUM-232` están **resueltos en código pero abiertos en Jira**. | commit `44cb741` | Cerrarlos. Backlog desactualizado se lee como trabajo no hecho. |
 | 🟡 **A-04** | Hubo **otra sesión de Claude commiteando en el mismo working tree**. El commit `a809818` dice "refactor de enrollments" pero contiene toda la feature de corrección de asistencia. | `git log` | Revisar el mensaje del commit. Evitar dos agentes sobre el mismo repo a la vez. |
 | 🟡 **A-05** | **Smoke test integral pendiente.** El Encuentro 7 exige que "todo lo anterior siga funcionando en conjunto". | — | Recorrer los 4 portales antes de presentar. |
@@ -127,13 +127,17 @@ es el que propuso el anteproyecto de Práctica I.
 | 🟢 **F-09** | Facturación AFIP/ARCA | **Fuera de alcance Fase 1** | El cliente la pidió después (`SCRUM-184`) → ampliación de alcance |
 | 🟢 **F-10** | Actor **contadora externa** | Actor real del negocio (concilia ingresos, cierre contable) | Sin rol en el sistema → candidato a Práctica III |
 
-**Tarea F-00:** redactar la justificación escrita del cambio de stack. Argumentos
-defendibles: un stack unificado en TypeScript reduce la superficie a mantener por un
-equipo de 4; Vercel + Supabase eliminan la administración de servidor que el
-anteproyecto asumía; **usar un modelo de lenguaje ya entrenado evita necesitar el
-dataset histórico que el instituto no tiene — justamente porque no había sistema**;
-WhatsApp Business API requiere aprobación de Meta y costo por mensaje, mientras el
-email cubre el mismo requisito de trazabilidad.
+✅ **F-00 — justificación resuelta.** El equipo arrancó con 4 integrantes y **se fueron
+dos**. Con la mitad del equipo y el mismo alcance, el stack del anteproyecto (tres capas
+separadas + servidor propio a administrar) no era viable; se eligió uno más rápido de
+desarrollar y más confiable de operar. Desarrollo completo en
+[encuentro-2-dominio.md](encuentro-2-dominio.md) §6.3.
+
+**Esa misma restricción explica F-07, F-08 y A-02** (chatbot y portal de tutores fuera de
+alcance, Sprint 8 vencido). Conviene presentarlos como **una sola decisión de gestión**,
+no como tres carencias sueltas. Para el SM es un impedimento del proyecto documentado y
+gestionado — que es exactamente lo que la materia evalúa. **Registrarlo en la
+retrospectiva del sprint correspondiente.**
 
 ---
 
@@ -200,14 +204,29 @@ Ninguna se puede resolver desde el código. Llevarlas a la próxima reunión.
 
 ## Resumen por prioridad
 
-**🔴 Hacer antes del próximo encuentro (11):**
-A-01 aplicar migraciones · A-02 cerrar Sprint 8 · B-01/B-02/B-03 actualizar umbrales y
-escala · F-00 justificar el stack · G-04 y G-06 corregir el relevamiento · H-02 a H-07
-y H-09/H-10 documentación de análisis · I-01 y I-02 preguntas al cliente.
+**🔴 Hacer antes del próximo encuentro (8):**
+B-01/B-02/B-03 actualizar umbrales y escala · G-04 y G-06 corregir el relevamiento ·
+H-02 a H-07 y H-09/H-10 documentación de análisis · I-01 y I-02 preguntas al cliente.
 
-**🟡 Importante (18):** A-03 a A-05 · B-04 · C-01 a C-03 · D-03 a D-05, D-08 a D-10 ·
-E-01 · F-05 a F-08 · G-01 a G-03 · H-08 · I-03 a I-09.
+**🟡 Importante (18):** A-02 abrir Sprint 9 · A-03 a A-05 · B-04 · C-01 a C-03 ·
+D-03 a D-05, D-08 a D-10 · E-01 · F-05 a F-08 · G-01 a G-03 · H-08 · I-03 a I-09.
 
 **🟢 Menor (11):** C-04 a C-06 · D-06, D-07 · E-02 a E-05 · F-09, F-10 · G-05.
 
-**✅ Resueltos (4):** C-07 · D-01, D-02 · H-01.
+**✅ Resueltos (7):** A-01 migraciones aplicadas · C-07 · D-01, D-02 · F-00 justificación
+del stack · H-01 · C-01 con ticket creado (`SCRUM-233`).
+
+---
+
+## Trazabilidad a Jira
+
+| Hallazgo | Issue |
+|---|---|
+| C-01 lista de espera | [`SCRUM-233`](https://iicana.atlassian.net/browse/SCRUM-233) — creado 21/07/2026, ligado a la épica `SCRUM-191` |
+| B-01 umbral de asistencia 70% | `SCRUM-190` |
+| B-02 / B-03 escala 0–100% | `SCRUM-188` |
+| B-04 métodos de pago | `SCRUM-180` |
+| C-04 pago adelantado | `SCRUM-183` |
+| C-05 matrícula y cuota por curso | `SCRUM-179`, `SCRUM-181` |
+| C-06 facturación ARCA | `SCRUM-184` |
+| D-03 / D-04 marketing | `SCRUM-187` (eliminar el módulo) |
