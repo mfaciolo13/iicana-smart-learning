@@ -1,9 +1,14 @@
 "use client";
 
 import { useActionState, useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
+import type { Resolver } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { loginAction } from "@/modules/auth/actions";
+import { loginSchema } from "@/modules/auth/schemas";
 import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 
@@ -13,6 +18,7 @@ const inputBase =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-700 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
 
 type ActionState = { error?: string; needsConfirmation?: boolean } | null;
+type FormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
@@ -21,25 +27,29 @@ export default function LoginPage() {
   );
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const emailRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(loginSchema) as Resolver<FormValues>,
+    defaultValues: { email: "", password: "" },
+  });
 
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_KEY);
-    if (saved && emailRef.current) {
-      emailRef.current.value = saved;
+    if (saved) {
+      setValue("email", saved);
       setRememberMe(true);
     }
-  }, []);
+  }, [setValue]);
 
-  function handleSubmit(formData: FormData) {
-    const email = formData.get("email") as string;
-    if (rememberMe && email) {
-      localStorage.setItem(REMEMBER_KEY, email);
+  const onSubmit = handleSubmit((values) => {
+    if (rememberMe && values.email) {
+      localStorage.setItem(REMEMBER_KEY, values.email);
     } else {
       localStorage.removeItem(REMEMBER_KEY);
     }
-    formAction(formData);
-  }
+    formAction(new FormData(formRef.current!));
+  });
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
@@ -81,33 +91,31 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form action={handleSubmit} className="space-y-5" aria-labelledby="login-title">
-            <Field label="Email" required id="email">
+          <form ref={formRef} onSubmit={onSubmit} className="space-y-5" aria-labelledby="login-title">
+            <Field label="Email" required id="email" error={errors.email?.message}>
               <Input
-                ref={emailRef}
                 id="email"
-                name="email"
-                type="email"
-                required
+                type="text"
+                inputMode="email"
                 autoComplete="email"
                 autoFocus
                 placeholder="tu@email.com"
                 disabled={pending}
+                {...register("email")}
               />
             </Field>
 
             {/* Password with eye toggle */}
-            <Field label="Contraseña" required id="password">
+            <Field label="Contraseña" required id="password" error={errors.password?.message}>
               <div className="relative">
                 <input
                   id="password"
-                  name="password"
                   type={showPassword ? "text" : "password"}
-                  required
                   autoComplete="current-password"
                   placeholder="••••••••"
                   disabled={pending}
                   className={`${inputBase} pr-10`}
+                  {...register("password")}
                 />
                 <button
                   type="button"
