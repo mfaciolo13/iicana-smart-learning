@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useEffect, useRef } from "react";
+import { useActionState, useState, useEffect, useRef, startTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
@@ -50,7 +50,9 @@ export default function LoginPage() {
     } else {
       localStorage.removeItem(REMEMBER_KEY);
     }
-    formAction(new FormData(formRef.current!));
+    startTransition(() => {
+      formAction(new FormData(formRef.current!));
+    });
   });
 
   return (

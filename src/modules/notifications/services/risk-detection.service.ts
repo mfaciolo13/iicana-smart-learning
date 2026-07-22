@@ -133,7 +133,7 @@ export async function getAtRiskStudents(): Promise<StudentRiskRow[]> {
       db
         .select({
           studentId: studentRiskAssessments.studentId,
-          latestAt: sql<Date>`max(${studentRiskAssessments.assessedAt})`,
+          latestAt: sql<Date>`max(${studentRiskAssessments.assessedAt})`.as("latestAt"),
         })
         .from(studentRiskAssessments)
         .groupBy(studentRiskAssessments.studentId)

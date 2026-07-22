@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, startTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,7 +25,9 @@ export default function ForgotPasswordPage() {
   });
   // eslint-disable-next-line react-hooks/refs
   const onSubmit = handleSubmit(() => {
-    formAction(new FormData(formRef.current!));
+    startTransition(() => {
+      formAction(new FormData(formRef.current!));
+    });
   });
 
   return (
