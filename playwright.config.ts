@@ -14,8 +14,8 @@ export default defineConfig({
   workers: 1,
   reporter: [["html", { open: "never" }], ["list"]],
 
-  // Timeout global por test: 60s para absorber la latencia de producción
-  timeout: 60_000,
+  // Timeout global por test: 90s para absorber la latencia de producción
+  timeout: 90_000,
 
   use: {
     baseURL,
@@ -23,7 +23,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "on-first-retry",
     // Timeouts de acción y navegación globales para todos los proyectos
-    actionTimeout: 60_000,
+    actionTimeout: 30_000,
     navigationTimeout: 60_000,
   },
 
