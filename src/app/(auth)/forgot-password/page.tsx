@@ -23,6 +23,7 @@ export default function ForgotPasswordPage() {
     resolver: zodResolver(forgotPasswordSchema) as Resolver<FormValues>,
     defaultValues: { email: "" },
   });
+  // eslint-disable-next-line react-hooks/refs
   const onSubmit = handleSubmit(() => {
     formAction(new FormData(formRef.current!));
   });
