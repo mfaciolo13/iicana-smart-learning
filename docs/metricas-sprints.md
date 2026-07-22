@@ -14,8 +14,9 @@ Datos extraídos del board de Jira el **21/07/2026**.
 >   (Board → Reports → Sprint Report), que sí guarda la foto al cierre. Para la
 >   presentación, conviene sacar captura de ese report por cada sprint.
 > - **Story points cargados el 21/07/2026** en los ~150 issues de los sprints 1–8 (§4).
->   Con eso el Velocity Chart y el Burndown nativos de Jira ya se pueden ver. Las tablas
->   de abajo mantienen el conteo por issues, pero ahora hay puntos para el gráfico.
+>   Ojo: esto **no** rellena el Velocity Report nativo de los sprints cerrados (§4.1) —
+>   ese report usa fotos históricas congeladas al cierre y muestra Completed = 0. La
+>   métrica de velocidad válida es la **reconstruida** de §4.1–4.2, no la del report nativo.
 
 ---
 
@@ -112,8 +113,42 @@ Verificado: **0 issues sin puntos** en los 8 sprints tras la carga.
 > porque no se había hecho story-point planning en su momento. Es la deuda de gestión que
 > el equipo reconoce en la [retrospectiva del Sprint 8](retrospectiva-sprint-8.md).
 
-Los números de la tabla son un cálculo derivado de la escala; el **Velocity Report nativo
-de Jira** es ahora la fuente autoritativa y coincidirá con estos valores.
+### 4.1 ⚠️ Por qué el Velocity Report nativo de Jira NO sirve para estos sprints
+
+Cargar los story points **no repara** el Velocity Report de los sprints ya cerrados. El
+report usa dos fotos históricas, tomadas en el momento del sprint:
+
+- **Commitment:** puntos de los issues presentes al **iniciar** el sprint.
+- **Completed:** puntos de los issues terminados al **cerrar** el sprint.
+
+Como los puntos se cargaron **después** de que los 8 sprints ya estaban cerrados, esas
+fotos quedaron congeladas: el report muestra **Completed = 0 en los 8 sprints** (y
+Commitment solo en los más recientes). **Esto no se puede corregir sin reabrir y
+re-cerrar los sprints, lo que falsearía las fechas de cierre** — y eso no se hace.
+
+**Consecuencia práctica:**
+
+- Para los sprints **1 a 8** (cerrados): se usa la **tabla de velocidad reconstruida** de
+  arriba y el gráfico de §4.2 como métrica del proyecto. **No** se presenta el Velocity
+  Report nativo, porque quedó vacío por la razón explicada.
+- Del Sprint **9 en adelante:** si se estima **antes** de arrancar cada sprint, el Velocity
+  Report nativo se llena solo y pasa a ser la fuente válida.
+
+### 4.2 Gráfico de velocidad reconstruida
+
+Como los 8 sprints cerraron al 100%, la velocidad completada coincide con la comprometida.
+
+```mermaid
+xychart-beta
+    title "Velocidad por sprint (story points, reconstruida)"
+    x-axis ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
+    y-axis "Story points" 0 --> 110
+    bar [30, 106, 80, 35, 25, 77, 69, 45]
+```
+
+Velocidad promedio: **58,4 puntos/sprint**. La caída del Sprint 5 (25) coincide con el
+período de reducción del equipo; la recuperación en 6–8 muestra al equipo de 2 personas
+sosteniendo la entrega.
 
 ---
 
