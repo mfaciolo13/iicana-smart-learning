@@ -38,10 +38,12 @@ export default function LoginPage() {
     const saved = localStorage.getItem(REMEMBER_KEY);
     if (saved) {
       setValue("email", saved);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRememberMe(true);
     }
   }, [setValue]);
 
+  // eslint-disable-next-line react-hooks/refs
   const onSubmit = handleSubmit((values) => {
     if (rememberMe && values.email) {
       localStorage.setItem(REMEMBER_KEY, values.email);
