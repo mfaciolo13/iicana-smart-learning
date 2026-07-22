@@ -25,18 +25,21 @@ Datos extraídos del board de Jira el **21/07/2026**.
 | Sprint | Fechas | Issues | Historias | Tareas | Bugs | Estado final |
 |---|---|---:|---:|---:|---:|---|
 | 0 | 19/01 – 02/02 | 0 (planificación) | — | — | — | Cerrado |
-| 1 | 02/02 – 16/02 | 13 | 6 | 1 | 6 | 100% Done |
-| 2 | 16/02 – 02/03 | 39 | 30 | 8 | 1 | 100% Done |
-| 3 | 02/03 – 16/03 | 30 | 20 | 4 | 6 | 100% Done |
-| 4 | 16/03 – 30/03 | 15 | 5 | 2 | 8 | 100% Done |
-| 5 | 04/05 – 11/05 | 10 | 8 | 2 | 0 | 100% Done |
-| 6 | 11/05 – 25/05 | 33 | ~14 | ~7 | ~12 | 100% Done |
-| 7 | 27/05 – 11/06 | 31 | ~12 | ~13 | ~6 | 100% Done |
-| 8 | 11/06 – 25/06 | 17 | 9 | 8 | 0 | 100% Done |
+| Sprint | Fechas | Issues | Historias | Bugs | Tareas | Story Points |
+|---|---|---:|---:|---:|---:|---:|
+| 0 | 19/01 – 02/02 | 0 | 0 | 0 | 0 | 0 |
+| 1 | 02/02 – 16/02 | 13 | 6 | 6 | 1 | 32 |
+| 2 | 16/02 – 02/03 | 39 | 30 | 1 | 8 | 108 |
+| 3 | 02/03 – 16/03 | 30 | 20 | 6 | 4 | 80 |
+| 4 | 16/03 – 30/03 | 15 | 5 | 9 | 1 | 35 |
+| 5 | 04/05 – 11/05 | 10 | 7 | 2 | 1 | 27 |
+| 6 | 11/05 – 25/05 | 33 | 15 | 12 | 6 | 81 |
+| 7 | 27/05 – 11/06 | 31 | 7 | 8 | 16 | 69 |
+| 8 | 11/06 – 25/06 | 17 | 14 | 0 | 3 | 48 |
+| **Total** | | **188** | **104** | **44** | **40** | **480** |
 
-Los conteos de los sprints 6 y 7 llevan `~` porque incluyen issues arrastrados de sprints
-previos (ver §3); el número total de issues del sprint es exacto, el desglose por tipo es
-aproximado.
+Números tomados de la consulta en vivo al board (21/07/2026); coinciden con el Reporte de
+Sprints del proyecto.
 
 **Lectura para el coloquio:** la tasa de finalización es **100% en todos los sprints
 ejecutados** — todo lo que entró a un sprint terminó cerrándose. Ese es el dato fuerte de
@@ -96,14 +99,15 @@ Verificado: **0 issues sin puntos** en los 8 sprints tras la carga.
 
 | Sprint | Puntos | Issues |
 |---|---:|---:|
-| 1 | 30 | 13 |
-| 2 | 106 | 39 |
+| 1 | 32 | 13 |
+| 2 | 108 | 39 |
 | 3 | 80 | 30 |
 | 4 | 35 | 15 |
-| 5 | 25 | 10 |
-| 6 | 77 | 33 |
+| 5 | 27 | 10 |
+| 6 | 81 | 33 |
 | 7 | 69 | 31 |
-| 8 | 45 | 17 |
+| 8 | 48 | 17 |
+| **Total** | **480** | **188** |
 
 > **Salvedad honesta sobre esta escala.** Los puntos se asignaron por **tipo de issue**,
 > no por complejidad real estimada en su momento (el equipo no estimó durante los sprints).
@@ -140,15 +144,15 @@ Como los 8 sprints cerraron al 100%, la velocidad completada coincide con la com
 
 ```mermaid
 xychart-beta
-    title "Velocidad por sprint (story points, reconstruida)"
+    title "Velocidad por sprint (story points completados)"
     x-axis ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]
     y-axis "Story points" 0 --> 110
-    bar [30, 106, 80, 35, 25, 77, 69, 45]
+    bar [32, 108, 80, 35, 27, 81, 69, 48]
 ```
 
-Velocidad promedio: **58,4 puntos/sprint**. La caída del Sprint 5 (25) coincide con el
-período de reducción del equipo; la recuperación en 6–8 muestra al equipo de 2 personas
-sosteniendo la entrega.
+Velocidad promedio: **60 puntos/sprint** (480 puntos ÷ 8 sprints ejecutados). La caída del
+Sprint 5 (27) coincide con el período de reducción del equipo; la recuperación en 6–8
+muestra al equipo de 2 personas sosteniendo la entrega.
 
 ---
 
