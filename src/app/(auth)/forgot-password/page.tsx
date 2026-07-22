@@ -1,14 +1,32 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { Resolver } from "react-hook-form";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { forgotPasswordAction } from "@/modules/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 
+const forgotPasswordSchema = z.object({
+  email: z.email("Email inválido"),
+});
+type FormValues = z.infer<typeof forgotPasswordSchema>;
+
 export default function ForgotPasswordPage() {
   const [state, formAction, pending] = useActionState(forgotPasswordAction, undefined);
+  const formRef = useRef<HTMLFormElement>(null);
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(forgotPasswordSchema) as Resolver<FormValues>,
+    defaultValues: { email: "" },
+  });
+  // eslint-disable-next-line react-hooks/refs
+  const onSubmit = handleSubmit(() => {
+    formAction(new FormData(formRef.current!));
+  });
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
@@ -61,17 +79,17 @@ export default function ForgotPasswordPage() {
                 </div>
               )}
 
-              <form action={formAction} className="space-y-5">
-                <Field label="Email" required id="email">
+              <form ref={formRef} onSubmit={onSubmit} className="space-y-5">
+                <Field label="Email" required id="email" error={errors.email?.message}>
                   <Input
                     id="email"
-                    name="email"
-                    type="email"
-                    required
+                    type="text"
+                    inputMode="email"
                     autoComplete="email"
                     autoFocus
                     placeholder="tu@email.com"
                     disabled={pending}
+                    {...register("email")}
                   />
                 </Field>
 
