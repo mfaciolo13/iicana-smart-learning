@@ -31,7 +31,19 @@ setup("autenticar como admin", async ({ page }) => {
   await page.waitForURL((url) => !url.pathname.includes("/login"), {
     timeout: 60_000,
   });
+
+  // Esperar a que la página post-login esté completamente cargada
+  await page.waitForLoadState("domcontentloaded");
   await page.waitForLoadState("networkidle");
+
+  // Verificar que efectivamente estamos autenticados (no redirigidos de vuelta a /login)
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 });
+
+  // Esperar a que la página muestre contenido real (nav, sidebar, o cualquier elemento
+  // del shell autenticado) para garantizar que las cookies/tokens están asentados
+  await expect(
+    page.locator("nav, aside, [data-testid='sidebar'], main").first()
+  ).toBeVisible({ timeout: 30_000 });
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -63,7 +75,19 @@ setup("autenticar como alumno", async ({ page }) => {
   await page.waitForURL((url) => !url.pathname.includes("/login"), {
     timeout: 60_000,
   });
+
+  // Esperar a que la página post-login esté completamente cargada
+  await page.waitForLoadState("domcontentloaded");
   await page.waitForLoadState("networkidle");
+
+  // Verificar que efectivamente estamos autenticados (no redirigidos de vuelta a /login)
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 });
+
+  // Esperar a que la página muestre contenido real para garantizar que las
+  // cookies/tokens están asentados antes de serializar el estado
+  await expect(
+    page.locator("nav, aside, [data-testid='sidebar'], main").first()
+  ).toBeVisible({ timeout: 30_000 });
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
