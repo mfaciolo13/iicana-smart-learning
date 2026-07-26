@@ -31,7 +31,13 @@ setup("autenticar como admin", async ({ page }) => {
   await page.waitForURL((url) => !url.pathname.includes("/login"), {
     timeout: 60_000,
   });
-  await page.waitForLoadState("networkidle");
+
+  // Esperar domcontentloaded (evitar networkidle que puede colgar en prod
+  // si hay polling, SSE o websockets activos)
+  await page.waitForLoadState("domcontentloaded");
+
+  // Confirmar que llegamos a una ruta autenticada de admin antes de guardar
+  await expect(page).toHaveURL(/\/admin/, { timeout: 30_000 });
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -63,7 +69,13 @@ setup("autenticar como alumno", async ({ page }) => {
   await page.waitForURL((url) => !url.pathname.includes("/login"), {
     timeout: 60_000,
   });
-  await page.waitForLoadState("networkidle");
+
+  // Esperar domcontentloaded (evitar networkidle que puede colgar en prod
+  // si hay polling, SSE o websockets activos)
+  await page.waitForLoadState("domcontentloaded");
+
+  // Confirmar que llegamos a una ruta autenticada de alumno antes de guardar
+  await expect(page).toHaveURL(/\/alumno/, { timeout: 30_000 });
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });

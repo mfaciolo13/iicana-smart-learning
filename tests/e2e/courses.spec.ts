@@ -10,7 +10,7 @@ test.describe("Gestión de Cursos", () => {
     const name = `Inglés Test ${slug()}`;
 
     await page.goto("/admin/courses/new");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     await page.getByLabel("Nombre del curso").fill(name);
     await page.getByLabel("Nivel").selectOption("intermediate");
@@ -35,7 +35,7 @@ test.describe("Gestión de Cursos", () => {
 
     // Redirige al listado y aparece el curso
     await expect(page).toHaveURL(/\/admin\/courses$/);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByRole("cell", { name })).toBeVisible({ timeout: 10_000 });
   });
 
@@ -50,7 +50,7 @@ test.describe("Gestión de Cursos", () => {
   test("listado de cursos muestra los cursos existentes", async ({ page }) => {
     await page.goto("/admin/courses");
     await page.waitForURL(/\/admin\/courses/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByRole("heading", { name: "Cursos" })).toBeVisible({ timeout: 20_000 });
 
     // Esperar a que la tabla o el mensaje vacío sean visibles

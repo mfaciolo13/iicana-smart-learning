@@ -6,7 +6,7 @@ test.describe("Marketing — Campañas", () => {
   test("listado de campañas carga correctamente", async ({ page }) => {
     await page.goto("/admin/marketing");
     await page.waitForURL(/\/admin\/marketing/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByRole("heading", { name: "Marketing" })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/campañas/i).first()).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/consultas totales/i)).toBeVisible({ timeout: 20_000 });
@@ -18,21 +18,21 @@ test.describe("Marketing — Campañas", () => {
     const name = `Campaña E2E ${slug()}`;
 
     await page.goto("/admin/marketing/new");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await page.getByLabel("Nombre de la campaña").fill(name);
     await page.getByLabel("Canal").selectOption("social_media");
     await page.getByRole("button", { name: /registrar campaña/i }).click();
 
     await expect(page.getByText(/campaña creada correctamente/i)).toBeVisible({ timeout: 8000 });
     await expect(page).toHaveURL(/\/admin\/marketing$/);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByRole("cell", { name })).toBeVisible({ timeout: 10_000 });
   });
 
   test("formulario de campaña tiene fechas con type=date", async ({ page }) => {
     await page.goto("/admin/marketing/new");
     await page.waitForURL(/\/admin\/marketing\/new/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     const startDate = page.getByLabel("Inicio");
     const endDate = page.getByLabel("Fin");
     await expect(startDate).toBeVisible({ timeout: 20_000 });
@@ -44,7 +44,7 @@ test.describe("Marketing — Campañas", () => {
   test("detalle de campaña muestra formulario de consulta", async ({ page }) => {
     await page.goto("/admin/marketing");
     await page.waitForURL(/\/admin\/marketing/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const verLink = page.getByText("Ver →").first();
     const hasLink = await verLink.isVisible().catch(() => false);
@@ -63,7 +63,7 @@ test.describe("Marketing — Campañas", () => {
   test("formulario de consulta se resetea tras éxito", async ({ page }) => {
     test.skip(!!process.env.CI, "Escribe datos en producción — solo correr localmente");
     await page.goto("/admin/marketing");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     const verLink = page.getByText("Ver →").first();
     const hasLink = await verLink.isVisible().catch(() => false);

@@ -4,7 +4,7 @@ test.describe("Notificaciones", () => {
   test("página de notificaciones carga correctamente", async ({ page }) => {
     await page.goto("/admin/notifications");
     await page.waitForURL(/\/admin\/notifications/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByRole("heading", { name: "Comunicaciones" })).toBeVisible({ timeout: 20_000 });
   });
 
@@ -13,7 +13,7 @@ test.describe("Notificaciones", () => {
   }) => {
     await page.goto("/admin/notifications/new");
     await page.waitForURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByRole("button", { name: "Por rol" })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole("button", { name: "Por curso" })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole("button", { name: "Usuario individual" })).toBeVisible({ timeout: 20_000 });
@@ -22,7 +22,7 @@ test.describe("Notificaciones", () => {
   test("cambiar modo de destinatario actualiza el select", async ({ page }) => {
     await page.goto("/admin/notifications/new");
     await page.waitForURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Por defecto: rol — el selector de rol está visible
     await expect(page.getByRole("button", { name: "Por rol" })).toBeVisible({ timeout: 20_000 });
@@ -39,7 +39,7 @@ test.describe("Notificaciones", () => {
   test("tipo de notificación tiene default en General", async ({ page }) => {
     await page.goto("/admin/notifications/new");
     await page.waitForURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByLabel("Tipo")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByLabel("Tipo")).toHaveValue("general");
   });
@@ -53,7 +53,7 @@ test.describe("Reclamos", () => {
   test("listado de reclamos carga correctamente", async ({ page }) => {
     await page.goto("/admin/complaints");
     await page.waitForURL(/\/admin\/complaints/, { timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(page.getByRole("heading", { name: "Reclamos" })).toBeVisible({ timeout: 20_000 });
   });
 
