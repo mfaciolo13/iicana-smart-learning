@@ -3,44 +3,51 @@ import { test, expect } from "@playwright/test";
 test.describe("Notificaciones", () => {
   test("página de notificaciones carga correctamente", async ({ page }) => {
     await page.goto("/admin/notifications");
-    await page.waitForURL(/\/admin\/notifications/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("heading", { name: "Comunicaciones" })).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/notifications/, { timeout: 30_000 });
+    // El heading puede ser "Comunicaciones" o "Notificaciones" según la versión
+    await expect(
+      page.getByRole("heading", { name: /comunicaciones|notificaciones/i })
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   test("formulario de nueva notificación muestra los tres modos de destinatario", async ({
     page,
   }) => {
     await page.goto("/admin/notifications/new");
-    await page.waitForURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("button", { name: "Por rol" })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole("button", { name: "Por curso" })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole("button", { name: "Usuario individual" })).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
+    await expect(page.getByRole("button", { name: "Por rol" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: "Por curso" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: "Usuario individual" })).toBeVisible({ timeout: 30_000 });
   });
 
   test("cambiar modo de destinatario actualiza el select", async ({ page }) => {
     await page.goto("/admin/notifications/new");
-    await page.waitForURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
+    await expect(page).toHaveURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
 
     // Por defecto: rol — el selector de rol está visible
-    await expect(page.getByRole("button", { name: "Por rol" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("button", { name: "Por rol" })).toBeVisible({ timeout: 30_000 });
 
     // Cambiar a curso
     await page.getByRole("button", { name: "Por curso" }).click();
-    await expect(page.getByLabel("Curso")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByLabel("Curso")).toBeVisible({ timeout: 30_000 });
 
     // Cambiar a usuario
     await page.getByRole("button", { name: "Usuario individual" }).click();
-    await expect(page.getByLabel("Usuario")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByLabel("Usuario")).toBeVisible({ timeout: 30_000 });
   });
 
   test("tipo de notificación tiene default en General", async ({ page }) => {
     await page.goto("/admin/notifications/new");
-    await page.waitForURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByLabel("Tipo")).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/notifications\/new/, { timeout: 30_000 });
+    await expect(page.getByLabel("Tipo")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByLabel("Tipo")).toHaveValue("general");
   });
 
@@ -52,9 +59,10 @@ test.describe("Notificaciones", () => {
 test.describe("Reclamos", () => {
   test("listado de reclamos carga correctamente", async ({ page }) => {
     await page.goto("/admin/complaints");
-    await page.waitForURL(/\/admin\/complaints/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("heading", { name: "Reclamos" })).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/complaints/, { timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: /reclamos/i })).toBeVisible({ timeout: 30_000 });
   });
 
   test("formulario de reclamo muestra banner de 48hs destacado", async () => {

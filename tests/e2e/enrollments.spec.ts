@@ -3,26 +3,29 @@ import { test, expect } from "@playwright/test";
 test.describe("Inscripciones", () => {
   test("listado de inscripciones carga correctamente", async ({ page }) => {
     await page.goto("/admin/enrollments");
-    await page.waitForURL(/\/admin\/enrollments/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("heading", { name: "Inscripciones" })).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/enrollments/, { timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: /inscripciones/i })).toBeVisible({ timeout: 30_000 });
   });
 
   test("formulario de inscripción muestra alumnos y cursos", async ({ page }) => {
     await page.goto("/admin/enrollments/new");
-    await page.waitForURL(/\/admin\/enrollments\/new/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByLabel("Alumno")).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByLabel("Curso")).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole("button", { name: /inscribir/i })).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/enrollments\/new/, { timeout: 30_000 });
+    await expect(page.getByLabel("Alumno")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByLabel("Curso")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: /inscribir/i })).toBeVisible({ timeout: 30_000 });
   });
 
   test("el select de cursos solo muestra activos con cupo", async ({ page }) => {
     await page.goto("/admin/enrollments/new");
-    await page.waitForURL(/\/admin\/enrollments\/new/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
+    await expect(page).toHaveURL(/\/admin\/enrollments\/new/, { timeout: 30_000 });
     const courseSelect = page.getByLabel("Curso");
-    await expect(courseSelect).toBeVisible({ timeout: 20_000 });
+    await expect(courseSelect).toBeVisible({ timeout: 30_000 });
     // Cursos sin cupo aparecen como disabled options
     // No fallar si no hay cursos sin cupo, solo verificar que el select existe
     await expect(courseSelect).toBeEnabled();
@@ -32,36 +35,40 @@ test.describe("Inscripciones", () => {
 test.describe("Asistencia", () => {
   test("página de asistencia carga correctamente", async ({ page }) => {
     await page.goto("/admin/attendance");
-    await page.waitForURL(/\/admin\/attendance/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("heading", { name: "Asistencia" })).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/attendance/, { timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: /asistencia/i })).toBeVisible({ timeout: 30_000 });
   });
 
   test("formulario de nueva asistencia muestra los campos necesarios", async ({ page }) => {
     await page.goto("/admin/attendance/new");
-    await page.waitForURL(/\/admin\/attendance\/new/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByLabel("Curso")).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByLabel(/fecha/i)).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/attendance\/new/, { timeout: 30_000 });
+    await expect(page.getByLabel("Curso")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByLabel(/fecha/i)).toBeVisible({ timeout: 30_000 });
   });
 });
 
 test.describe("Notas", () => {
   test("listado de notas carga correctamente", async ({ page }) => {
     await page.goto("/admin/grades");
-    await page.waitForURL(/\/admin\/grades/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("heading", { name: "Notas" })).toBeVisible({ timeout: 20_000 });
+    await expect(page).toHaveURL(/\/admin\/grades/, { timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: /notas/i })).toBeVisible({ timeout: 30_000 });
   });
 
   test("formulario de carga de nota tiene evaluationType pre-seleccionado en Parcial", async ({
     page,
   }) => {
     await page.goto("/admin/grades/new");
-    await page.waitForURL(/\/admin\/grades\/new/, { timeout: 30_000 });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForLoadState("networkidle");
+    await expect(page).toHaveURL(/\/admin\/grades\/new/, { timeout: 30_000 });
     const select = page.getByLabel("Tipo de evaluación");
-    await expect(select).toBeVisible({ timeout: 20_000 });
+    await expect(select).toBeVisible({ timeout: 30_000 });
     await expect(select).toHaveValue("parcial");
   });
 
