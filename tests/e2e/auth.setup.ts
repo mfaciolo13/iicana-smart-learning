@@ -31,7 +31,20 @@ setup("autenticar como admin", async ({ page }) => {
   await page.waitForURL((url) => !url.pathname.includes("/login"), {
     timeout: 60_000,
   });
-  await page.waitForLoadState("networkidle");
+
+  // Esperar a que la navegación final se estabilice (puede haber redirects internos)
+  await page.waitForLoadState("domcontentloaded");
+
+  // Navegar explícitamente a una ruta admin protegida para confirmar que la sesión
+  // está correctamente establecida antes de serializar el storage state
+  await page.goto("/admin/students");
+  await page.waitForURL(/\/admin\/students/, { timeout: 60_000 });
+  await page.waitForLoadState("domcontentloaded");
+
+  // Verificar que el heading admin es visible (no redirigió a /login)
+  await expect(page.getByRole("heading", { name: "Alumnos" })).toBeVisible({
+    timeout: 30_000,
+  });
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -63,7 +76,20 @@ setup("autenticar como alumno", async ({ page }) => {
   await page.waitForURL((url) => !url.pathname.includes("/login"), {
     timeout: 60_000,
   });
-  await page.waitForLoadState("networkidle");
+
+  // Esperar a que la navegación final se estabilice (puede haber redirects internos)
+  await page.waitForLoadState("domcontentloaded");
+
+  // Navegar explícitamente a una ruta alumno protegida para confirmar que la sesión
+  // está correctamente establecida antes de serializar el storage state
+  await page.goto("/alumno/payments");
+  await page.waitForURL(/\/alumno\/payments/, { timeout: 60_000 });
+  await page.waitForLoadState("domcontentloaded");
+
+  // Verificar que el heading alumno es visible (no redirigió a /login)
+  await expect(page.getByRole("heading", { name: /pagos/i })).toBeVisible({
+    timeout: 30_000,
+  });
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
