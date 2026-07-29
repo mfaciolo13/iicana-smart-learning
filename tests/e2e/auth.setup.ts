@@ -31,7 +31,10 @@ setup("autenticar como admin", async ({ page }) => {
   await page.waitForURL((url) => !url.pathname.includes("/login"), {
     timeout: 60_000,
   });
-  await page.waitForLoadState("networkidle");
+
+  // Usar domcontentloaded en lugar de networkidle para evitar bloqueos
+  // en producción donde puede haber conexiones persistentes (polling/SSE)
+  await page.waitForLoadState("domcontentloaded");
 
   await page.context().storageState({ path: ADMIN_FILE });
 });
@@ -63,7 +66,10 @@ setup("autenticar como alumno", async ({ page }) => {
   await page.waitForURL((url) => !url.pathname.includes("/login"), {
     timeout: 60_000,
   });
-  await page.waitForLoadState("networkidle");
+
+  // Usar domcontentloaded en lugar de networkidle para evitar bloqueos
+  // en producción donde puede haber conexiones persistentes (polling/SSE)
+  await page.waitForLoadState("domcontentloaded");
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
