@@ -33,6 +33,19 @@ setup("autenticar como admin", async ({ page }) => {
   });
   await page.waitForLoadState("networkidle");
 
+  // Verificar explícitamente que llegamos a una ruta admin (no quedamos en /login ni en error)
+  const currentUrl = page.url();
+  if (currentUrl.includes("/login")) {
+    throw new Error(
+      `El login de admin falló: la página sigue siendo /login. Verificar credenciales E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD.`
+    );
+  }
+
+  // Asegurarse de que hay una cookie/session válida esperando un elemento de la UI autenticada
+  await expect(page.locator("body")).not.toContainText(/inicia sesión|sign in|unauthorized/i, {
+    timeout: 10_000,
+  });
+
   await page.context().storageState({ path: ADMIN_FILE });
 });
 
@@ -64,6 +77,14 @@ setup("autenticar como alumno", async ({ page }) => {
     timeout: 60_000,
   });
   await page.waitForLoadState("networkidle");
+
+  // Verificar explícitamente que llegamos a una ruta autenticada
+  const currentUrl = page.url();
+  if (currentUrl.includes("/login")) {
+    throw new Error(
+      `El login de alumno falló: la página sigue siendo /login. Verificar credenciales E2E_ALUMNO_EMAIL / E2E_ALUMNO_PASSWORD.`
+    );
+  }
 
   await page.context().storageState({ path: ALUMNO_FILE });
 });
