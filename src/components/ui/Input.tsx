@@ -21,13 +21,25 @@ interface FieldProps {
 }
 
 export function Field({ label, required, helper, error, className, children, id }: FieldProps) {
-  const childrenWithProps = Children.map(children, (child) =>
+  const descriptionId = useId();
+  const childrenWithProps = Children.map(children, (child) => {
     // `error` sólo se inyecta en los controles que lo aceptan; en un elemento DOM crudo (botones de cupo o
     // nota, input hidden) React emitía "Received `false` for a non-boolean attribute `error`" (SCRUM-237).
-    isValidElement(child) && (child.type === Input || child.type === Select || child.type === Textarea)
-      ? cloneElement(child as React.ReactElement<{ error?: boolean }>, { error: !!error })
-      : child
-  );
+    if (!isValidElement(child) || (child.type !== Input && child.type !== Select && child.type !== Textarea)) {
+      return child;
+    }
+    const control = child as React.ReactElement<{
+      error?: boolean;
+      "aria-invalid"?: InputHTMLAttributes<HTMLInputElement>["aria-invalid"];
+      "aria-describedby"?: string;
+    }>;
+    return cloneElement(control, {
+      error: !!error,
+      "aria-invalid": error ? true : control.props["aria-invalid"],
+      "aria-describedby": [control.props["aria-describedby"], (error || helper) && descriptionId]
+        .filter(Boolean).join(" ") || undefined,
+    });
+  });
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
@@ -42,11 +54,11 @@ export function Field({ label, required, helper, error, className, children, id 
       )}
       {childrenWithProps}
       {error ? (
-        <p className="text-xs text-danger-500" role="alert" aria-live="polite">
+        <p id={descriptionId} className="text-xs text-danger-500" role="alert" aria-live="polite">
           {error}
         </p>
       ) : helper ? (
-        <p className="text-xs text-slate-400">{helper}</p>
+        <p id={descriptionId} className="text-xs text-slate-400">{helper}</p>
       ) : null}
     </div>
   );
