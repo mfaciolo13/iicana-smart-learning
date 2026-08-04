@@ -249,7 +249,11 @@ export function Select({ className, error, children, ref, id, ...props }: Select
             aria-expanded={open}
             aria-controls={listId}
             aria-haspopup="listbox"
-            aria-invalid={error || undefined}
+            aria-label={props["aria-label"]}
+            aria-labelledby={props["aria-labelledby"]}
+            aria-describedby={props["aria-describedby"]}
+            aria-required={props.required || props["aria-required"]}
+            aria-invalid={error || props["aria-invalid"]}
             disabled={props.disabled}
             onClick={() => (open ? setOpen(false) : openList())}
             onKeyDown={(e) => {
