@@ -143,12 +143,17 @@ export function Select({ className, error, children, ref, id, ...props }: Select
     const el = selectRef.current;
     if (!el) return;
     const form = el.form;
-    const onReset = () => setTimeout(sync, 0);
+    let resetTimer: ReturnType<typeof setTimeout> | undefined;
+    const onReset = () => {
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(sync, 0);
+    };
     const observer = new MutationObserver(sync);
     observer.observe(el, { childList: true, subtree: true, characterData: true, attributes: true });
     el.addEventListener("change", sync);
     form?.addEventListener("reset", onReset);
     return () => {
+      clearTimeout(resetTimer);
       observer.disconnect();
       el.removeEventListener("change", sync);
       form?.removeEventListener("reset", onReset);
