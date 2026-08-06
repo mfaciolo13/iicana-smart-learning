@@ -134,7 +134,11 @@ export function Select({ className, error, children, ref, id, ...props }: Select
   const sync = useCallback(() => {
     const el = selectRef.current;
     if (!el) return;
-    const next = Array.from(el.options).map((o) => ({ value: o.value, label: o.text, disabled: o.disabled }));
+    const next = Array.from(el.options).map((o) => ({
+      value: o.value,
+      label: o.text,
+      disabled: o.disabled || (o.parentElement instanceof HTMLOptGroupElement && o.parentElement.disabled),
+    }));
     setOptions((prev) => (sameOptions(prev, next) ? prev : next));
     setSelectedValue(el.value);
   }, []);
