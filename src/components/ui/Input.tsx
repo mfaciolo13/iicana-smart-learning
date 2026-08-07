@@ -42,7 +42,7 @@ export function Field({ label, required, helper, error, className, children, id 
   });
 
   return (
-    <div className={cn("flex flex-col gap-1", className)}>
+    <div className={cn("flex min-w-0 flex-col gap-1", className)}>
       {label && (
         <label
           htmlFor={id}
@@ -67,7 +67,7 @@ export function Field({ label, required, helper, error, className, children, id 
 // ─── Shared input classes ─────────────────────────────────────────────────────
 
 const inputBase =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-700 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-700 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
 
 const inputError = "border-danger-500 focus:ring-danger-500 focus:border-danger-500";
 
@@ -237,7 +237,7 @@ export function Select({ className, error, children, ref, id, ...props }: Select
   }
 
   return (
-    <div ref={wrapperRef} className={searchable ? "relative" : "contents"}>
+    <div ref={wrapperRef} className={searchable ? "relative min-w-0" : "contents"}>
       <select
         ref={setRefs}
         id={searchable ? undefined : id}
@@ -273,7 +273,7 @@ export function Select({ className, error, children, ref, id, ...props }: Select
             }}
             className={cn(inputBase, "flex items-center justify-between gap-2 text-left", error && inputError, className)}
           >
-            <span className={cn("truncate", (!selected || selected.value === "") && "text-slate-400")}>
+            <span className={cn("min-w-0 truncate", (!selected || selected.value === "") && "text-slate-400")}>
               {selected?.label || "Seleccioná una opción"}
             </span>
             <ChevronDown className="w-4 h-4 shrink-0 text-slate-400" />
@@ -318,7 +318,7 @@ export function Select({ className, error, children, ref, id, ...props }: Select
                         o.disabled && "cursor-not-allowed opacity-50"
                       )}
                     >
-                      <span className="truncate">{o.label}</span>
+                      <span className="min-w-0 truncate">{o.label}</span>
                       {o.value === selectedValue && <Check className="w-4 h-4 shrink-0" />}
                     </li>
                   ))
