@@ -201,7 +201,8 @@ export function Select({ className, error, children, ref, id, ...props }: Select
   function openList() {
     if (props.disabled) return;
     setQuery("");
-    setActive(Math.max(choices.findIndex((o) => o.value === selectedValue), 0));
+    const selectedIndex = choices.findIndex((o) => o.value === selectedValue && !o.disabled);
+    setActive(selectedIndex >= 0 ? selectedIndex : choices.findIndex((o) => !o.disabled));
     setOpen(true);
     requestAnimationFrame(() => searchRef.current?.focus());
   }
@@ -218,12 +219,13 @@ export function Select({ className, error, children, ref, id, ...props }: Select
   }
 
   function onSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    const enabled = filtered.flatMap((option, index) => option.disabled ? [] : [index]);
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActive((i) => Math.min(i + 1, filtered.length - 1));
+      setActive((i) => enabled.find((index) => index > i) ?? enabled[enabled.length - 1] ?? -1);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActive((i) => Math.max(i - 1, 0));
+      setActive((i) => [...enabled].reverse().find((index) => index < i) ?? enabled[0] ?? -1);
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (filtered[active]) pick(filtered[active]);
