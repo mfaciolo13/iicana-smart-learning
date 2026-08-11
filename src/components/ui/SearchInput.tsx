@@ -44,7 +44,7 @@ export function SearchInput({ placeholder, resultCount, className }: SearchInput
     timer.current = setTimeout(() => apply(next), 300);
   }
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => clearTimeout(timer.current), [applied]);
 
   // Si la búsqueda cambia desde afuera (por ejemplo, al quitar su chip de filtro), el campo la sigue.
   // Se ajusta durante el render, que es el patrón recomendado en lugar de un efecto.
