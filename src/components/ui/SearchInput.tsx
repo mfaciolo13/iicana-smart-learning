@@ -72,9 +72,9 @@ export function SearchInput({ placeholder, resultCount, className }: SearchInput
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="w-full"
+          className="min-w-0 flex-1"
         />
-        <Button type="submit" variant="secondary" iconLeft={<Search className="w-4 h-4" />}>
+        <Button type="submit" variant="secondary" className="shrink-0" iconLeft={<Search className="w-4 h-4" />}>
           Buscar
         </Button>
       </form>
