@@ -5,6 +5,7 @@ import {
   DialogBackdrop,
   DialogPanel,
   DialogTitle,
+  Description,
 } from "@headlessui/react";
 import { Button } from "@/components/ui/Button";
 
@@ -45,7 +46,7 @@ export function ConfirmDialog({
             {title}
           </DialogTitle>
 
-          <p className="text-sm text-slate-500 mb-6 leading-relaxed">{message}</p>
+          <Description className="text-sm text-slate-500 mb-6 leading-relaxed">{message}</Description>
 
           <div className="flex justify-end gap-3">
             <Button variant="ghost" size="sm" onClick={onClose}>
