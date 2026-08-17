@@ -40,7 +40,7 @@ export function ConfirmDialog({
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel
           transition
-          className="w-full max-w-md rounded-2xl bg-white shadow-xl border border-slate-200 p-6 transition duration-200 ease-out data-[closed]:opacity-0 data-[closed]:scale-95"
+          className="w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto break-words rounded-2xl bg-white shadow-xl border border-slate-200 p-6 transition duration-200 ease-out data-[closed]:opacity-0 data-[closed]:scale-95"
         >
           <DialogTitle className="text-base font-semibold text-slate-900 mb-2">
             {title}
@@ -48,7 +48,7 @@ export function ConfirmDialog({
 
           <Description className="text-sm text-slate-500 mb-6 leading-relaxed">{message}</Description>
 
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-wrap justify-end gap-3">
             <Button variant="ghost" size="sm" onClick={onClose}>
               {cancelLabel}
             </Button>
