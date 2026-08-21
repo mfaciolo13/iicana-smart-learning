@@ -71,7 +71,7 @@ export function Pagination({ basePath, searchParams, page, noun = "resultados", 
         Mostrando {page.from}–{page.to} de {page.total} {page.total === 1 && nounSingular ? nounSingular : noun}
       </p>
       {page.pageCount > 1 && (
-        <div className="flex items-center gap-1">
+        <div className="flex max-w-full flex-wrap items-center gap-1">
           {page.page > 1 ? (
             <Link href={href(page.page - 1)} className={cn(linkBase, "hover:bg-slate-100")} aria-label="Página anterior">
               <ChevronLeft className="w-4 h-4" />
