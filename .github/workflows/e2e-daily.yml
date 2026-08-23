@@ -1,5 +1,12 @@
 name: E2E Daily
 
+# Corre la suite E2E contra un BUILD LOCAL de producción (next start) apuntando
+# al proyecto Supabase de TEST, con datos sembrados. NUNCA contra el sitio real:
+# la suite crea/edita/borra datos y correrla contra producción sería destructivo.
+#
+# Requiere estos secrets (del proyecto Supabase de TEST, no producción):
+#   SUPABASE_TEST_URL, SUPABASE_TEST_ANON_KEY, SUPABASE_TEST_SECRET_KEY, DATABASE_TEST_URL
+
 on:
   schedule:
     - cron: "0 6 * * *"
@@ -7,8 +14,14 @@ on:
 
 jobs:
   e2e:
-    name: Playwright E2E (producción)
+    name: Playwright E2E (build local + Supabase de test)
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_TEST_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_TEST_SECRET_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_TEST_URL }}
     steps:
       - uses: actions/checkout@v6
 
@@ -31,15 +44,16 @@ jobs:
 
       - run: pnpm exec playwright install --with-deps chromium
 
-      - name: Ejecutar tests E2E
-        run: pnpm exec playwright test
+      - name: Build de producción
+        run: pnpm build
+
+      - name: Sembrar datos de test
+        run: pnpm seed:e2e
+
+      - name: Ejecutar E2E (next start local)
+        run: pnpm test:e2e
         env:
-          CI: true
-          PLAYWRIGHT_BASE_URL: https://cervantes-smart-learning.com.ar
-          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
-          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-          E2E_ALUMNO_EMAIL: ${{ secrets.E2E_ALUMNO_EMAIL }}
-          E2E_ALUMNO_PASSWORD: ${{ secrets.E2E_ALUMNO_PASSWORD }}
+          E2E_PROD: "1"
 
       - name: Subir reporte Playwright
         uses: actions/upload-artifact@v7
