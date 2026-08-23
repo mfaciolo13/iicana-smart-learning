@@ -8,6 +8,12 @@ updates:
       time: "09:00"
       timezone: America/Argentina/Cordoba
     open-pull-requests-limit: 5
+    # TypeScript 7 aún no lo soportan Next 16 (el build worker crashea) ni
+    # typescript-eslint (peer topa en <6.1.0). Ignoramos el major de TS hasta
+    # que el toolchain lo soporte; @types/* y los minor/patch de TS 6 siguen.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       typescript-ecosystem:
         patterns:
