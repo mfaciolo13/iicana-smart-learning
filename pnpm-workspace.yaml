@@ -1,3 +1,5 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+patchedDependencies:
+  playwright@1.61.0: patches/playwright@1.61.0.patch
