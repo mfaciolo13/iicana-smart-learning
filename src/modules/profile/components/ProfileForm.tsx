@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -51,11 +51,19 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
 
   const [preview, setPreview] = useState<string | null>(avatarUrl);
   const fileRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  useEffect(() => () => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+  }, []);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPreview(URL.createObjectURL(file));
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
+    setPreview(previewUrl);
   }
 
   return (
