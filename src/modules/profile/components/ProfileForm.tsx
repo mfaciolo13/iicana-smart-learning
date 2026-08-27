@@ -73,7 +73,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-24 h-24 rounded-full overflow-hidden focus:outline-none"
+            className="w-24 h-24 rounded-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             aria-label="Cambiar foto de perfil"
           >
             {preview ? (
@@ -87,7 +87,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
                 {getInitials(fullName)}
               </div>
             )}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center rounded-full">
               <Camera className="w-6 h-6 text-white" />
             </div>
           </button>
