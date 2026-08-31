@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { LogoutButton } from "./LogoutButton";
+import { getInitials } from "@/lib/initials";
 import type { UserRole } from "@/modules/auth/types";
 import { cn } from "@/lib/cn";
 import { Logo } from "./Logo";
@@ -169,14 +170,6 @@ const ROLE_LABELS: Record<UserRole, string> = {
   alumno: "Alumno",
 };
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
-}
 
 interface SidebarProps {
   role: UserRole;

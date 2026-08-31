@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { Camera } from "lucide-react";
+import { getInitials } from "@/lib/initials";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { updateProfileAction } from "../actions";
@@ -24,9 +25,6 @@ function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
   if (cleaned !== el.value) el.value = cleaned;
 }
 
-function getInitials(name: string) {
-  return name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
-}
 
 const profileSchema = z.object({
   fullName: personNameField("El nombre"),

@@ -4,17 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, Menu, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
+import { getInitials } from "@/lib/initials";
 import { createClient } from "@/lib/supabase/client";
 import type { UserRole } from "@/modules/auth/types";
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
-}
 
 interface TopbarProps {
   fullName: string;
