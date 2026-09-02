@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useId, useState, useRef, useEffect } from "react";
 import { Bell, Menu, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
@@ -26,6 +26,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export function Topbar({ fullName, role, avatarUrl, userId, initialUnreadCount, onMenuClick }: TopbarProps) {
+  const dropdownId = useId();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -95,7 +96,8 @@ export function Topbar({ fullName, role, avatarUrl, userId, initialUnreadCount, 
           onClick={() => setDropdownOpen((v) => !v)}
           className="flex items-center gap-2.5 rounded-lg pl-2 pr-1 py-1 hover:bg-slate-100 transition-colors"
           aria-expanded={dropdownOpen}
-          aria-haspopup="true"
+          aria-label={`Menú de usuario de ${fullName}`}
+          aria-controls={dropdownId}
         >
           <div className="text-right hidden sm:block">
             <p className="text-xs font-semibold text-slate-900 leading-none">{fullName}</p>
@@ -112,7 +114,7 @@ export function Topbar({ fullName, role, avatarUrl, userId, initialUnreadCount, 
         </button>
 
         {dropdownOpen && (
-          <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-50">
+          <div id={dropdownId} className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-50">
             <Link
               href={`/${role}/profile`}
               onClick={() => setDropdownOpen(false)}
