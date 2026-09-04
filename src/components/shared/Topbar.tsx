@@ -90,7 +90,17 @@ export function Topbar({ fullName, role, avatarUrl, userId, initialUnreadCount, 
       <div className="w-px h-5 bg-slate-200 mx-1" />
 
       {/* Usuario + menú */}
-      <div className="relative" ref={dropdownRef}>
+      <div
+        className="relative"
+        ref={dropdownRef}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && dropdownOpen) {
+            event.stopPropagation();
+            setDropdownOpen(false);
+            dropdownRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+          }
+        }}
+      >
         <button
           type="button"
           onClick={() => setDropdownOpen((v) => !v)}
