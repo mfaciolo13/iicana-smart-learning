@@ -26,6 +26,15 @@ export function DashboardShell({ role, fullName, avatarUrl, userId, initialUnrea
     };
   }, [sidebarOpen]);
 
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [sidebarOpen]);
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       {/* Mobile overlay */}
