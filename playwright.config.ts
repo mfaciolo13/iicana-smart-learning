@@ -83,8 +83,12 @@ export default defineConfig({
       // E2E_PROD=1 → build de producción (next start). Producción no tiene la
       // compilación on-demand ni la staleness del unstable_cache de `next dev`
       // que desincronizaban las listas sembradas en la corrida completa.
-      // (El build hay que generarlo antes: `pnpm build`.)
-      command: process.env.E2E_PROD ? "pnpm start" : "pnpm dev",
+      // RESEND_API_KEY=disabled-for-e2e se antepone al comando completo para que
+      // esté presente tanto en `pnpm build` (static analysis de Next.js) como en
+      // `pnpm start`, evitando el error "Missing API key" de Resend en build time.
+      command: process.env.E2E_PROD
+        ? "RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start"
+        : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
