@@ -138,7 +138,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             const isChosen = chosenIndex === i;
             const isCorrectOption = i === correctIndex;
 
-            let optionClass = "flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-150 ";
+            let optionClass = "flex w-full items-center gap-3 p-4 text-left rounded-xl border-2 cursor-pointer transition-all duration-150 ";
             let letterClass = "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ";
 
             if (!isConfirmed) {
@@ -163,12 +163,13 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             }
 
             return (
-              <div
+              <button
                 key={i}
-                role="button"
-                tabIndex={isConfirmed ? -1 : 0}
+                type="button"
+                disabled={isConfirmed}
+                aria-pressed={isChosen}
                 onClick={() => pick(i)}
-                onKeyDown={(e) => e.key === "Enter" && pick(i)}
+
                 className={optionClass}
               >
                 <span className={letterClass}>{OPTION_LETTERS[i]}</span>
@@ -179,7 +180,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
                 {isConfirmed && isChosen && !isCorrectOption && (
                   <span className="ml-auto text-red-500 text-lg">✗</span>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
