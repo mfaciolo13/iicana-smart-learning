@@ -83,6 +83,10 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
         <h2 className="text-xl font-bold text-slate-900">{topic}</h2>
       </div>
 
+      {error && (
+        <p className="text-sm text-red-600 mb-3" role="alert">{error}</p>
+      )}
+
       {/* Progress bar */}
       <div className="mb-6">
         <div className="flex justify-between text-xs text-slate-400 mb-2">
@@ -244,9 +248,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
         <div className="mt-6 p-5 bg-gradient-to-r from-brand-50 to-violet-50 border border-brand-200 rounded-2xl text-center">
           <p className="text-base font-semibold text-slate-800 mb-1">¡Respondiste todas las preguntas!</p>
           <p className="text-sm text-slate-500 mb-4">Enviá tus respuestas para ver tu puntaje final.</p>
-          {error && (
-            <p className="text-sm text-red-600 mb-3">{error}</p>
-          )}
+
           <button
             type="button"
             onClick={handleSubmit}
