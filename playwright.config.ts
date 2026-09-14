@@ -18,6 +18,12 @@ const isRemote = baseURL !== "http://localhost:3000";
 
 const chrome = devices["Desktop Chrome"];
 
+// Valor con prefijo "re_" para satisfacer la validación del constructor de
+// Resend sin necesitar una key real. Las llamadas de red fallarán con 401 en
+// runtime, pero el build de Next.js (que instancia el cliente en módulo-scope)
+// ya no lanzará "Missing API key".
+const E2E_RESEND_KEY = "re_e2e_00000000000000000000000000000000";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -80,17 +86,20 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // E2E_PROD=1 → build de producción (next start). Producción no tiene la
-      // compilación on-demand ni la staleness del unstable_cache de `next dev`
-      // que desincronizaban las listas sembradas en la corrida completa.
-      // (El build hay que generarlo antes: `pnpm build`.)
-      command: process.env.E2E_PROD ? "pnpm start" : "pnpm dev",
+      // E2E_PROD=1 → build de producción (next build && next start).
+      // El build se incluye en el mismo command para que RESEND_API_KEY esté
+      // disponible también durante la fase de recolección de páginas estáticas
+      // de Next.js (donde instancia clientes de terceros en módulo-scope).
+      // En modo dev no hay build previo, así que solo se pasa al devserver.
+      command: process.env.E2E_PROD
+        ? "pnpm build && pnpm start"
+        : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
-      timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // En producción NODE_ENV=production hace que se envíen emails reales; los
-      // neutralizamos para la suite (las actions atrapan el fallo de envío).
-      env: { RESEND_API_KEY: "disabled-for-e2e" },
+      timeout: process.env.E2E_PROD ? 300_000 : 120_000,
+      // RESEND_API_KEY con prefijo "re_" válido para el constructor de Resend:
+      // evita "Missing API key" en build-time sin enviar emails reales.
+      env: { RESEND_API_KEY: E2E_RESEND_KEY },
     },
   }),
 });
