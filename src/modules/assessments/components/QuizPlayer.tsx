@@ -93,7 +93,14 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
           <span>Pregunta {current + 1} de {questions.length}</span>
           <span>{answeredCount}/{questions.length} respondidas</span>
         </div>
-        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-2 bg-slate-100 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-label="Preguntas respondidas"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={answeredCount}
+        >
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
