@@ -117,6 +117,8 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
               key={i}
               type="button"
               onClick={() => setCurrent(i)}
+              aria-label={`Pregunta ${i + 1}`}
+              aria-current={i === current ? "step" : undefined}
               className={[
                 "w-7 h-7 rounded-full text-xs font-bold transition-all",
                 i === current
