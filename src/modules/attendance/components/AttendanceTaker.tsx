@@ -81,7 +81,7 @@ export function AttendanceTaker({
                     defaultChecked={(initialStatuses?.[enrollment.id] ?? "present") === opt.value}
                     className="sr-only peer"
                   />
-                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all peer-checked:ring-2 peer-checked:ring-offset-1 cursor-pointer ${opt.color} peer-checked:ring-current`}>
+                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all peer-checked:ring-2 peer-checked:ring-offset-1 cursor-pointer ${opt.color} peer-checked:ring-current peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-500`}>
                     {opt.label}
                   </span>
                 </label>
