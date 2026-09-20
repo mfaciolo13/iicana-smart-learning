@@ -88,9 +88,12 @@ export default defineConfig({
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // En producción NODE_ENV=production hace que se envíen emails reales; los
-      // neutralizamos para la suite (las actions atrapan el fallo de envío).
-      env: { RESEND_API_KEY: "disabled-for-e2e" },
+      // Resend valida que la API key tenga el prefijo "re_"; un valor sin ese
+      // formato lanza "Missing API key" en tiempo de build/módulo cuando la ruta
+      // /api/cron/class-reminder instancia el cliente a nivel de módulo.
+      // Usamos "re_test_disabled_for_e2e" para satisfacer la validación sin
+      // enviar emails reales (las actions atrapan el fallo de red/auth).
+      env: { RESEND_API_KEY: "re_test_disabled_for_e2e" },
     },
   }),
 });
