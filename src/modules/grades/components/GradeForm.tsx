@@ -108,6 +108,8 @@ export function GradeForm({ enrollments, grade, action, submitLabel = "Guardar",
                         key={n}
                         type="button"
                         onClick={() => field.onChange(n)}
+                        aria-pressed={active}
+                        aria-label={`Nota ${n}`}
                         className={cn(
                           "w-10 h-10 rounded-xl border-2 text-sm font-bold transition-all",
                           active ? scoreColorActive(n) : scoreColor(n)
