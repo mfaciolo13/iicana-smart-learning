@@ -57,11 +57,12 @@ export function dniField() {
 // Validado con libphonenumber-js usando el contexto del país AR.
 export function phoneField() {
   return z
-    .union([
+    .string()
+    .trim()
+    .pipe(z.union([
       z.literal(""),
       z
         .string()
-        .trim()
         .regex(/^\d+$/, "Solo se permiten números, sin código de país (ej: 3516789012)")
         .refine(
           (v) => {
@@ -73,7 +74,7 @@ export function phoneField() {
           },
           "Ingresá un número de teléfono argentino válido (ej: 3516789012)",
         ),
-    ])
+    ]))
     .optional()
     .transform((v) => (v === "" ? undefined : v));
 }

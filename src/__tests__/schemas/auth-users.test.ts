@@ -1,8 +1,23 @@
 ﻿import { describe, it, expect } from "vitest";
 import { loginSchema } from "@/modules/auth/schemas";
 import { updateUserSchema } from "@/modules/users/schemas";
+import { phoneField } from "@/lib/validation";
 
 // SCRUM-102: Tests unitarios — schemas Zod de autenticación y usuarios
+
+describe("phoneField", () => {
+  it.each([undefined, "", "   ", "\t\n"])("trata %j como teléfono omitido", (value) => {
+    expect(phoneField().parse(value)).toBeUndefined();
+  });
+
+  it("normaliza espacios alrededor de un teléfono válido", () => {
+    expect(phoneField().parse(" 3511234567 ")).toBe("3511234567");
+  });
+
+  it("sigue rechazando caracteres no numéricos", () => {
+    expect(phoneField().safeParse("351-1234567").success).toBe(false);
+  });
+});
 
 describe("loginSchema", () => {
   it("acepta email válido y password suficiente", () => {
