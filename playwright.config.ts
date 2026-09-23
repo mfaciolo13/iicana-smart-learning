@@ -4,6 +4,12 @@ import dotenv from "dotenv";
 // El dev server y el seed apuntan al proyecto Supabase de TEST.
 dotenv.config({ path: ".env.test" });
 
+// Neutraliza claves de servicios externos en todo el proceso CI (build incluido).
+// Sin esto, `next build` falla al intentar inicializar Resend sin API key.
+if (!process.env.RESEND_API_KEY) {
+  process.env.RESEND_API_KEY = "disabled-for-e2e";
+}
+
 // Rutas de storageState por rol (inline para no importar .ts desde el config —
 // el loader de Playwright 1.61 falla al resolver imports .ts en tiempo de config).
 const STORAGE = {
