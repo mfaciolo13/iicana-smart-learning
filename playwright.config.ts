@@ -80,16 +80,20 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // E2E_PROD=1 → build de producción (next start). Producción no tiene la
-      // compilación on-demand ni la staleness del unstable_cache de `next dev`
-      // que desincronizaban las listas sembradas en la corrida completa.
-      // (El build hay que generarlo antes: `pnpm build`.)
-      command: process.env.E2E_PROD ? "pnpm start" : "pnpm dev",
+      // E2E_PROD=1 → build + start de producción con RESEND_API_KEY neutralizada
+      // para que `next build` no falle al colectar rutas que instancian Resend.
+      // El build y el start corren en el mismo comando (shell -c) para que el
+      // `env` de Playwright aplique a ambos pasos.
+      // En modo dev no hay build; el key también se neutraliza por consistencia.
+      command: process.env.E2E_PROD
+        ? "pnpm build && pnpm start"
+        : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
-      timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // En producción NODE_ENV=production hace que se envíen emails reales; los
-      // neutralizamos para la suite (las actions atrapan el fallo de envío).
+      timeout: process.env.E2E_PROD ? 300_000 : 120_000,
+      // RESEND_API_KEY neutralizada: evita que `next build` (y `next dev`) fallen
+      // al intentar instanciar el cliente de Resend sin credenciales reales.
+      // Las actions que envían emails atrapan el fallo de envío sin romper el flujo.
       env: { RESEND_API_KEY: "disabled-for-e2e" },
     },
   }),
