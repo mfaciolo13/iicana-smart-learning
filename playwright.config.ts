@@ -89,8 +89,12 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
       // En producción NODE_ENV=production hace que se envíen emails reales; los
-      // neutralizamos para la suite (las actions atrapan el fallo de envío).
-      env: { RESEND_API_KEY: "disabled-for-e2e" },
+      // neutralizamos para la suite. El valor debe satisfacer la validación del
+      // constructor de Resend (prefijo "re_") para que Next.js pueda colectar la
+      // configuración de rutas como /api/cron/class-reminder sin explotar en
+      // build time. Cualquier llamada real a la API fallará con 401 en runtime,
+      // lo cual es aceptable ya que esas rutas cron no se testean en E2E.
+      env: { RESEND_API_KEY: "re_disabled_for_e2e_tests" },
     },
   }),
 });
