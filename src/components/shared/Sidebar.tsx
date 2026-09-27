@@ -203,8 +203,8 @@ export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: 
     <aside
       className={cn(
         "fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col bg-slate-50 border-r border-slate-200 transition-transform duration-200 ease-in-out",
-        "lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:z-auto",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        "lg:sticky lg:top-0 lg:h-screen lg:visible lg:translate-x-0 lg:z-auto",
+        isOpen ? "visible translate-x-0" : "invisible -translate-x-full"
       )}
       aria-label="Menú principal"
     >
