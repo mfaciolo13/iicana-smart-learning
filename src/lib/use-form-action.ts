@@ -23,11 +23,14 @@ export function useFormAction<T extends FieldValues>(
   const onSubmit = form.handleSubmit(() => {
     startTransition(async () => {
       let result: Awaited<ReturnType<typeof action>>;
+      let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
         // Timeout de 20 s: una mutación que no responde no debe dejar el botón girando sin aviso.
         result = await Promise.race([
           action(undefined, new FormData(formRef.current!)),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ACTION_TIMEOUT_MS)),
+          new Promise<never>((_, reject) => {
+            timeout = setTimeout(() => reject(new Error("timeout")), ACTION_TIMEOUT_MS);
+          }),
         ]);
       } catch (e) {
         if (isRedirectError(e)) throw e;
@@ -38,6 +41,8 @@ export function useFormAction<T extends FieldValues>(
             : "No se pudo completar la acción. Revisá los datos e intentá de nuevo."
         );
         return;
+      } finally {
+        clearTimeout(timeout);
       }
       if (result?.error) toast.error(result.error);
       if (result?.fieldErrors) {
