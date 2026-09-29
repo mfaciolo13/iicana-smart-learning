@@ -18,6 +18,15 @@ const isRemote = baseURL !== "http://localhost:3000";
 
 const chrome = devices["Desktop Chrome"];
 
+// Variable dummy que satisface la validación de Resend en tiempo de build/boot
+// sin enviar emails reales. Debe estar presente tanto para `pnpm build` como
+// para `pnpm start`/`pnpm dev`, así que la inyectamos en process.env aquí para
+// que el webServer la herede, y también la incluimos en el objeto `env` del
+// webServer (que cubre el proceso del servidor en sí).
+if (!process.env.RESEND_API_KEY) {
+  process.env.RESEND_API_KEY = "disabled-for-e2e";
+}
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -83,11 +92,13 @@ export default defineConfig({
       // E2E_PROD=1 → build de producción (next start). Producción no tiene la
       // compilación on-demand ni la staleness del unstable_cache de `next dev`
       // que desincronizaban las listas sembradas en la corrida completa.
-      // (El build hay que generarlo antes: `pnpm build`.)
-      command: process.env.E2E_PROD ? "pnpm start" : "pnpm dev",
+      // El comando incluye el build con RESEND_API_KEY ya seteada (via
+      // process.env heredado arriba) para que Next.js no falle al colectar
+      // rutas que instancian Resend en tiempo de build.
+      command: process.env.E2E_PROD ? "pnpm build && pnpm start" : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
-      timeout: process.env.E2E_PROD ? 180_000 : 120_000,
+      timeout: process.env.E2E_PROD ? 300_000 : 120_000,
       // En producción NODE_ENV=production hace que se envíen emails reales; los
       // neutralizamos para la suite (las actions atrapan el fallo de envío).
       env: { RESEND_API_KEY: "disabled-for-e2e" },
