@@ -4,6 +4,15 @@ import dotenv from "dotenv";
 // El dev server y el seed apuntan al proyecto Supabase de TEST.
 dotenv.config({ path: ".env.test" });
 
+// Garantizamos que RESEND_API_KEY esté siempre definida en el proceso actual
+// (y en cualquier proceso hijo que Playwright o el build lancen) antes de que
+// Next.js intente instanciar el cliente de Resend en tiempo de build/collect.
+// Si ya viene seteada desde el entorno de CI la respetamos; si no, ponemos un
+// valor ficticio que impide el crash de `new Resend(undefined)`.
+if (!process.env.RESEND_API_KEY) {
+  process.env.RESEND_API_KEY = "disabled-for-e2e";
+}
+
 // Rutas de storageState por rol (inline para no importar .ts desde el config —
 // el loader de Playwright 1.61 falla al resolver imports .ts en tiempo de config).
 const STORAGE = {
@@ -83,8 +92,12 @@ export default defineConfig({
       // E2E_PROD=1 → build de producción (next start). Producción no tiene la
       // compilación on-demand ni la staleness del unstable_cache de `next dev`
       // que desincronizaban las listas sembradas en la corrida completa.
-      // (El build hay que generarlo antes: `pnpm build`.)
-      command: process.env.E2E_PROD ? "pnpm start" : "pnpm dev",
+      // Usamos `sh -c` para que tanto el `next build` como el `next start`
+      // hereden RESEND_API_KEY=disabled-for-e2e y no fallen al colectar la
+      // ruta /api/cron/class-reminder en tiempo de build.
+      command: process.env.E2E_PROD
+        ? "RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start"
+        : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
