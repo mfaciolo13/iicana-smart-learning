@@ -80,14 +80,17 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // E2E_PROD=1 → build de producción (next start). Producción no tiene la
-      // compilación on-demand ni la staleness del unstable_cache de `next dev`
-      // que desincronizaban las listas sembradas en la corrida completa.
-      // (El build hay que generarlo antes: `pnpm build`.)
-      command: process.env.E2E_PROD ? "pnpm start" : "pnpm dev",
+      // E2E_PROD=1 → build de producción (next build && next start).
+      // RESEND_API_KEY se pasa como variable de entorno en el propio comando
+      // para que tanto el build como el servidor arranquen sin la dependencia
+      // de una API key real (evita "Missing API key" al colectar rutas con
+      // next build, p.ej. /api/cron/class-reminder).
+      command: process.env.E2E_PROD
+        ? "RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start"
+        : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
-      timeout: process.env.E2E_PROD ? 180_000 : 120_000,
+      timeout: process.env.E2E_PROD ? 300_000 : 120_000,
       // En producción NODE_ENV=production hace que se envíen emails reales; los
       // neutralizamos para la suite (las actions atrapan el fallo de envío).
       env: { RESEND_API_KEY: "disabled-for-e2e" },
