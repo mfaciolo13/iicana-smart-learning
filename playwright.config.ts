@@ -90,7 +90,10 @@ export default defineConfig({
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
       // En producción NODE_ENV=production hace que se envíen emails reales; los
       // neutralizamos para la suite (las actions atrapan el fallo de envío).
-      env: { RESEND_API_KEY: "disabled-for-e2e" },
+      // El valor debe tener el prefijo "re_" para satisfacer la validación del
+      // constructor de Resend y no romper el build de Next.js en la recopilación
+      // de datos de /api/cron/class-reminder.
+      env: { RESEND_API_KEY: "re_disabled_for_e2e" },
     },
   }),
 });
