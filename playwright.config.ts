@@ -90,7 +90,11 @@ export default defineConfig({
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
       // En producción NODE_ENV=production hace que se envíen emails reales; los
       // neutralizamos para la suite (las actions atrapan el fallo de envío).
-      env: { RESEND_API_KEY: "disabled-for-e2e" },
+      // IMPORTANTE: el SDK de Resend valida que la clave empiece con "re_" en
+      // el constructor — "disabled-for-e2e" lanzaba excepción durante `next build`
+      // al analizar /api/cron/class-reminder. El valor re_disabled_for_e2e
+      // satisface esa validación sin realizar llamadas reales.
+      env: { RESEND_API_KEY: "re_disabled_for_e2e" },
     },
   }),
 });
