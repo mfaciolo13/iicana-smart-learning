@@ -122,19 +122,17 @@ test.describe("Director · Alumnos · ciclo completo crear → editar → elimin
     await page.waitForURL(/\/director\/students\/[0-9a-f-]{36}$/);
     await page.getByRole("button", { name: "Eliminar" }).click();
     await page.getByRole("button", { name: "Confirmar" }).click();
-    // Esperar a que el borrado complete: por BUG-A el detalle pasa a 404.
-    await expect(page.getByText(/Página no encontrada/i)).toBeVisible({ timeout: 30_000 });
+    // Esperar a que el borrado complete: el usuario vuelve al listado (SCRUM-234).
+    await page.waitForURL(/\/director\/students$/, { timeout: 30_000 });
     // Verificar que ya no está en la lista (la action revalida el tag "students").
     await page.goto("/director/students");
     await expect(page.getByRole("cell", { name: NEW.dni, exact: true })).toHaveCount(0);
   });
 });
 
-// BUG-A — al eliminar desde el detalle, el usuario queda en una página 404 en
-// vez de ser redirigido a la lista (el borrado sí ocurre). Se espera que falle
-// hasta que se arregle (usar redirect() server-side en la action, p. ej.).
+// BUG-A / SCRUM-234 (corregido) — al eliminar desde el detalle, el usuario vuelve a la lista.
 test.describe("Director · Alumnos · bug de navegación post-borrado", () => {
-  test.fail("BUG-A: eliminar desde el detalle deja al usuario en 404 en vez de la lista", async ({ page }) => {
+  test("BUG-A: eliminar desde el detalle lleva al usuario a la lista", async ({ page }) => {
     // Crear un alumno descartable para borrarlo desde su detalle.
     const s = String(Date.now()).slice(-8);
     await page.goto("/director/students/new");
@@ -152,7 +150,7 @@ test.describe("Director · Alumnos · bug de navegación post-borrado", () => {
     await page.getByRole("button", { name: "Eliminar" }).click();
     await page.getByRole("button", { name: "Confirmar" }).click();
 
-    // Contrato deseado: aterrizar en la lista. Hoy aterriza en /404 → falla.
+    // Contrato: aterrizar en la lista.
     await page.waitForURL(/\/director\/students$/, { timeout: 15_000 });
   });
 });

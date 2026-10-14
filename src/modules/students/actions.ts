@@ -6,7 +6,8 @@ import { requireRole } from "@/lib/auth/helpers";
 import { buildInviteUrl } from "@/lib/site-url";
 import { portalPath } from "@/lib/portal";
 import { createStudentSchema, updateStudentSchema } from "./schemas";
-import { createStudent, updateStudent, deleteStudent, setStudentAccessRestricted, dniExists } from "./services/students.service";
+import { createStudent, updateStudent, deleteStudent, setStudentAccessRestricted, dniExists, getStudentRemovalInfo } from "./services/students.service";
+import { removalMode } from "./lib/removal";
 import { sendInvitationEmail } from "@/lib/email";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
@@ -161,10 +162,29 @@ export async function deleteStudentAction(_prev: ActionResult, formData: FormDat
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
 
-  await deleteStudent(id);
+  const info = await getStudentRemovalInfo(id);
+  if (!info) return { error: "El alumno no existe" };
+
+  const adminSupabase = createAdminClient();
+  const mode = removalMode(info.impact, role);
+
+  if (mode === "deactivate") {
+    // Baja lógica (SCRUM-281): inactivo y sin acceso; los pagos y las inscripciones se conservan.
+    await updateStudent({ id, status: "inactive" });
+    const { error } = await adminSupabase.auth.admin.updateUserById(info.profileId, { ban_duration: "87600h" });
+    if (error) return { error: "El alumno quedó inactivo, pero no se pudo bloquear su acceso. Intentá de nuevo." };
+  } else {
+    // Sin historia: borrado físico (sólo director). También se quitan el perfil y la cuenta de acceso.
+    await deleteStudent(id);
+    await adminSupabase.from("profiles").delete().eq("id", info.profileId);
+    await adminSupabase.auth.admin.deleteUser(info.profileId).catch(() => {});
+  }
 
   updateTag("students");
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
-  return { success: "Alumno eliminado", redirectTo: portalPath(role, "/students") };
+  return {
+    success: mode === "deactivate" ? "Alumno dado de baja (se conservan sus pagos e inscripciones)" : "Alumno eliminado",
+    redirectTo: portalPath(role, "/students"),
+  };
 }

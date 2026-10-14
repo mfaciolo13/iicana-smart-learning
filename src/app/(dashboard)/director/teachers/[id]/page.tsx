@@ -1,4 +1,4 @@
-﻿import { notFound } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -22,7 +22,8 @@ export default async function TeacherDetailPage({
     .eq("id", id)
     .single();
 
-  if (!row) notFound();
+  // SCRUM-234: tras eliminar desde el detalle, volver al listado en lugar de mostrar un 404.
+  if (!row) redirect("/director/teachers");
 
   const { data: profileRow } = await supabase
     .from("profiles")
