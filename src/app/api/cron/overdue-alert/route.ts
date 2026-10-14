@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedCron } from "@/lib/cron-auth";
 import { db } from "@/lib/drizzle";
 import { payments, students } from "@/lib/drizzle/schema";
-import { eq, count } from "drizzle-orm";
+import { eq, count, inArray } from "drizzle-orm";
 import { getOverdueAlertRecipients } from "@/modules/notifications/services/cron.service";
 import { sendPaymentOverdueAlertEmail } from "@/lib/email";
 import { markOverduePayments } from "@/modules/payments/services/payments.service";
+
+// SCRUM-319: hasta 60 s por corrida (envíos de email en tanda).
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
@@ -46,7 +49,8 @@ export async function GET(request: NextRequest) {
   const studentRows = await db
     .select({ studentId: payments.studentId, overdueCount: count() })
     .from(payments)
-    .where(eq(payments.status, "overdue"))
+    // Una cuota suspendida cuenta como impaga junto con las vencidas (SCRUM-305).
+    .where(inArray(payments.status, ["overdue", "suspended"]))
     .groupBy(payments.studentId);
 
   for (const row of studentRows) {

@@ -1,7 +1,8 @@
 ﻿import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAttendanceReport } from "@/modules/reports/services/reports.service";
-import { buildStyledReport } from "@/lib/excel";
+import { buildStyledReport, EXCEL_FORMATS } from "@/lib/excel";
+import { todayInstitute } from "@/lib/validation";
 
 export async function GET() {
   const supabase = await createClient();
@@ -31,12 +32,13 @@ export async function GET() {
     rows: data,
     colWidths: [{ wch: 30 }, { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 14 }],
     sheetName: "Asistencia",
+    formats: { 7: EXCEL_FORMATS.percent },
   });
 
   return new Response(buffer, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": 'attachment; filename="reporte-asistencia.xlsx"',
+      "Content-Disposition": `attachment; filename="reporte-asistencia-${todayInstitute()}.xlsx"`,
     },
   });
 }

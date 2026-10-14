@@ -1,7 +1,8 @@
 ﻿import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getGradesReport } from "@/modules/reports/services/reports.service";
-import { buildStyledReport } from "@/lib/excel";
+import { buildStyledReport, excelDate, EXCEL_FORMATS } from "@/lib/excel";
+import { todayInstitute } from "@/lib/validation";
 
 const EVAL_LABELS: Record<string, string> = {
   parcial: "Parcial",
@@ -28,9 +29,9 @@ export async function GET() {
     r.courseName,
     EVAL_LABELS[r.evaluationType] ?? r.evaluationType,
     parseFloat(r.score),
-    new Date(r.evaluatedAt).toLocaleDateString("es-AR"),
+    excelDate(r.evaluatedAt),
     parseFloat(r.score) >= 7 ? "Sí" : "No",
-  ] as (string | number)[]);
+  ] as (string | number | Date)[]);
 
   const buffer = buildStyledReport({
     title: "Smart Learning — Reporte de Notas",
@@ -38,12 +39,13 @@ export async function GET() {
     rows: data,
     colWidths: [{ wch: 30 }, { wch: 12 }, { wch: 25 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 10 }],
     sheetName: "Notas",
+    formats: { 4: EXCEL_FORMATS.grade, 5: EXCEL_FORMATS.date },
   });
 
   return new Response(buffer, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": 'attachment; filename="reporte-notas.xlsx"',
+      "Content-Disposition": `attachment; filename="reporte-notas-${todayInstitute()}.xlsx"`,
     },
   });
 }

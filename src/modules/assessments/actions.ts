@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import Anthropic from "@anthropic-ai/sdk";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { assertCourseAccess } from "@/lib/auth/course-access";
+import { isStudentAccessRestricted } from "@/modules/students/services/students.service";
 import { sendAssessmentPublishedEmail } from "@/lib/email";
 import { getEmailsForCourse } from "@/modules/notifications/services/notifications.service";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -389,6 +390,8 @@ export async function checkAnswerAction(
   const user = await getCurrentUser();
   if (!user) return { error: "No autorizado" };
 
+  if (await isStudentAccessRestricted(user.id)) return { error: "Tu acceso está restringido por cuotas impagas. Regularizá tus pagos con la administración." };
+
   if (!Number.isInteger(questionIndex) || !Number.isInteger(chosenIndex) || chosenIndex < 0) {
     return { error: "Respuesta inválida" };
   }
@@ -436,6 +439,8 @@ export async function submitAttemptAction(_prev: ActionResult, formData: FormDat
       ) as Record<string, string>,
     };
   }
+
+  if (await isStudentAccessRestricted(user.id)) return { error: "Tu acceso está restringido por cuotas impagas. Regularizá tus pagos con la administración." };
 
   const detail = await getAssessmentDetail(parsed.data.assessmentId);
   if (!detail || detail.status !== "published") return { error: "Evaluación no disponible" };

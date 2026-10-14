@@ -16,7 +16,7 @@ import {
 } from "@/lib/email";
 import { db } from "@/lib/drizzle";
 import { payments, students } from "@/lib/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function runRiskDetectionAction(_prev: ActionResult, _fd: FormData): Promise<ActionResult> {
@@ -78,7 +78,8 @@ export async function runOverdueAlertAction(_prev: ActionResult, _fd: FormData):
   const studentRows = await db
     .select({ studentId: payments.studentId })
     .from(payments)
-    .where(eq(payments.status, "overdue"));
+    // Una cuota suspendida cuenta como impaga junto con las vencidas (SCRUM-305).
+    .where(inArray(payments.status, ["overdue", "suspended"]));
 
   const counts = new Map<string, number>();
   for (const r of studentRows) {

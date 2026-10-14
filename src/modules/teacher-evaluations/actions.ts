@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { surveySchema, observationSchema } from "./schemas";
 import { submitSurvey, createObservation, hasSurveySubmitted, getActiveEnrollmentForSurvey } from "./services/teacher-evaluations.service";
+import { isStudentAccessRestricted } from "@/modules/students/services/students.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function submitSurveyAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -15,6 +16,8 @@ export async function submitSurveyAction(_prev: ActionResult, formData: FormData
   // La inscripción y el docente salen del servidor (SCRUM-280): sin inscripción activa en el
   // curso no se puede evaluar, no se puede votar por otro docente y hay una sola encuesta
   // por alumno y curso.
+  if (await isStudentAccessRestricted(user.id)) return { error: "Tu acceso está restringido por cuotas impagas. Regularizá tus pagos con la administración." };
+
   const courseId = formData.get("courseId") as string;
   const active = courseId ? await getActiveEnrollmentForSurvey(user.id, courseId) : null;
   if (!active) return { error: "No estás inscripto en este curso" };

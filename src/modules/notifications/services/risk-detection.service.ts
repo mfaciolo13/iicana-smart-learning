@@ -10,6 +10,7 @@ import {
   studentRiskAssessments,
 } from "@/lib/drizzle/schema";
 import { eq, and, sql, inArray, desc, ne } from "drizzle-orm";
+import { todayInstitute } from "@/lib/validation";
 
 interface RiskSignal {
   type: "overdue" | "low_attendance" | "low_assessment";
@@ -90,6 +91,23 @@ export async function runRiskDetection(): Promise<{ assessed: number; atRisk: nu
     if (studentId && Number(r.avgScore) < 60) lowAssessmentSet.add(studentId);
   }
 
+  // Última evaluación de cada alumno: de ahí se conserva la intervención de Dirección y se evita
+  // duplicar el registro cuando la detección corre dos veces el mismo día (SCRUM-306).
+  const previousRows = await db
+    .select({
+      id: studentRiskAssessments.id,
+      studentId: studentRiskAssessments.studentId,
+      assessedAt: studentRiskAssessments.assessedAt,
+      intervenedAt: studentRiskAssessments.intervenedAt,
+      interventionNote: studentRiskAssessments.interventionNote,
+    })
+    .from(studentRiskAssessments)
+    .where(inArray(studentRiskAssessments.studentId, studentIds))
+    .orderBy(desc(studentRiskAssessments.assessedAt));
+  const latestByStudent = new Map<string, (typeof previousRows)[number]>();
+  for (const row of previousRows) if (!latestByStudent.has(row.studentId)) latestByStudent.set(row.studentId, row);
+
+  const now = new Date();
   let atRisk = 0;
 
   for (const student of activeStudents) {
@@ -101,12 +119,27 @@ export async function runRiskDetection(): Promise<{ assessed: number; atRisk: nu
 
     const riskLevel = computeRiskLevel(signals);
 
-    await db.insert(studentRiskAssessments).values({
-      studentId: student.id,
-      riskLevel,
-      signals: signals as unknown as typeof studentRiskAssessments.$inferInsert["signals"],
-      assessedAt: new Date(),
-    });
+    const signalsJson = signals as unknown as typeof studentRiskAssessments.$inferInsert["signals"];
+    const previous = latestByStudent.get(student.id);
+
+    if (previous && todayInstitute(previous.assessedAt) === todayInstitute(now)) {
+      // Misma jornada: se actualiza el registro de hoy (conserva la intervención) en lugar de duplicarlo.
+      await db
+        .update(studentRiskAssessments)
+        .set({ riskLevel, signals: signalsJson, assessedAt: now })
+        .where(eq(studentRiskAssessments.id, previous.id));
+    } else {
+      await db.insert(studentRiskAssessments).values({
+        studentId: student.id,
+        riskLevel,
+        signals: signalsJson,
+        assessedAt: now,
+        // La intervención registrada sigue visible mientras el alumno continúe en riesgo.
+        ...(previous?.intervenedAt && riskLevel !== "none"
+          ? { intervenedAt: previous.intervenedAt, interventionNote: previous.interventionNote }
+          : {}),
+      });
+    }
 
     if (riskLevel !== "none") atRisk++;
   }
