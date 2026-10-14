@@ -72,7 +72,10 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
   }
 
   try {
-    await markAsPaid(parsed.data);
+    const paid = await markAsPaid(parsed.data);
+    if (!paid) {
+      return { error: "Solo se pueden cobrar pagos pendientes, vencidos o suspendidos. Este pago ya fue cobrado o anulado." };
+    }
   } catch (err) {
     if (isUniqueViolation(err)) {
       return { error: "Ya existe un pago con ese número de recibo" };

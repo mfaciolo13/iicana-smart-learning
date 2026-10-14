@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { loginSchema, registerSchema } from "./schemas";
+import { loginSchema } from "./schemas";
 import { sendPasswordResetEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -39,75 +39,21 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     return { error: "No se pudo obtener la sesión." };
   }
 
-  let { data: profile } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
+  // El perfil (y su rol) solo lo crea el servidor al dar de alta al usuario. Nunca se arma
+  // a partir de `user_metadata`, que controla el propio usuario (SCRUM-268 / DEV-002).
   if (!profile) {
-    const meta = user.user_metadata ?? {};
-    const { data: created } = await supabase
-      .from("profiles")
-      .insert({
-        id: user.id,
-        email: user.email!,
-        full_name: (meta.full_name as string) ?? "",
-        role: (meta.role as string) ?? "alumno",
-      })
-      .select("role")
-      .single();
-    profile = created;
+    await supabase.auth.signOut({ scope: "local" });
+    return { error: "Tu cuenta no está habilitada. Contactá a la institución." };
   }
 
-  const role = profile?.role ?? "alumno";
+  const role = profile.role;
   redirect(`/${role}`);
-}
-
-export async function registerAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  const raw = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-    confirmPassword: formData.get("confirmPassword") as string,
-    fullName: formData.get("fullName") as string,
-    role: formData.get("role") as string,
-  };
-
-  const parsed = registerSchema.safeParse(raw);
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
-
-  const allowedSelfRegisterRoles = ["alumno"] as const;
-  type AllowedRole = (typeof allowedSelfRegisterRoles)[number];
-  if (!(allowedSelfRegisterRoles as readonly string[]).includes(parsed.data.role)) {
-    return { error: "Rol no permitido para el registro público." };
-  }
-  const safeRole: AllowedRole = parsed.data.role as AllowedRole;
-
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      data: {
-        full_name: parsed.data.fullName,
-        role: safeRole,
-      },
-    },
-  });
-
-  if (error) return { error: error.message };
-
-  if (data.user) {
-    await supabase.from("profiles").insert({
-      id: data.user.id,
-      email: parsed.data.email,
-      full_name: parsed.data.fullName,
-      role: safeRole,
-    });
-  }
-
-  redirect("/login?registered=1");
 }
 
 export async function logoutAction() {

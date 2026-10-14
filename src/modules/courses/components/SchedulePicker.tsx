@@ -5,13 +5,21 @@ import { Input, Select } from "@/components/ui/Input";
 import type { DayOfWeek } from "../types";
 import { DAY_LABELS_ES, SELECTABLE_DAYS, DURATION_OPTIONS, formatSchedule } from "../lib/schedule";
 
+export interface ScheduleValue {
+  days: DayOfWeek[];
+  time: string;
+  duration: number;
+}
+
 interface SchedulePickerProps {
   defaultDays?: DayOfWeek[];
   defaultTime?: string;
   defaultDuration?: number;
+  /** Notifica cada cambio para que el formulario padre (react-hook-form) valide los mismos valores que se envían. */
+  onChange?: (value: ScheduleValue) => void;
 }
 
-export function SchedulePicker({ defaultDays = [], defaultTime = "", defaultDuration = 90 }: SchedulePickerProps) {
+export function SchedulePicker({ defaultDays = [], defaultTime = "", defaultDuration = 90, onChange }: SchedulePickerProps) {
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(defaultDays);
   const [time, setTime] = useState(defaultTime.slice(0, 5));
   const [duration, setDuration] = useState(defaultDuration);
@@ -19,11 +27,21 @@ export function SchedulePicker({ defaultDays = [], defaultTime = "", defaultDura
   const preview = formatSchedule(selectedDays, time, duration);
 
   function toggleDay(day: DayOfWeek) {
-    setSelectedDays((prev) =>
-      prev.includes(day)
-        ? prev.filter((d) => d !== day)
-        : SELECTABLE_DAYS.filter((d) => [...prev, day].includes(d))
-    );
+    const next = selectedDays.includes(day)
+      ? selectedDays.filter((d) => d !== day)
+      : SELECTABLE_DAYS.filter((d) => [...selectedDays, day].includes(d));
+    setSelectedDays(next);
+    onChange?.({ days: next, time, duration });
+  }
+
+  function changeTime(value: string) {
+    setTime(value);
+    onChange?.({ days: selectedDays, time: value, duration });
+  }
+
+  function changeDuration(value: number) {
+    setDuration(value);
+    onChange?.({ days: selectedDays, time, duration: value });
   }
 
   return (
@@ -55,7 +73,7 @@ export function SchedulePicker({ defaultDays = [], defaultTime = "", defaultDura
             type="time"
             name="classTime"
             value={time}
-            onChange={(e) => setTime(e.target.value)}
+            onChange={(e) => changeTime(e.target.value)}
             className="w-32"
             required
           />
@@ -65,7 +83,7 @@ export function SchedulePicker({ defaultDays = [], defaultTime = "", defaultDura
           <Select
             name="classDurationMinutes"
             value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
+            onChange={(e) => changeDuration(Number(e.target.value))}
             className="w-32"
           >
             {DURATION_OPTIONS.map((d) => (

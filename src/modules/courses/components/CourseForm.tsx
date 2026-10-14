@@ -58,11 +58,14 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
       classroom: course?.classroom ?? "",
       maxCapacity: initialCapacity,
       teacherId: course?.teacherId ?? undefined,
+      classDays: course?.classDays ?? [],
+      classTime: course?.classTime?.slice(0, 5) ?? "",
+      classDurationMinutes: course?.classDurationMinutes ?? 90,
       diagnosticFrequency: course?.diagnosticFrequency ?? 0,
       ...(isEditing && { status: course.status }),
     },
   });
-  const { register, control, formState: { errors } } = form;
+  const { register, control, setValue, formState: { errors } } = form;
   const { formRef, onSubmit, isPending } = useFormAction(form, action);
 
   return (
@@ -84,7 +87,8 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
             </Select>
           </Field>
 
-          {/* SchedulePicker manages its own hidden inputs; validated server-side */}
+          {/* SchedulePicker maneja los inputs que viajan en el FormData y además refleja sus
+              valores en react-hook-form para que la validación client-side vea lo mismo. */}
           <Field
             label="Horario"
             required
@@ -96,6 +100,12 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
               defaultDays={course?.classDays}
               defaultTime={course?.classTime}
               defaultDuration={course?.classDurationMinutes}
+              onChange={({ days, time, duration }) => {
+                const shouldValidate = form.formState.isSubmitted;
+                setValue("classDays", days, { shouldValidate });
+                setValue("classTime", time, { shouldValidate });
+                setValue("classDurationMinutes", duration, { shouldValidate });
+              }}
             />
           </Field>
 
