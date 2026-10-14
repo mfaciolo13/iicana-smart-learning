@@ -21,7 +21,8 @@ export const createCourseSchema = z.object({
     .min(1, "El cupo mínimo es 1")
     .max(15, "El cupo máximo es 15 alumnos")
     .default(15),
-  teacherId: z.uuid().optional(),
+  // "Sin asignar" llega como "" desde el <select>: se trata como no informado.
+  teacherId: z.preprocess((v) => (v === "" ? undefined : v), z.uuid("Docente inválido").optional()),
   diagnosticFrequency: z.coerce.number().int().min(0).max(20).default(0),
 });
 

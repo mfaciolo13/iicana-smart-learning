@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
+import { assertEnrollmentAccess, assertGradeAccess } from "@/lib/auth/course-access";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createGradeSchema, updateGradeSchema } from "./schemas";
 import { getGradeAlertInfo } from "./services/grades.service";
@@ -41,7 +42,7 @@ async function notifyGradePublished(gradeId: string): Promise<void> {
 }
 
 export async function createGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "profesor"]);
+  const role = await requireRole(["director", "profesor"]);
 
   const raw = {
     enrollmentId: formData.get("enrollmentId") as string,
@@ -62,6 +63,8 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
       ) as Record<string, string>,
     };
   }
+
+  await assertEnrollmentAccess(role, parsed.data.enrollmentId);
 
   const supabase = createServiceClient();
   const { data, error } = await supabase
@@ -86,7 +89,7 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
 }
 
 export async function updateGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "profesor"]);
+  const role = await requireRole(["director", "profesor"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -108,6 +111,8 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
     };
   }
 
+  await assertGradeAccess(role, parsed.data.id);
+
   const updateData: Record<string, string | null | undefined> = {};
   if (parsed.data.evaluationType) updateData.evaluation_type = parsed.data.evaluationType;
   if (parsed.data.score !== undefined) updateData.score = String(parsed.data.score);
@@ -126,10 +131,11 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
 }
 
 export async function deleteGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "profesor"]);
+  const role = await requireRole(["director", "profesor"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
+  await assertGradeAccess(role, id);
 
   const supabase = createServiceClient();
   const { error } = await supabase.from("grades").delete().eq("id", id);

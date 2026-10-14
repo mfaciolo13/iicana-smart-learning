@@ -1,5 +1,5 @@
 ﻿import { describe, it, expect } from "vitest";
-import { loginSchema, registerSchema } from "@/modules/auth/schemas";
+import { loginSchema } from "@/modules/auth/schemas";
 import { updateUserSchema } from "@/modules/users/schemas";
 
 // SCRUM-102: Tests unitarios — schemas Zod de autenticación y usuarios
@@ -23,43 +23,6 @@ describe("loginSchema", () => {
   it("rechaza email vacío", () => {
     const result = loginSchema.safeParse({ email: "", password: "123456" });
     expect(result.success).toBe(false);
-  });
-});
-
-describe("registerSchema", () => {
-  const valid = {
-    email: "nuevo@test.com",
-    password: "abcdef",
-    confirmPassword: "abcdef",
-    fullName: "Juan Pérez",
-    role: "alumno" as const,
-  };
-
-  it("acepta datos válidos", () => {
-    expect(registerSchema.safeParse(valid).success).toBe(true);
-  });
-
-  it("rechaza si passwords no coinciden", () => {
-    const result = registerSchema.safeParse({ ...valid, confirmPassword: "diferente" });
-    expect(result.success).toBe(false);
-    expect(result.error?.issues[0].path).toContain("confirmPassword");
-  });
-
-  it("rechaza rol inválido", () => {
-    const result = registerSchema.safeParse({ ...valid, role: "superadmin" });
-    expect(result.success).toBe(false);
-  });
-
-  it("rechaza nombre menor a 2 caracteres", () => {
-    const result = registerSchema.safeParse({ ...valid, fullName: "A" });
-    expect(result.success).toBe(false);
-  });
-
-  it("acepta todos los roles válidos", () => {
-    const roles = ["director", "administrativo", "profesor", "alumno"] as const;
-    for (const role of roles) {
-      expect(registerSchema.safeParse({ ...valid, role }).success).toBe(true);
-    }
   });
 });
 

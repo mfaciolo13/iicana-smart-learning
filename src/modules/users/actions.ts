@@ -3,7 +3,7 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { requireRole } from "@/lib/auth/helpers";
+import { requireRole, getServerUser } from "@/lib/auth/helpers";
 import { db } from "@/lib/drizzle";
 import { profiles } from "@/lib/drizzle/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -110,6 +110,12 @@ export async function updateUserAction(_prev: ActionResult, formData: FormData):
     };
   }
 
+  // Evita el lockout: un director no puede degradarse a sí mismo, así siempre queda al menos uno activo.
+  const currentUser = await getServerUser();
+  if (currentUser?.id === parsed.data.id && parsed.data.role !== "director") {
+    return { error: "No podés cambiar tu propio rol. Pedile a otro director que lo haga." };
+  }
+
   await updateUser(parsed.data);
 
   updateTag("teachers");
@@ -123,6 +129,12 @@ export async function banUserAction(_prev: ActionResult, formData: FormData): Pr
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
+
+  // Evita el lockout: un director no puede desactivar su propia cuenta.
+  const currentUser = await getServerUser();
+  if (currentUser?.id === id) {
+    return { error: "No podés desactivar tu propia cuenta." };
+  }
 
   await banUser(id);
 
