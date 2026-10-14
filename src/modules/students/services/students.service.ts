@@ -126,16 +126,28 @@ export async function createStudent(
 }
 
 export async function updateStudent(input: UpdateStudentInput) {
-  const { id, ...data } = input;
-  const [updated] = await db
-    .update(students)
-    .set({
-      ...data,
-      updatedAt: new Date(),
-    })
-    .where(eq(students.id, id))
-    .returning();
-  return updated;
+  // fullName y phone viven en `profiles`, no en `students`: Drizzle ignoraría esas
+  // claves en silencio (SCRUM-242), así que se actualizan por separado.
+  const { id, fullName, phone, ...studentData } = input;
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(students)
+      .set({ ...studentData, updatedAt: new Date() })
+      .where(eq(students.id, id))
+      .returning();
+
+    if (updated && (fullName !== undefined || phone !== undefined)) {
+      await tx
+        .update(profiles)
+        .set({
+          ...(fullName !== undefined && { fullName }),
+          ...(phone !== undefined && { phone }),
+          updatedAt: new Date(),
+        })
+        .where(eq(profiles.id, updated.profileId));
+    }
+    return updated;
+  });
 }
 
 export async function deleteStudent(id: string) {
