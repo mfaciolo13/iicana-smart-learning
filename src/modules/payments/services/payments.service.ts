@@ -108,6 +108,11 @@ export async function createPayment(input: CreatePaymentInput) {
   return payment;
 }
 
+/**
+ * Registra el cobro de un pago. Solo aplica a pagos adeudados (pendiente, vencido o
+ * suspendido por mora): un pago ya cobrado o anulado no puede "resucitar" ni pisar
+ * su fecha, método y recibo originales (SCRUM-249). Devuelve null si no corresponde.
+ */
 export async function markAsPaid(input: MarkAsPaidInput) {
   const [updated] = await db
     .update(payments)
@@ -117,9 +122,9 @@ export async function markAsPaid(input: MarkAsPaidInput) {
       method: input.method,
       receiptNumber: input.receiptNumber ?? null,
     })
-    .where(eq(payments.id, input.id))
+    .where(and(eq(payments.id, input.id), inArray(payments.status, ["pending", "overdue", "suspended"])))
     .returning();
-  return updated;
+  return updated ?? null;
 }
 
 /**
