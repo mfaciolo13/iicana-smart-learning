@@ -28,7 +28,7 @@ export interface CertificateData {
   courseLevel: string;
 }
 
-export async function getPromotionEligibility(): Promise<PromotionRow[]> {
+export async function getPromotionEligibility(enrollmentId?: string): Promise<PromotionRow[]> {
   const attendanceStats = db
     .$with("att_stats")
     .as(
@@ -73,7 +73,7 @@ export async function getPromotionEligibility(): Promise<PromotionRow[]> {
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
     .leftJoin(attendanceStats, eq(attendanceStats.enrollmentId, enrollments.id))
     .leftJoin(gradeStats, eq(gradeStats.enrollmentId, enrollments.id))
-    .where(eq(enrollments.status, "active"))
+    .where(and(eq(enrollments.status, "active"), enrollmentId ? eq(enrollments.id, enrollmentId) : undefined))
     .orderBy(profiles.fullName);
 
   return rows.map((r) => {
@@ -122,11 +122,25 @@ export async function getEnrollmentForCertificate(enrollmentId: string): Promise
   return row ?? null;
 }
 
-export async function promoteEnrollment(enrollmentId: string) {
+/**
+ * Promueve una inscripción. Revalida en el servidor que siga activa y que cumpla
+ * asistencia y nota mínimas: el chequeo de la UI (que oculta el botón) no alcanza
+ * porque la Server Action es invocable directamente (SCRUM-248).
+ */
+export async function promoteEnrollment(
+  enrollmentId: string,
+): Promise<{ error: string } | { id: string; studentId: string }> {
+  const [row] = await getPromotionEligibility(enrollmentId);
+  if (!row) return { error: "La inscripción no está activa o no existe." };
+  if (!row.isEligible) {
+    return { error: "El alumno no cumple los requisitos de asistencia y nota para promover." };
+  }
+
   const [updated] = await db
     .update(enrollments)
     .set({ status: "completed", completedAt: new Date() })
-    .where(eq(enrollments.id, enrollmentId))
+    .where(and(eq(enrollments.id, enrollmentId), eq(enrollments.status, "active")))
     .returning({ id: enrollments.id, studentId: enrollments.studentId });
+  if (!updated) return { error: "La inscripción ya no está activa." };
   return updated;
 }
