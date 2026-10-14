@@ -22,6 +22,12 @@ const campaignSchema = z.object({
   path: ["endDate"],
 });
 
+const inquiryStatusSchema = z.object({
+  id: z.uuid(),
+  status: z.enum(["pending", "enrolled", "lost"]),
+  campaignId: z.uuid(),
+});
+
 const inquirySchema = z.object({
   campaignId: z.uuid(),
   name: personNameField("El nombre"),
@@ -29,6 +35,9 @@ const inquirySchema = z.object({
   phone: phoneField(),
   notes: z.string().optional(),
   receivedAt: z.string().min(1, "Fecha requerida"),
+}).refine((v) => !!(v.email?.trim() || v.phone?.trim()), {
+  message: "Ingresá al menos un email o un teléfono de contacto",
+  path: ["email"],
 });
 
 export async function createCampaignAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -96,11 +105,13 @@ export async function createInquiryAction(_prev: ActionResult, formData: FormDat
 export async function updateInquiryStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director"]);
 
-  const id = formData.get("id") as string;
-  const status = formData.get("status") as "pending" | "enrolled" | "lost";
-  const campaignId = formData.get("campaignId") as string;
-
-  if (!id || !status) return { error: "Datos incompletos" };
+  const parsed = inquiryStatusSchema.safeParse({
+    id: formData.get("id"),
+    status: formData.get("status"),
+    campaignId: formData.get("campaignId"),
+  });
+  if (!parsed.success) return { error: "Datos inválidos" };
+  const { id, status, campaignId } = parsed.data;
 
   await updateInquiryStatus(id, status);
 

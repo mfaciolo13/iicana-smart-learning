@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { enrollments, students, profiles, courses, attendance, grades } from "@/lib/drizzle/schema";
-import { eq, sql, inArray, and, ne } from "drizzle-orm";
+import { eq, sql, inArray, notInArray, and } from "drizzle-orm";
 import { meetsAttendance, meetsGrades, displayAverage } from "@/modules/promotions/eligibility";
 
 export interface YearEndRow {
@@ -160,7 +160,8 @@ export async function consolidateYearEnd(): Promise<{ promoted: number; graduate
     const active = await db
       .select({ id: enrollments.id })
       .from(enrollments)
-      .where(and(eq(enrollments.studentId, studentId), ne(enrollments.status, "completed")))
+      // Una baja vieja (withdrawn) no debe impedir el egreso (SCRUM-259).
+      .where(and(eq(enrollments.studentId, studentId), notInArray(enrollments.status, ["completed", "withdrawn"])))
       .limit(1);
 
     if (active.length === 0) {

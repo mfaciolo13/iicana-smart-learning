@@ -123,11 +123,15 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
   if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes ?? null;
 
   const supabase = createServiceClient();
+  const { data: previous } = await supabase.from("grades").select("score").eq("id", parsed.data.id).maybeSingle();
   const { error } = await supabase.from("grades").update(updateData).eq("id", parsed.data.id);
 
   if (error) return { error: error.message };
 
-  await notifyGradePublished(parsed.data.id);
+  // Se vuelve a avisar sólo si cambió la nota; corregir un comentario no re-notifica (SCRUM-324).
+  if (updateData.score !== undefined && Number(previous?.score) !== Number(updateData.score)) {
+    await notifyGradePublished(parsed.data.id);
+  }
 
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");

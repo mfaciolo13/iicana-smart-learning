@@ -98,7 +98,8 @@ export async function updateTeacherAction(_prev: ActionResult, formData: FormDat
     fullName: (formData.get("fullName") as string) || undefined,
     phone: (formData.get("phone") as string) || undefined,
     dni: (formData.get("dni") as string) || undefined,
-    specialization: (formData.get("specialization") as string) || undefined,
+    // Si el campo viene vacío se limpia la especialización (antes no se podía quitar).
+    specialization: formData.has("specialization") ? (formData.get("specialization") as string) : undefined,
   };
 
   const parsed = updateTeacherSchema.safeParse(raw);

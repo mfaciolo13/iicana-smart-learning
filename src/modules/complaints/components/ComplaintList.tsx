@@ -18,7 +18,8 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "warning" | "info"
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: "director",
+  director: "Director",
+  administrativo: "Administrativo",
   profesor: "Docente",
   alumno: "Alumno",
 };

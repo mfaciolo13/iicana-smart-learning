@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
-import { createClient } from "@/lib/supabase/server";
 import { surveySchema, observationSchema } from "./schemas";
 import { submitSurvey, createObservation, hasSurveySubmitted, getActiveEnrollmentForSurvey } from "./services/teacher-evaluations.service";
 import type { ActionResult } from "@/lib/action-result";
@@ -56,8 +55,7 @@ export async function submitSurveyAction(_prev: ActionResult, formData: FormData
 export async function createObservationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director"]);
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: "No autenticado" };
 
   const raw = {

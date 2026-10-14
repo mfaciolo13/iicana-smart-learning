@@ -287,3 +287,13 @@ export async function getPaymentSummary() {
 
   return row;
 }
+
+/** Ya hay una cuota vigente (no anulada) del alumno con ese vencimiento. */
+export async function paymentExistsForDueDate(studentId: string, dueDate: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: payments.id })
+    .from(payments)
+    .where(and(eq(payments.studentId, studentId), eq(payments.dueDate, dueDate), ne(payments.status, "cancelled")))
+    .limit(1);
+  return !!row;
+}

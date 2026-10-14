@@ -8,6 +8,7 @@ const STATUS_LABELS: Record<string, string> = {
   paid: "Pagado",
   overdue: "Vencido",
   suspended: "Suspendido",
+  cancelled: "Anulado",
 };
 
 const METHOD_LABELS: Record<string, string> = {

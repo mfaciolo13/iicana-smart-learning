@@ -7,6 +7,7 @@ import { createComplaint, updateComplaintStatus } from "./services/complaints.se
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createComplaintAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["alumno", "profesor", "administrativo", "director"]);
   const user = await getCurrentUser();
   if (!user) return { error: "No autorizado" };
 
@@ -39,6 +40,7 @@ export async function createComplaintAction(_prev: ActionResult, formData: FormD
 }
 
 export async function createComplaintAsProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["profesor"]);
   const user = await getCurrentUser();
   if (!user) return { error: "No autorizado" };
 
