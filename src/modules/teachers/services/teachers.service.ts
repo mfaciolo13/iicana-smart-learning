@@ -76,13 +76,26 @@ export async function createTeacher(profileId: string, input: CreateTeacherInput
 }
 
 export async function updateTeacher(input: UpdateTeacherInput) {
-  const { id, ...data } = input;
-  const [updated] = await db
-    .update(teachers)
-    .set(data)
-    .where(eq(teachers.id, id))
-    .returning();
-  return updated;
+  // fullName y phone viven en `profiles`, no en `teachers` (SCRUM-242).
+  const { id, fullName, phone, ...teacherData } = input;
+  return db.transaction(async (tx) => {
+    const [teacher] =
+      Object.keys(teacherData).length > 0
+        ? await tx.update(teachers).set(teacherData).where(eq(teachers.id, id)).returning()
+        : await tx.select().from(teachers).where(eq(teachers.id, id)).limit(1);
+
+    if (teacher && (fullName !== undefined || phone !== undefined)) {
+      await tx
+        .update(profiles)
+        .set({
+          ...(fullName !== undefined && { fullName }),
+          ...(phone !== undefined && { phone }),
+          updatedAt: new Date(),
+        })
+        .where(eq(profiles.id, teacher.profileId));
+    }
+    return teacher;
+  });
 }
 
 export async function deleteTeacher(id: string) {
