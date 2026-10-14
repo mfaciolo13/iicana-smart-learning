@@ -4,6 +4,7 @@ import { PaymentList } from "@/modules/payments/components/PaymentList";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { markOverduePaymentsAction, runOverdueChecksAction } from "@/modules/payments/actions";
+import { effectiveStatus, summarizePayments } from "@/modules/payments/lib/buckets";
 
 const STATUS_TABS = [
   { value: "all", label: "Todos" },
@@ -25,20 +26,9 @@ export default async function PaymentsPage({
   const allPayments = await getPayments();
 
   const paymentsList =
-    activeTab === "all"
-      ? allPayments
-      : activeTab === "overdue"
-      ? allPayments.filter((p) => p.isOverdue)
-      : allPayments.filter((p) => p.status === activeTab);
+    activeTab === "all" ? allPayments : allPayments.filter((p) => effectiveStatus(p) === activeTab);
 
-  const summary = {
-    pending: allPayments.filter((p) => p.status === "pending").length,
-    overdue: allPayments.filter((p) => p.isOverdue).length,
-    paid: allPayments.filter((p) => p.status === "paid").length,
-    totalPendingAmount: allPayments
-      .filter((p) => p.status === "pending" || p.status === "overdue")
-      .reduce((sum, p) => sum + parseFloat(p.amount), 0),
-  };
+  const summary = summarizePayments(allPayments);
 
   return (
     <div>
