@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import Anthropic from "@anthropic-ai/sdk";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
+import { assertCourseAccess } from "@/lib/auth/course-access";
 import { sendAssessmentPublishedEmail } from "@/lib/email";
 import { getEmailsForCourse } from "@/modules/notifications/services/notifications.service";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -19,6 +20,8 @@ import {
   archiveAssessment,
   submitAttempt,
   getAssessmentDetail,
+  isStudentEnrolledInCourse,
+  hasAttempt,
 } from "./services/assessments.service";
 import type { QuizQuestion } from "./types";
 import type { ActionResult } from "@/lib/action-result";
@@ -215,7 +218,7 @@ export async function archiveAssessmentAction(_prev: ActionResult, formData: For
 }
 
 export async function generateAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["profesor"]);
+  const role = await requireRole(["profesor"]);
   const user = await getCurrentUser();
   if (!user) return { error: "No autorizado" };
 
@@ -238,6 +241,8 @@ export async function generateAssessmentProfesorAction(_prev: ActionResult, form
       ) as Record<string, string>,
     };
   }
+
+  await assertCourseAccess(role, parsed.data.courseId);
 
   const prompt = `Sos un profesor experto de inglés en Argentina.
 Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
@@ -301,10 +306,14 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
 }
 
 export async function publishAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "profesor"]);
+  const role = await requireRole(["director", "profesor"]);
 
   const parsed = publishAssessmentSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const target = await getAssessmentDetail(parsed.data.id);
+  if (!target) return { error: "Evaluación no encontrada" };
+  await assertCourseAccess(role, target.courseId);
 
   const assessment = await publishAssessment(parsed.data.id);
   const detail = await getAssessmentDetail(parsed.data.id);
@@ -334,10 +343,14 @@ export async function publishAssessmentProfesorAction(_prev: ActionResult, formD
 }
 
 export async function archiveAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "profesor"]);
+  const role = await requireRole(["director", "profesor"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
+
+  const target = await getAssessmentDetail(id);
+  if (!target) return { error: "Evaluación no encontrada" };
+  await assertCourseAccess(role, target.courseId);
 
   await archiveAssessment(id);
 
@@ -377,6 +390,9 @@ export async function submitAttemptAction(_prev: ActionResult, formData: FormDat
 
   const detail = await getAssessmentDetail(parsed.data.assessmentId);
   if (!detail || detail.status !== "published") return { error: "Evaluación no disponible" };
+  // Sólo alumnos inscriptos en el curso, y una sola vez por autoevaluación (SCRUM-251).
+  if (!(await isStudentEnrolledInCourse(user.id, detail.courseId))) return { error: "Evaluación no disponible" };
+  if (await hasAttempt(parsed.data.assessmentId, user.id)) return { error: "Ya respondiste esta autoevaluación" };
 
   await submitAttempt(parsed.data, user.id, detail.questions);
 

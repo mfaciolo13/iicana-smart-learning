@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getServerUser } from "@/lib/auth/helpers";
+import { assertCourseAccess } from "@/lib/auth/course-access";
 import { getAssessmentDetail } from "@/modules/assessments/services/assessments.service";
 import { publishAssessmentProfesorAction, archiveAssessmentProfesorAction } from "@/modules/assessments/actions";
 import { FormButton } from "@/components/ui/FormButton";
@@ -28,6 +29,12 @@ export default async function ProfesorAssessmentDetailPage({
 
   const detail = await getAssessmentDetail(id);
   if (!detail) notFound();
+  // Un profesor sólo ve las autoevaluaciones de los cursos que dicta (SCRUM-279).
+  try {
+    await assertCourseAccess("profesor", detail.courseId);
+  } catch {
+    notFound();
+  }
 
   const cfg = STATUS_CONFIG[detail.status];
   const questions = detail.questions as unknown as QuizQuestion[];

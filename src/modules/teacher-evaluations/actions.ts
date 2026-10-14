@@ -2,24 +2,31 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireRole } from "@/lib/auth/helpers";
+import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { createClient } from "@/lib/supabase/server";
 import { surveySchema, observationSchema } from "./schemas";
-import { submitSurvey, createObservation, hasSurveySubmitted } from "./services/teacher-evaluations.service";
+import { submitSurvey, createObservation, hasSurveySubmitted, getActiveEnrollmentForSurvey } from "./services/teacher-evaluations.service";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function submitSurveyAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["alumno"]);
+  const user = await getCurrentUser();
+  if (!user) return { error: "No autorizado" };
 
-  const enrollmentId = formData.get("enrollmentId") as string;
-  if (enrollmentId && (await hasSurveySubmitted(enrollmentId))) {
+  // La inscripción y el docente salen del servidor (SCRUM-280): sin inscripción activa en el
+  // curso no se puede evaluar, no se puede votar por otro docente y hay una sola encuesta
+  // por alumno y curso.
+  const courseId = formData.get("courseId") as string;
+  const active = courseId ? await getActiveEnrollmentForSurvey(user.id, courseId) : null;
+  if (!active) return { error: "No estás inscripto en este curso" };
+  if (await hasSurveySubmitted(active.enrollmentId)) {
     return { error: "Ya enviaste tu evaluación para este curso" };
   }
 
   const raw = {
-    teacherId: formData.get("teacherId") as string,
-    courseId: formData.get("courseId") as string,
-    enrollmentId: enrollmentId || undefined,
+    teacherId: active.teacherId,
+    courseId,
+    enrollmentId: active.enrollmentId,
     rating1: formData.get("rating1") as string,
     rating2: formData.get("rating2") as string,
     rating3: formData.get("rating3") as string,

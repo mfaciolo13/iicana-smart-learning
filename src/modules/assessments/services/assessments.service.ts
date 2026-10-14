@@ -274,3 +274,24 @@ export async function submitAttempt(
     .returning();
   return row;
 }
+
+/** El alumno (por id de perfil) tiene una inscripción activa en el curso. */
+export async function isStudentEnrolledInCourse(studentProfileId: string, courseId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(and(eq(students.profileId, studentProfileId), eq(enrollments.courseId, courseId), eq(enrollments.status, "active")))
+    .limit(1);
+  return !!row;
+}
+
+/** El alumno ya respondió esta autoevaluación. */
+export async function hasAttempt(assessmentId: string, studentProfileId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: assessmentAttempts.id })
+    .from(assessmentAttempts)
+    .where(and(eq(assessmentAttempts.assessmentId, assessmentId), eq(assessmentAttempts.studentId, studentProfileId)))
+    .limit(1);
+  return !!row;
+}

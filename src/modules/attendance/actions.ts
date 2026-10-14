@@ -2,23 +2,43 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole, getServerProfile } from "@/lib/auth/helpers";
-import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo, checkLowAttendanceThreshold, updateAttendanceSession, deleteAttendanceSession } from "./services/attendance.service";
+import { assertCourseAccess } from "@/lib/auth/course-access";
+import { portalPath } from "@/lib/portal";
+import { isFutureDate } from "@/lib/validation";
+import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo, checkLowAttendanceThreshold, updateAttendanceSession, deleteAttendanceSession, allEnrollmentsInCourse } from "./services/attendance.service";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import { sendAlert } from "@/lib/notifications/send-alert";
 import { sendAbsenceAlertEmail, sendTeacherAttendanceAlertEmail } from "@/lib/email";
 import { checkAndTriggerDiagnosticAssessment } from "@/modules/assessments/services/auto-assessment.service";
 import type { ActionResult } from "@/lib/action-result";
 
+const STATUSES = ["present", "absent", "late"] as const;
+type AttendanceStatus = (typeof STATUSES)[number];
+
+function readStatus(formData: FormData, enrollmentId: string): AttendanceStatus | null {
+  const value = (formData.get(`status_${enrollmentId}`) as string | null) ?? "present";
+  return (STATUSES as readonly string[]).includes(value) ? (value as AttendanceStatus) : null;
+}
+
+/** Sólo se acepta un redirectTo del portal del rol; si no, el listado de asistencia propio. */
+function safeRedirect(requested: string | null, role: Parameters<typeof portalPath>[0]): string {
+  return requested && requested.startsWith(portalPath(role, "/")) ? requested : portalPath(role, "/attendance");
+}
+
 export async function recordAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo", "profesor"]);
+  const role = await requireRole(["director", "administrativo", "profesor"]);
 
   const courseId = formData.get("courseId") as string;
   const classDate = formData.get("classDate") as string;
-  const enrollmentIds = (formData.get("enrollmentIds") as string).split(",").filter(Boolean);
+  const enrollmentIds = ((formData.get("enrollmentIds") as string) ?? "").split(",").filter(Boolean);
 
   if (!courseId || !classDate || enrollmentIds.length === 0) {
     return { error: "Datos incompletos" };
   }
+  await assertCourseAccess(role, courseId);
+  if (isFutureDate(classDate)) return { error: "La fecha de la clase no puede ser futura" };
+  if (!(await allEnrollmentsInCourse(courseId, enrollmentIds))) return { error: "Hay inscripciones que no pertenecen al curso" };
+  if (enrollmentIds.some((id) => readStatus(formData, id) === null)) return { error: "Estado de asistencia inválido" };
 
   const alreadyRecorded = await isAttendanceRecorded(courseId, classDate);
   if (alreadyRecorded) return { error: "La asistencia de esta fecha ya fue registrada" };
@@ -26,7 +46,7 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
   const records = enrollmentIds.map((enrollmentId) => ({
     enrollmentId,
     classDate,
-    status: (formData.get(`status_${enrollmentId}`) as "present" | "absent" | "late") ?? "present",
+    status: readStatus(formData, enrollmentId) as AttendanceStatus,
     notes: (formData.get(`notes_${enrollmentId}`) as string) || null,
   }));
 
@@ -103,8 +123,7 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
   revalidatePath("/director/attendance");
   revalidatePath("/profesor/attendance");
   revalidatePath("/administrativo/attendance");
-  const redirectTo = (formData.get("redirectTo") as string) || "/director/attendance";
-  return { success: "Asistencia registrada correctamente", redirectTo };
+  return { success: "Asistencia registrada correctamente", redirectTo: safeRedirect(formData.get("redirectTo") as string | null, role) };
 }
 
 /**
@@ -117,7 +136,7 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
  * de baja. El % de asistencia sí queda recalculado, porque se lee de la BD.
  */
 export async function updateAttendanceAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo", "profesor"]);
+  const role = await requireRole(["director", "administrativo", "profesor"]);
 
   const profile = await getServerProfile();
   if (!profile) return { error: "No autorizado" };
@@ -129,10 +148,14 @@ export async function updateAttendanceAction(_prev: ActionResult, formData: Form
   if (!courseId || !classDate || enrollmentIds.length === 0) {
     return { error: "Datos incompletos" };
   }
+  await assertCourseAccess(role, courseId);
+  if (isFutureDate(classDate)) return { error: "La fecha de la clase no puede ser futura" };
+  if (!(await allEnrollmentsInCourse(courseId, enrollmentIds))) return { error: "Hay inscripciones que no pertenecen al curso" };
+  if (enrollmentIds.some((id) => readStatus(formData, id) === null)) return { error: "Estado de asistencia inválido" };
 
   const records = enrollmentIds.map((enrollmentId) => ({
     enrollmentId,
-    status: (formData.get(`status_${enrollmentId}`) as "present" | "absent" | "late") ?? "present",
+    status: readStatus(formData, enrollmentId) as AttendanceStatus,
     notes: (formData.get(`notes_${enrollmentId}`) as string) || null,
   }));
 
@@ -145,18 +168,18 @@ export async function updateAttendanceAction(_prev: ActionResult, formData: Form
   revalidatePath("/profesor/attendance");
   revalidatePath("/administrativo/attendance");
   revalidatePath("/alumno/attendance");
-  const redirectTo = (formData.get("redirectTo") as string) || "/director/attendance";
-  return { success: `Asistencia corregida (${updated} registros)`, redirectTo };
+  return { success: `Asistencia corregida (${updated} registros)`, redirectTo: safeRedirect(formData.get("redirectTo") as string | null, role) };
 }
 
 /** Elimina una toma de lista completa — clase no dictada o cargada sobre el curso equivocado. */
 export async function deleteAttendanceSessionAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo", "profesor"]);
+  const role = await requireRole(["director", "administrativo", "profesor"]);
 
   const courseId = formData.get("courseId") as string;
   const classDate = formData.get("classDate") as string;
 
   if (!courseId || !classDate) return { error: "Datos incompletos" };
+  await assertCourseAccess(role, courseId);
 
   const deleted = await deleteAttendanceSession(courseId, classDate);
   if (deleted === 0) {
@@ -167,6 +190,5 @@ export async function deleteAttendanceSessionAction(_prev: ActionResult, formDat
   revalidatePath("/profesor/attendance");
   revalidatePath("/administrativo/attendance");
   revalidatePath("/alumno/attendance");
-  const redirectTo = (formData.get("redirectTo") as string) || "/director/attendance";
-  return { success: `Asistencia eliminada (${deleted} registros)`, redirectTo };
+  return { success: `Asistencia eliminada (${deleted} registros)`, redirectTo: safeRedirect(formData.get("redirectTo") as string | null, role) };
 }

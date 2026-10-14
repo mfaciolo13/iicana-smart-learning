@@ -77,3 +77,13 @@ export function phoneField() {
     .optional()
     .transform((v) => (v === "" ? undefined : v));
 }
+
+/** Fecha de hoy (YYYY-MM-DD) en la zona horaria del instituto. */
+export function todayInstitute(now: Date = new Date()): string {
+  return now.toLocaleDateString("en-CA", { timeZone: "America/Argentina/Cordoba" });
+}
+
+/** true si la fecha (YYYY-MM-DD) es posterior a hoy en la zona horaria del instituto. */
+export function isFutureDate(value: string, now: Date = new Date()): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && value > todayInstitute(now);
+}
