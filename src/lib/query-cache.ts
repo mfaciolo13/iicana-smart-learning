@@ -26,7 +26,7 @@ export const getCachedTeachers = unstable_cache(
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
   },
   ["teachers"],
-  { revalidate: false, tags: ["teachers"] }
+  { revalidate: 300, tags: ["teachers"] }
 );
 
 export const getCachedStudents = unstable_cache(
@@ -55,5 +55,5 @@ export const getCachedStudents = unstable_cache(
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
   },
   ["students"],
-  { revalidate: false, tags: ["students"] }
+  { revalidate: 300, tags: ["students"] }
 );

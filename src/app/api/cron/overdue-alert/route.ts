@@ -5,11 +5,16 @@ import { payments, students } from "@/lib/drizzle/schema";
 import { eq, count } from "drizzle-orm";
 import { getOverdueAlertRecipients } from "@/modules/notifications/services/cron.service";
 import { sendPaymentOverdueAlertEmail } from "@/lib/email";
+import { markOverduePayments } from "@/modules/payments/services/payments.service";
 
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // SCRUM-284: antes de avisar, pasar a "Vencida" toda cuota pendiente con vencimiento anterior a hoy
+  // (las alertas, la restricción de acceso y el riesgo dependen del estado real en la base).
+  const markedOverdue = await markOverduePayments();
 
   const recipients = await getOverdueAlertRecipients();
 
@@ -62,6 +67,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log(`[cron/overdue-alert] sent=${sent} failed=${failed} restricted=${restricted} total=${recipients.length}`);
-  return NextResponse.json({ sent, failed, restricted, total: recipients.length });
+  console.log(`[cron/overdue-alert] markedOverdue=${markedOverdue} sent=${sent} failed=${failed} restricted=${restricted} total=${recipients.length}`);
+  return NextResponse.json({ markedOverdue, sent, failed, restricted, total: recipients.length });
 }
