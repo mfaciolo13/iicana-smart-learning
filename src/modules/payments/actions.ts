@@ -49,7 +49,16 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
     return { error: "Ese alumno ya tiene una cuota con ese vencimiento" };
   }
 
-  const payment = await createPayment(parsed.data);
+  let payment;
+  try {
+    payment = await createPayment(parsed.data);
+  } catch (e) {
+    // Índice único (alumno, vencimiento): si dos pedidos llegan a la vez, gana uno solo.
+    if ((e as { code?: string; cause?: { code?: string } })?.code === "23505" || (e as { cause?: { code?: string } })?.cause?.code === "23505") {
+      return { error: "Ese alumno ya tiene una cuota con ese vencimiento" };
+    }
+    throw e;
+  }
 
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");

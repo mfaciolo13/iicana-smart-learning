@@ -49,7 +49,9 @@ export async function submitSurveyAction(_prev: ActionResult, formData: FormData
     };
   }
 
-  await submitSurvey(parsed.data);
+  // La marca de "ya respondió" tiene clave primaria: un doble envío simultáneo no duplica la encuesta.
+  const saved = await submitSurvey({ ...parsed.data, enrollmentId: active.enrollmentId });
+  if (!saved) return { error: "Ya enviaste tu evaluación para este curso" };
 
   revalidatePath("/alumno/evaluations");
   redirect("/alumno/evaluations");

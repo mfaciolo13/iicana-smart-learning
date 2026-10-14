@@ -290,13 +290,17 @@ async function seed() {
   await db.insert(schema.teacherSurveys).values({
     teacherId: teacher.id,
     courseId: course.id,
-    enrollmentId: enrollment.id,
     rating1: 5,
     rating2: 4,
     rating3: 5,
     rating4: 5,
     comment: "Encuesta de prueba del seed E2E.",
   });
+
+  await db
+    .insert(schema.teacherSurveySubmissions)
+    .values({ enrollmentId: enrollment.id, courseId: course.id })
+    .onConflictDoNothing();
 
   // Observación de clase (por dirección)
   await db.insert(schema.classObservations).values({

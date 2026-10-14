@@ -263,7 +263,7 @@ export const payments = pgTable("payments", {
   id: uuid("id").primaryKey().defaultRandom(),
   studentId: uuid("student_id")
     .notNull()
-    .references(() => students.id, { onDelete: "cascade" }),
+    .references(() => students.id, { onDelete: "restrict" }),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   dueDate: date("due_date").notNull(),
   paidAt: timestamp("paid_at", { withTimezone: true }),
@@ -271,7 +271,9 @@ export const payments = pgTable("payments", {
   status: paymentStatusEnum("status").notNull().default("pending"),
   receiptNumber: text("receipt_number").unique(),
   notes: text("notes"),
+  // Aviso de mora al alumno y aviso a Dirección (15 días): cada uno con su marca (SCRUM-288)
   overdueAlertSentAt: timestamp("overdue_alert_sent_at", { withTimezone: true }),
+  directorAlertSentAt: timestamp("director_alert_sent_at", { withTimezone: true }),
   // Anulación — el registro se conserva por trazabilidad contable, nunca se borra
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   cancelledBy: uuid("cancelled_by").references(() => profiles.id, { onDelete: "set null" }),
@@ -382,9 +384,7 @@ export const teacherSurveys = pgTable("teacher_surveys", {
   courseId: uuid("course_id")
     .notNull()
     .references(() => courses.id, { onDelete: "cascade" }),
-  enrollmentId: uuid("enrollment_id").references(() => enrollments.id, {
-    onDelete: "set null",
-  }),
+  // Sin enrollment_id a propósito: la encuesta es anónima (SCRUM-250).
   rating1: integer("rating1").notNull(), // Claridad al explicar
   rating2: integer("rating2").notNull(), // Disponibilidad para consultas
   rating3: integer("rating3").notNull(), // Ritmo de la clase
@@ -393,6 +393,16 @@ export const teacherSurveys = pgTable("teacher_surveys", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+});
+
+// Marca "este alumno ya respondió", separada del contenido de la respuesta (SCRUM-250).
+export const teacherSurveySubmissions = pgTable("teacher_survey_submissions", {
+  enrollmentId: uuid("enrollment_id")
+    .primaryKey()
+    .references(() => enrollments.id, { onDelete: "cascade" }),
+  courseId: uuid("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
 });
 
 export const classObservations = pgTable("class_observations", {
