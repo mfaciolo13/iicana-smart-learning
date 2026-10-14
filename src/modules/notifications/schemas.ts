@@ -4,8 +4,16 @@ import { z } from "zod";
 //   "role:alumno"   → all users with that role
 //   "course:<uuid>" → all active students in that course
 //   "<uuid>"        → individual user profile id
+export const NOTIFICATION_TARGET_ROLES = ["alumno", "profesor", "director", "administrativo"] as const;
+
 export const sendNotificationSchema = z.object({
-  targetId: z.string().min(1, "Seleccioná un destinatario"),
+  targetId: z
+    .string()
+    .min(1, "Seleccioná un destinatario")
+    .refine(
+      (v) => !v.startsWith("role:") || (NOTIFICATION_TARGET_ROLES as readonly string[]).includes(v.slice(5)),
+      "El rol destinatario no es válido",
+    ),
   type: z.enum(["absence", "payment", "grade", "general", "alert"]),
   title: z.string().min(1, "El título es requerido").max(100),
   body: z.string().min(1, "El mensaje es requerido").max(500),

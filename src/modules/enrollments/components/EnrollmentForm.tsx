@@ -25,6 +25,8 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 interface EnrollmentFormProps {
+  /** Destino del botón "Cancelar" (por defecto, portal director). */
+  cancelHref?: string;
   students: StudentListItem[];
   courses: CourseListItem[];
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
@@ -32,7 +34,7 @@ interface EnrollmentFormProps {
   defaultCourseId?: string;
 }
 
-export function EnrollmentForm({ students, courses, action, defaultStudentId, defaultCourseId }: EnrollmentFormProps) {
+export function EnrollmentForm({ students, courses, action, defaultStudentId, defaultCourseId, cancelHref = "/director/enrollments" }: EnrollmentFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(createEnrollmentSchema),
     defaultValues: {
@@ -82,7 +84,7 @@ export function EnrollmentForm({ students, courses, action, defaultStudentId, de
       </Card>
 
       <div className="flex justify-end gap-3">
-        <Link href="/director/enrollments" className={buttonVariants({ variant: "secondary" })}>
+        <Link href={cancelHref} className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
         <Button type="submit" variant="primary" loading={isPending}>

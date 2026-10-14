@@ -3,16 +3,14 @@ import { getServerUser } from "@/lib/auth/helpers";
 import { createClient } from "@/lib/supabase/server";
 import { submitSurveyAction } from "@/modules/teacher-evaluations/actions";
 import { SurveyForm } from "@/modules/teacher-evaluations/components/SurveyForm";
+import { getActiveEnrollmentForSurvey, hasSurveySubmitted } from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
 
 export default async function AlumnoSurveyPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ enrollment?: string }>;
 }) {
   const { courseId } = await params;
-  const { enrollment: enrollmentId } = await searchParams;
 
   const user = await getServerUser();
   if (!user) redirect("/login");
@@ -27,14 +25,11 @@ export default async function AlumnoSurveyPage({
 
   if (!studentRow) redirect("/alumno");
 
-  if (enrollmentId) {
-    const { data: surveyRows } = await supabase
-      .from("teacher_surveys")
-      .select("id")
-      .eq("enrollment_id", enrollmentId)
-      .limit(1);
-    if ((surveyRows ?? []).length > 0) redirect("/alumno/evaluations");
-  }
+  // La inscripción sale del servidor (SCRUM-280): sin inscripción activa en el curso no hay
+  // formulario, y una encuesta ya respondida no se vuelve a abrir.
+  const active = await getActiveEnrollmentForSurvey(user.id, courseId);
+  if (!active) notFound();
+  if (await hasSurveySubmitted(active.enrollmentId)) redirect("/alumno/evaluations");
 
   const { data: course } = await supabase
     .from("courses")
@@ -61,7 +56,7 @@ export default async function AlumnoSurveyPage({
         <SurveyForm
           teacherId={course.teacher_id}
           courseId={course.id}
-          enrollmentId={enrollmentId ?? ""}
+          enrollmentId={active.enrollmentId}
           action={submitSurveyAction}
         />
       </div>

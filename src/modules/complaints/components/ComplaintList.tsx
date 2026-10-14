@@ -18,7 +18,8 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "warning" | "info"
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: "director",
+  director: "Director",
+  administrativo: "Administrativo",
   profesor: "Docente",
   alumno: "Alumno",
 };
@@ -27,9 +28,11 @@ interface ComplaintListProps {
   complaints: ComplaintItem[];
   adminView?: boolean;
   newLink?: string;
+  /** Prefijo del detalle según el portal (por defecto, director). */
+  detailBase?: string;
 }
 
-export function ComplaintList({ complaints, adminView = false, newLink }: ComplaintListProps) {
+export function ComplaintList({ complaints, adminView = false, newLink, detailBase = "/director/complaints" }: ComplaintListProps) {
   if (complaints.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -59,7 +62,7 @@ export function ComplaintList({ complaints, adminView = false, newLink }: Compla
         {complaints.map((c) => {
           const typeCfg = TYPE_CONFIG[c.type] ?? { label: c.type };
           const statusCfg = STATUS_CONFIG[c.status] ?? { label: c.status, variant: "neutral" as const };
-          const detailHref = adminView ? `/director/complaints/${c.id}` : null;
+          const detailHref = adminView ? `${detailBase}/${c.id}` : null;
           const inner = (
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -109,7 +112,7 @@ export function ComplaintList({ complaints, adminView = false, newLink }: Compla
             {complaints.map((c) => {
               const typeCfg = TYPE_CONFIG[c.type] ?? { label: c.type };
               const statusCfg = STATUS_CONFIG[c.status] ?? { label: c.status, variant: "neutral" as const };
-              const detailHref = adminView ? `/director/complaints/${c.id}` : undefined;
+              const detailHref = adminView ? `${detailBase}/${c.id}` : undefined;
               return (
                 <tr key={c.id} className={`hover:bg-brand-50 transition-colors ${detailHref ? "relative group cursor-pointer" : ""}`}>
                   {adminView && (

@@ -1,9 +1,9 @@
 ﻿"use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
+import { buildInviteUrl } from "@/lib/site-url";
 import { createTeacherSchema, updateTeacherSchema } from "./schemas";
 import { createTeacher, updateTeacher, deleteTeacher, dniExists } from "./services/teachers.service";
 import { sendInvitationEmail } from "@/lib/email";
@@ -76,13 +76,7 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
     return { error: "No se pudo registrar el docente. Verificá los datos e intentá de nuevo." };
   }
 
-  const hdrs = await headers();
-  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
-  const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
-  const siteUrl = `${proto}://${host}`;
-
-  const encoded = Buffer.from(parsed.data.email).toString("base64url");
-  const safeInviteUrl = `${siteUrl}/invite/${encoded}`;
+  const safeInviteUrl = await buildInviteUrl(authData.user.id);
 
   await sendInvitationEmail({
     to: parsed.data.email,
@@ -104,7 +98,8 @@ export async function updateTeacherAction(_prev: ActionResult, formData: FormDat
     fullName: (formData.get("fullName") as string) || undefined,
     phone: (formData.get("phone") as string) || undefined,
     dni: (formData.get("dni") as string) || undefined,
-    specialization: (formData.get("specialization") as string) || undefined,
+    // Si el campo viene vacío se limpia la especialización (antes no se podía quitar).
+    specialization: formData.has("specialization") ? (formData.get("specialization") as string) : undefined,
   };
 
   const parsed = updateTeacherSchema.safeParse(raw);

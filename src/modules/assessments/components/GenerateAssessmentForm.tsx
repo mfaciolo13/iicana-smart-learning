@@ -11,6 +11,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { generateAssessmentSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
 import { useFormAction } from "@/lib/use-form-action";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 type FormValues = z.infer<typeof generateAssessmentSchema>;
 
@@ -53,7 +54,7 @@ export function GenerateAssessmentForm({ courses, action, cancelHref = "/directo
         <Select id="courseId" {...register("courseId")} defaultValue="">
           <option value="" disabled>Seleccioná un curso...</option>
           {courses.map((c) => (
-            <option key={c.id} value={c.id}>{c.name} — {c.level}</option>
+            <option key={c.id} value={c.id}>{c.name} — {LEVEL_LABELS[c.level] ?? c.level}</option>
           ))}
         </Select>
       </Field>

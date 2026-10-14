@@ -17,6 +17,7 @@ export function EnrollmentStatusForm({ enrollmentId, currentStatus, action }: En
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) toast.success(state.success);
   }, [state]);
 
   return (

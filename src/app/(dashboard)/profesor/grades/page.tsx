@@ -6,6 +6,7 @@ import { getGradesByTeacherProfile } from "@/modules/grades/services/grades.serv
 import { GradeList } from "@/modules/grades/components/GradeList";
 import { buttonVariants } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
+import { plural } from "@/lib/plural";
 
 export default async function ProfesorGradesPage({
   searchParams,
@@ -38,7 +39,7 @@ export default async function ProfesorGradesPage({
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Notas</h2>
           <p className="text-sm text-slate-400 mt-0.5">
-            {gradesList.length} evaluación{gradesList.length !== 1 ? "es" : ""} registrada{gradesList.length !== 1 ? "s" : ""}
+            {plural(gradesList.length, "evaluación registrada", "evaluaciones registradas")}
           </p>
         </div>
         <Link href="/profesor/grades/new" className={buttonVariants({ variant: "primary" })}>

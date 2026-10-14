@@ -8,6 +8,7 @@ import { requireRole, getServerProfile } from "@/lib/auth/helpers";
 import { db } from "@/lib/drizzle";
 import { documents } from "@/lib/drizzle/schema";
 import { createServiceClient } from "@/lib/supabase/service";
+import { detectMime, MIME_EXTENSION } from "@/lib/file-sniff";
 import { uploadDocumentSchema } from "./schemas";
 import { deleteDocument } from "./services/documents.service";
 import type { ActionResult } from "@/lib/action-result";
@@ -36,6 +37,13 @@ export async function uploadDocumentAction(_prev: ActionResult, formData: FormDa
     return { error: "Formato no permitido. Usá PDF, Word, imágenes o texto plano." };
   }
 
+  // El tipo real sale del contenido, no de lo que declara el navegador (SCRUM-302).
+  const arrayBuffer = await file.arrayBuffer();
+  const detected = detectMime(new Uint8Array(arrayBuffer));
+  if (!detected || !ALLOWED_MIME_TYPES.includes(detected)) {
+    return { error: "El contenido del archivo no coincide con un formato permitido (PDF, Word, imagen o texto plano)." };
+  }
+
   const raw = {
     name: (formData.get("name") as string) || file.name.replace(/\.[^.]+$/, ""),
     description: (formData.get("description") as string) || undefined,
@@ -44,15 +52,13 @@ export async function uploadDocumentAction(_prev: ActionResult, formData: FormDa
   const parsed = uploadDocumentSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const ext = file.name.split(".").pop() ?? "bin";
-  const filePath = `documents/${profile.id}/${Date.now()}.${ext}`;
+  const filePath = `documents/${profile.id}/${Date.now()}.${MIME_EXTENSION[detected]}`;
 
   const supabase = createServiceClient();
-  const arrayBuffer = await file.arrayBuffer();
 
   const { error: storageError } = await supabase.storage
     .from("documents")
-    .upload(filePath, arrayBuffer, { contentType: file.type, upsert: false });
+    .upload(filePath, arrayBuffer, { contentType: detected, upsert: false });
 
   if (storageError) return { error: `Error al subir el archivo: ${storageError.message}` };
 
@@ -64,7 +70,7 @@ export async function uploadDocumentAction(_prev: ActionResult, formData: FormDa
     fileUrl: publicUrl,
     filePath,
     fileSize: file.size,
-    mimeType: file.type,
+    mimeType: detected,
     uploadedById: profile.id,
   });
 

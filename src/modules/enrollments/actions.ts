@@ -2,6 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
+import { portalPath } from "@/lib/portal";
 import { db } from "@/lib/drizzle";
 import { students, profiles, courses } from "@/lib/drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -15,7 +16,7 @@ import {
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const raw = {
     studentId: formData.get("studentId") as string,
@@ -72,7 +73,7 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
   revalidatePath("/director/courses");
   revalidatePath("/administrativo/enrollments");
   revalidatePath("/administrativo/students");
-  return { success: "Inscripción creada correctamente", redirectTo: "/director/enrollments" };
+  return { success: "Inscripción creada correctamente", redirectTo: portalPath(role, "/enrollments") };
 }
 
 export async function updateEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -110,7 +111,7 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
 }
 
 export async function deleteEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -124,5 +125,5 @@ export async function deleteEnrollmentAction(_prev: ActionResult, formData: Form
   revalidatePath("/director/courses");
   revalidatePath("/administrativo/enrollments");
   revalidatePath("/administrativo/students");
-  return { success: "Inscripción eliminada", redirectTo: "/director/enrollments" };
+  return { success: "Inscripción eliminada", redirectTo: portalPath(role, "/enrollments") };
 }

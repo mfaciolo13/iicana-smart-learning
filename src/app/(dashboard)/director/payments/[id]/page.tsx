@@ -7,6 +7,7 @@ import { MarkAsPaidForm, PaymentStatusForm } from "@/modules/payments/components
 import { PaymentEditForm, PaymentCancelForm } from "@/modules/payments/components/PaymentEditForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { formatDateAR } from "@/lib/format";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   pending: { label: "Pendiente", variant: "warning" },
@@ -40,6 +41,8 @@ export default async function PaymentDetailPage({
   const statusKey = isOverdue && payment.status !== "paid" ? "overdue" : payment.status;
   const statusCfg = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pending;
   const isPendingOrOverdue = payment.status === "pending" || payment.status === "overdue";
+  // Una cuota suspendida también se puede cobrar: el alumno que regulariza no puede quedar sin poder pagar (SCRUM-289).
+  const isCollectable = isPendingOrOverdue || payment.status === "suspended";
   const isCancelled = payment.status === "cancelled";
 
   return (
@@ -78,7 +81,7 @@ export default async function PaymentDetailPage({
               <div>
                 <dt className="text-slate-400 font-medium mb-0.5">Vencimiento</dt>
                 <dd className={`font-semibold ${isOverdue ? "text-red-600" : "text-slate-900"}`}>
-                  {new Date(payment.dueDate).toLocaleDateString("es-AR")}
+                  {formatDateAR(payment.dueDate)}
                 </dd>
               </div>
               {payment.paidAt && (
@@ -120,9 +123,9 @@ export default async function PaymentDetailPage({
             </dl>
           </Card>
 
+          {isCollectable && <MarkAsPaidForm paymentId={payment.id} action={markAsPaidAction} />}
           {isPendingOrOverdue && (
             <>
-              <MarkAsPaidForm paymentId={payment.id} action={markAsPaidAction} />
               <PaymentEditForm
                 paymentId={payment.id}
                 amount={payment.amount}

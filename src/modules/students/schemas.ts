@@ -9,16 +9,20 @@ export const createStudentSchema = z.object({
   // Student fields
   dni: dniField(),
   birthDate: birthDateField(6),
-  level: z
-    .enum([
-      "beginner",
-      "elementary",
-      "pre_intermediate",
-      "intermediate",
-      "upper_intermediate",
-      "advanced",
-    ])
-    .optional(),
+  // "Sin asignar" llega como cadena vacía desde el <select>: se trata como "sin nivel".
+  level: z.preprocess(
+    (v) => (v === "" || v === null ? undefined : v),
+    z
+      .enum([
+        "beginner",
+        "elementary",
+        "pre_intermediate",
+        "intermediate",
+        "upper_intermediate",
+        "advanced",
+      ], { error: "Seleccioná un nivel válido" })
+      .optional(),
+  ),
   placementTestScore: z.coerce.number().int("Debe ser un número entero").min(0, "Mínimo 0").max(100, "Máximo 100").optional(),
 });
 

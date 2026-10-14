@@ -1,8 +1,9 @@
 ﻿import Link from "next/link";
 import { TeacherList } from "@/modules/teachers/components/TeacherList";
 import { buttonVariants } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { getCachedTeachers } from "@/lib/query-cache";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { matchesSearch } from "@/lib/search";
 
 export default async function TeachersPage({
   searchParams,
@@ -14,12 +15,9 @@ export default async function TeachersPage({
   let teachers = await getCachedTeachers();
 
   if (q) {
-    const lower = q.toLowerCase();
     teachers = teachers.filter(
       (t) =>
-        t.fullName.toLowerCase().includes(lower) ||
-        t.email.toLowerCase().includes(lower) ||
-        t.dni.toLowerCase().includes(lower)
+        matchesSearch(t.fullName, q) || matchesSearch(t.email, q) || matchesSearch(t.dni, q)
     );
   }
 
@@ -37,15 +35,7 @@ export default async function TeachersPage({
         </Link>
       </div>
 
-      <form className="mb-4">
-        <Input
-          name="q"
-          type="search"
-          defaultValue={q}
-          placeholder="Buscar por nombre, email o DNI..."
-          className="w-full sm:max-w-sm"
-        />
-      </form>
+      <SearchInput placeholder="Buscar por nombre, email o DNI..." resultCount={teachers.length} className="mb-4" />
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-4 sm:px-6">
         <TeacherList teachers={teachers} />

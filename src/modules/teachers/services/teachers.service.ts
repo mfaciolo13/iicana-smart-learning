@@ -77,7 +77,8 @@ export async function createTeacher(profileId: string, input: CreateTeacherInput
 
 export async function updateTeacher(input: UpdateTeacherInput) {
   // fullName y phone viven en `profiles`, no en `teachers` (SCRUM-242).
-  const { id, fullName, phone, ...teacherData } = input;
+  const { id, fullName, phone, ...rest } = input;
+  const teacherData = rest.specialization === "" ? { ...rest, specialization: null } : rest;
   return db.transaction(async (tx) => {
     const [teacher] =
       Object.keys(teacherData).length > 0

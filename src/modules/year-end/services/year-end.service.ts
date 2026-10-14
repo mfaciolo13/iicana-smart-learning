@@ -1,7 +1,7 @@
 import { db } from "@/lib/drizzle";
 import { enrollments, students, profiles, courses, attendance, grades } from "@/lib/drizzle/schema";
-import { eq, sql, inArray, and, ne } from "drizzle-orm";
-import { ATTENDANCE_THRESHOLD, GRADE_THRESHOLD } from "@/modules/promotions/services/promotions.service";
+import { eq, sql, inArray, notInArray, and } from "drizzle-orm";
+import { meetsAttendance, meetsGrades, displayAverage } from "@/modules/promotions/eligibility";
 
 export interface YearEndRow {
   enrollmentId: string;
@@ -46,7 +46,7 @@ export async function getYearEndReport(): Promise<{ rows: YearEndRow[]; summary:
       db
         .select({
           enrollmentId: grades.enrollmentId,
-          avg: sql<number | null>`round(avg(${grades.score}), 1)`,
+          avg: sql<number | null>`round(avg(${grades.score}), 4)`,
         })
         .from(grades)
         .groupBy(grades.enrollmentId)
@@ -79,19 +79,18 @@ export async function getYearEndReport(): Promise<{ rows: YearEndRow[]; summary:
     const total = r.totalClasses ?? 0;
     const present = r.presentClasses ?? 0;
     const attendancePct = total > 0 ? Math.round((present / total) * 100) : null;
-    const gradeAvg = r.gradeAvg !== null && r.gradeAvg !== undefined ? Number(r.gradeAvg) : null;
+    const rawAvg = r.gradeAvg !== null && r.gradeAvg !== undefined ? Number(r.gradeAvg) : null;
+    const gradeAvg = displayAverage(rawAvg);
 
     let outcome: YearEndRow["outcome"];
     if (r.enrollmentStatus === "withdrawn") {
       outcome = "withdrawn";
     } else if (r.enrollmentStatus === "completed") {
       outcome = "promoted";
-    } else if (attendancePct === null && gradeAvg === null) {
+    } else if (attendancePct === null && rawAvg === null) {
       outcome = "no_data";
     } else {
-      const meetsAttendance = attendancePct !== null && attendancePct >= ATTENDANCE_THRESHOLD;
-      const meetsGrades = gradeAvg !== null && gradeAvg >= GRADE_THRESHOLD;
-      outcome = meetsAttendance && meetsGrades ? "eligible" : "insufficient";
+      outcome = meetsAttendance(present, total) && meetsGrades(rawAvg) ? "eligible" : "insufficient";
     }
 
     return {
@@ -161,7 +160,8 @@ export async function consolidateYearEnd(): Promise<{ promoted: number; graduate
     const active = await db
       .select({ id: enrollments.id })
       .from(enrollments)
-      .where(and(eq(enrollments.studentId, studentId), ne(enrollments.status, "completed")))
+      // Una baja vieja (withdrawn) no debe impedir el egreso (SCRUM-259).
+      .where(and(eq(enrollments.studentId, studentId), notInArray(enrollments.status, ["completed", "withdrawn"])))
       .limit(1);
 
     if (active.length === 0) {

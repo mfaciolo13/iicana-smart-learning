@@ -66,12 +66,14 @@ type CreateValues = z.infer<typeof createStudentSchema>;
 type EditValues = z.infer<typeof editClientSchema>;
 
 interface StudentFormProps {
+  /** Destino del botón "Cancelar" (por defecto, portal director). */
+  cancelHref?: string;
   student?: StudentWithProfile;
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
   submitLabel?: string;
 }
 
-export function StudentForm({ student, action, submitLabel = "Guardar" }: StudentFormProps) {
+export function StudentForm({ student, action, submitLabel = "Guardar", cancelHref = "/director/students" }: StudentFormProps) {
   const isEditing = !!student;
 
   const form = useForm<CreateValues | EditValues>({
@@ -131,7 +133,7 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
             <Input id="placementTestScore" type="text" inputMode="numeric" maxLength={3} onInput={sanitizeScoreInput} placeholder="Ej: 65" {...register("placementTestScore")} />
           </Field>
 
-          <Field label="Nivel asignado" id="level">
+          <Field label="Nivel asignado" id="level" error={(errors as Record<string, { message?: string }>).level?.message}>
             <Select id="level" {...register("level")} defaultValue={student?.level ?? ""}>
               <option value="">Sin asignar</option>
               {LEVELS.map((l) => (
@@ -164,7 +166,7 @@ export function StudentForm({ student, action, submitLabel = "Guardar" }: Studen
       )}
 
       <div className="flex justify-end gap-3">
-        <Link href="/director/students" className={buttonVariants({ variant: "secondary" })}>
+        <Link href={cancelHref} className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
         <Button type="submit" variant="primary" loading={isPending}>

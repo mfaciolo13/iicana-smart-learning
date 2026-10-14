@@ -2,6 +2,7 @@
 import { Eye, ChevronRight } from "lucide-react";
 import type { PaymentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
+import { formatDateAR } from "@/lib/format";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   pending: { label: "Pendiente", variant: "warning" },
@@ -57,7 +58,7 @@ export function PaymentList({ payments, showNewLink = false, basePath = "/direct
                 <p className="font-medium text-slate-900 truncate">{p.studentName}</p>
                 <p className="text-xs text-slate-400 font-mono mt-0.5">{p.studentDni}</p>
                 <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-600 font-medium" : "text-slate-500"}`}>
-                  Vence: {new Date(p.dueDate).toLocaleDateString("es-AR")}
+                  Vence: {formatDateAR(p.dueDate)}
                 </p>
               </div>
               <div className="ml-3 shrink-0 flex items-center gap-2">
@@ -104,7 +105,7 @@ export function PaymentList({ payments, showNewLink = false, basePath = "/direct
                   </td>
                   <td className="py-3.5 pr-4">
                     <span className={p.isOverdue && p.status !== "paid" ? "text-red-600 font-medium" : "text-slate-500"}>
-                      {new Date(p.dueDate).toLocaleDateString("es-AR")}
+                      {formatDateAR(p.dueDate)}
                     </span>
                   </td>
                   <td className="py-3.5 pr-4 text-slate-500 font-mono text-xs hidden md:table-cell">

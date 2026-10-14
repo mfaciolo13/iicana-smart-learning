@@ -15,7 +15,10 @@ import {
 import {
   getRecentEnrollments,
   getRecentPayments,
+  getDashboardCounts,
 } from "@/modules/reports/services/dashboard.service";
+import { getPaymentSummary } from "@/modules/payments/services/payments.service";
+import { countOpenComplaints } from "@/modules/complaints/services/complaints.service";
 
 function formatARS(amount: number): string {
   return new Intl.NumberFormat("es-AR", {
@@ -44,23 +47,22 @@ export default async function AdministrativoDashboardPage() {
   const supabase = await createClient();
   const profile = await getServerProfile();
 
-  const [studentsRes, paymentsRes, complaintsRes, enrollmentsRes, recentEnrollments, recentPayments] =
-    await Promise.all([
-      supabase.from("students").select("id, status"),
-      supabase.from("payments").select("id, status, amount, paid_at"),
-      supabase.from("complaints").select("id, status"),
-      supabase.from("enrollments").select("id, status, enrolled_at").order("enrolled_at", { ascending: false }).limit(5),
-      getRecentEnrollments(),
-      getRecentPayments(),
-    ]);
+  // Contadores en SQL (Drizzle), con el mismo criterio de pendiente/vencido que Pagos (SCRUM-283, SCRUM-285).
+  // En serie: la conexión de Drizzle atiende una consulta por vez (SCRUM-270).
+  const counts = await getDashboardCounts();
+  const paymentSummary = await getPaymentSummary();
+  const openComplaints = await countOpenComplaints();
+  const enrollmentsRes = await supabase
+    .from("enrollments")
+    .select("id, status, enrolled_at")
+    .order("enrolled_at", { ascending: false })
+    .limit(5);
+  const recentEnrollments = await getRecentEnrollments();
+  const recentPayments = await getRecentPayments();
 
-  const activeStudents = (studentsRes.data ?? []).filter((s) => s.status === "active").length;
-  const totalStudents = studentsRes.data?.length ?? 0;
-  const pendingPayments = (paymentsRes.data ?? []).filter((p) => p.status === "pending").length;
-  const overduePayments = (paymentsRes.data ?? []).filter((p) => p.status === "overdue").length;
-  const openComplaints = (complaintsRes.data ?? []).filter(
-    (c) => c.status === "open" || c.status === "in_progress"
-  ).length;
+  const { activeStudents, totalStudents } = counts;
+  const pendingPayments = paymentSummary.pending;
+  const overduePayments = paymentSummary.overdue;
   const recentEnrollmentCount = (enrollmentsRes.data ?? []).filter(
     (e) => e.status === "active"
   ).length;

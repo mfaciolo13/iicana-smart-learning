@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createComplaintSchema = z.object({
-  type: z.enum(["academic", "administrative", "infrastructure", "teacher"]),
+  type: z.enum(["academic", "administrative", "infrastructure", "teacher"], { error: "Seleccioná una categoría" }),
   description: z.string().min(20, "La descripción debe tener al menos 20 caracteres").max(1000),
 });
 

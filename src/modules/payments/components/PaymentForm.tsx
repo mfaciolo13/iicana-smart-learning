@@ -16,6 +16,8 @@ import type { Resolver } from "react-hook-form";
 type FormValues = z.infer<typeof createPaymentSchema>;
 
 interface PaymentFormProps {
+  /** Destino del botón "Cancelar" (por defecto, portal director). */
+  cancelHref?: string;
   students: StudentListItem[];
   defaultStudentId?: string;
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
@@ -28,7 +30,7 @@ function defaultDueDate() {
   return d.toISOString().split("T")[0];
 }
 
-export function PaymentForm({ students, defaultStudentId, action }: PaymentFormProps) {
+export function PaymentForm({ students, defaultStudentId, action, cancelHref = "/director/payments" }: PaymentFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(createPaymentSchema) as Resolver<FormValues>,
     defaultValues: {
@@ -69,7 +71,7 @@ export function PaymentForm({ students, defaultStudentId, action }: PaymentFormP
       </Card>
 
       <div className="flex justify-end gap-3">
-        <Link href="/director/payments" className={buttonVariants({ variant: "secondary" })}>
+        <Link href={cancelHref} className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
         <Button type="submit" variant="primary" loading={isPending}>

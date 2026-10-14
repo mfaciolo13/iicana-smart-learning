@@ -1,13 +1,15 @@
 ﻿import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentsReport } from "@/modules/reports/services/reports.service";
-import { buildStyledReport } from "@/lib/excel";
+import { buildStyledReport, excelDate, EXCEL_FORMATS } from "@/lib/excel";
+import { todayInstitute } from "@/lib/validation";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
   paid: "Pagado",
   overdue: "Vencido",
   suspended: "Suspendido",
+  cancelled: "Anulado",
 };
 
 const METHOD_LABELS: Record<string, string> = {
@@ -22,7 +24,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "director") return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
+  if (profile?.role !== "director" && profile?.role !== "administrativo") return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
 
   const rows = await getPaymentsReport();
 
@@ -31,12 +33,12 @@ export async function GET() {
     r.studentName,
     r.studentDni,
     parseFloat(r.amount),
-    new Date(r.dueDate).toLocaleDateString("es-AR"),
-    r.paidAt ? new Date(r.paidAt).toLocaleDateString("es-AR") : "—",
+    excelDate(r.dueDate),
+    excelDate(r.paidAt),
     r.method ? METHOD_LABELS[r.method] ?? r.method : "—",
     STATUS_LABELS[r.status] ?? r.status,
     r.receiptNumber ?? "—",
-  ] as (string | number)[]);
+  ] as (string | number | Date)[]);
 
   const buffer = buildStyledReport({
     title: "Smart Learning — Reporte de Pagos",
@@ -44,12 +46,13 @@ export async function GET() {
     rows: data,
     colWidths: [{ wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 16 }],
     sheetName: "Pagos",
+    formats: { 2: EXCEL_FORMATS.money, 3: EXCEL_FORMATS.date, 4: EXCEL_FORMATS.date },
   });
 
   return new Response(buffer, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": 'attachment; filename="reporte-pagos.xlsx"',
+      "Content-Disposition": `attachment; filename="reporte-pagos-${todayInstitute()}.xlsx"`,
     },
   });
 }

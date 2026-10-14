@@ -1,17 +1,19 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
-import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
+import { buildInviteUrl } from "@/lib/site-url";
+import { portalPath } from "@/lib/portal";
 import { createStudentSchema, updateStudentSchema } from "./schemas";
-import { createStudent, updateStudent, deleteStudent, setStudentAccessRestricted, dniExists } from "./services/students.service";
+import { createStudent, updateStudent, deleteStudent, setStudentAccessRestricted, dniExists, getStudentRemovalInfo } from "./services/students.service";
+import { removalMode } from "./lib/removal";
 import { sendInvitationEmail } from "@/lib/email";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const raw = {
     email: formData.get("email") as string,
@@ -20,6 +22,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
     dni: formData.get("dni") as string,
     birthDate: formData.get("birthDate") as string,
     level: (formData.get("level") as string) || undefined,
+    placementTestScore: (formData.get("placementTestScore") as string) || undefined,
   };
 
   const parsed = createStudentSchema.safeParse(raw);
@@ -77,13 +80,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
     return { error: "No se pudo registrar el alumno. Verificá los datos e intentá de nuevo." };
   }
 
-  const hdrs = await headers();
-  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
-  const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
-  const siteUrl = `${proto}://${host}`;
-
-  const encoded = Buffer.from(parsed.data.email).toString("base64url");
-  const safeInviteUrl = `${siteUrl}/invite/${encoded}`;
+  const safeInviteUrl = await buildInviteUrl(authData.user.id);
 
   await sendInvitationEmail({
     to: parsed.data.email,
@@ -95,11 +92,11 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   updateTag("students");
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
-  return { success: "Alumno registrado correctamente", redirectTo: "/director/students" };
+  return { success: "Alumno registrado correctamente", redirectTo: portalPath(role, "/students") };
 }
 
 export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -108,6 +105,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
     dni: (formData.get("dni") as string) || undefined,
     birthDate: (formData.get("birthDate") as string) || undefined,
     level: (formData.get("level") as string) || undefined,
+    placementTestScore: (formData.get("placementTestScore") as string) || undefined,
     status: (formData.get("status") as string) || undefined,
   };
 
@@ -140,7 +138,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
   updateTag("students");
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
-  return { success: "Alumno actualizado", redirectTo: `/director/students/${parsed.data.id}` };
+  return { success: "Alumno actualizado", redirectTo: portalPath(role, `/students/${parsed.data.id}`) };
 }
 
 export async function toggleAccessRestrictedAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -159,15 +157,34 @@ export async function toggleAccessRestrictedAction(_prev: ActionResult, formData
 }
 
 export async function deleteStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
 
-  await deleteStudent(id);
+  const info = await getStudentRemovalInfo(id);
+  if (!info) return { error: "El alumno no existe" };
+
+  const adminSupabase = createAdminClient();
+  const mode = removalMode(info.impact, role);
+
+  if (mode === "deactivate") {
+    // Baja lógica (SCRUM-281): inactivo y sin acceso; los pagos y las inscripciones se conservan.
+    await updateStudent({ id, status: "inactive" });
+    const { error } = await adminSupabase.auth.admin.updateUserById(info.profileId, { ban_duration: "87600h" });
+    if (error) return { error: "El alumno quedó inactivo, pero no se pudo bloquear su acceso. Intentá de nuevo." };
+  } else {
+    // Sin historia: borrado físico (sólo director). También se quitan el perfil y la cuenta de acceso.
+    await deleteStudent(id);
+    await adminSupabase.from("profiles").delete().eq("id", info.profileId);
+    await adminSupabase.auth.admin.deleteUser(info.profileId).catch(() => {});
+  }
 
   updateTag("students");
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
-  return { success: "Alumno eliminado", redirectTo: "/director/students" };
+  return {
+    success: mode === "deactivate" ? "Alumno dado de baja (se conservan sus pagos e inscripciones)" : "Alumno eliminado",
+    redirectTo: portalPath(role, "/students"),
+  };
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/Button";
+import { formatDateAR } from "@/lib/format";
 
 const STATUS_COLORS = {
   high: "bg-emerald-500",
@@ -61,7 +62,7 @@ export default async function AttendancePage() {
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Asistencia</h2>
-          <p className="text-sm text-slate-400 mt-0.5">Últimas {sessions.length} clases registradas</p>
+          <p className="text-sm text-slate-400 mt-0.5">{sessions.length === 1 ? "Última clase registrada" : `Últimas ${sessions.length} clases registradas`}</p>
         </div>
         <Link href="/administrativo/attendance/new" className={buttonVariants({ variant: "primary" })}>
           + Tomar asistencia
@@ -96,7 +97,7 @@ export default async function AttendancePage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900 truncate">{s.courseName}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{new Date(s.classDate).toLocaleDateString("es-AR")}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{formatDateAR(s.classDate)}</p>
                     </div>
                     <span className="text-xs font-semibold text-slate-700 shrink-0">{pct}%</span>
                   </div>
@@ -132,7 +133,7 @@ export default async function AttendancePage() {
                   return (
                     <tr key={`${s.courseId}-${s.classDate}`} className="hover:bg-brand-50 transition-colors">
                       <td className="py-3.5 pl-6 pr-4 font-medium text-slate-900">
-                        {new Date(s.classDate).toLocaleDateString("es-AR")}
+                        {formatDateAR(s.classDate)}
                       </td>
                       <td className="py-3.5 pr-4 text-slate-700">{s.courseName}</td>
                       <td className="py-3.5 pr-4">

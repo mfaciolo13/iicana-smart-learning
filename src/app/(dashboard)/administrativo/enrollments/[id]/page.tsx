@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getEnrollmentById } from "@/modules/enrollments/services/enrollments.service";
@@ -31,7 +31,8 @@ export default async function EnrollmentDetailPage({
   const { id } = await params;
 
   const enrollment = await getEnrollmentById(id);
-  if (!enrollment) notFound();
+  // SCRUM-234: tras eliminar desde el detalle, volver al listado en lugar de mostrar un 404.
+  if (!enrollment) redirect("/administrativo/enrollments");
 
   const statusCfg = STATUS_CONFIG[enrollment.status] ?? { label: enrollment.status, variant: "neutral" as const };
 

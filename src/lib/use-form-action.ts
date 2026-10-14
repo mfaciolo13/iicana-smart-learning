@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import type { ActionResult } from "./action-result";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+
+const ACTION_TIMEOUT_MS = 20_000;
 
 export function useFormAction<T extends FieldValues>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: UseFormReturn<T, any, any>,
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>,
+  options?: { /** Limpia el formulario tras un éxito sin redirección. */ resetOnSuccess?: boolean },
 ) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -18,7 +22,23 @@ export function useFormAction<T extends FieldValues>(
   // eslint-disable-next-line react-hooks/refs
   const onSubmit = form.handleSubmit(() => {
     startTransition(async () => {
-      const result = await action(undefined, new FormData(formRef.current!));
+      let result: Awaited<ReturnType<typeof action>>;
+      try {
+        // Timeout de 20 s: una mutación que no responde no debe dejar el botón girando sin aviso.
+        result = await Promise.race([
+          action(undefined, new FormData(formRef.current!)),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ACTION_TIMEOUT_MS)),
+        ]);
+      } catch (e) {
+        if (isRedirectError(e)) throw e;
+        // Una excepción del servidor no debe tumbar la página ni perder lo escrito.
+        toast.error(
+          e instanceof Error && e.message === "timeout"
+            ? "No pudimos guardar, reintentá."
+            : "No se pudo completar la acción. Revisá los datos e intentá de nuevo."
+        );
+        return;
+      }
       if (result?.error) toast.error(result.error);
       if (result?.fieldErrors) {
         const entries = Object.entries(result.fieldErrors);
@@ -33,6 +53,10 @@ export function useFormAction<T extends FieldValues>(
       }
       if (result?.success) {
         toast.success(result.success);
+        if (options?.resetOnSuccess && !result.redirectTo) {
+          form.reset();
+          formRef.current?.reset();
+        }
         if (result.redirectTo) router.push(result.redirectTo);
       }
     });

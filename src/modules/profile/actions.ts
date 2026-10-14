@@ -7,6 +7,7 @@ import { getServerUser } from "@/lib/auth/helpers";
 import { personNameField, phoneField } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
+import { detectMime, MIME_EXTENSION } from "@/lib/file-sniff";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function updateProfileAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -29,19 +30,25 @@ export async function updateProfileAction(_prev: ActionResult, formData: FormDat
     if (avatarFile.size > 2 * 1024 * 1024) {
       return { error: "La imagen no puede superar 2 MB." };
     }
-    const ext = avatarFile.name.split(".").pop()?.toLowerCase();
-    if (!["jpg", "jpeg", "png", "webp"].includes(ext ?? "")) {
+    const buffer = Buffer.from(await avatarFile.arrayBuffer());
+    // El tipo real sale del contenido (SCRUM-302): un HTML renombrado .png se rechaza.
+    const detected = detectMime(new Uint8Array(buffer));
+    if (detected !== "image/png" && detected !== "image/jpeg" && detected !== "image/webp") {
       return { error: "Solo se permiten imágenes JPG, PNG o WebP." };
     }
-    const path = `${user.id}/avatar.${ext}`;
-    const buffer = Buffer.from(await avatarFile.arrayBuffer());
+    // Nombre nuevo en cada subida: la URL cambia (cache-busting) y se borra el avatar anterior.
+    const path = `${user.id}/avatar-${Date.now()}.${MIME_EXTENSION[detected]}`;
 
     const service = createServiceClient();
     const { error: uploadError } = await service.storage
       .from("avatars")
-      .upload(path, buffer, { upsert: true, contentType: avatarFile.type });
+      .upload(path, buffer, { upsert: false, contentType: detected });
 
     if (uploadError) return { error: "Error al subir la imagen. Verificá que el bucket 'avatars' exista en Supabase Storage." };
+
+    const { data: previous } = await service.storage.from("avatars").list(user.id);
+    const stale = (previous ?? []).map((f) => `${user.id}/${f.name}`).filter((p) => p !== path);
+    if (stale.length > 0) await service.storage.from("avatars").remove(stale);
 
     const { data: { publicUrl } } = service.storage.from("avatars").getPublicUrl(path);
     avatarUrl = publicUrl;

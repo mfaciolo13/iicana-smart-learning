@@ -14,13 +14,15 @@ import {
   markOverdueAlertSent,
   getSuspensionTargets,
   suspendStudentAndPayments,
+  paymentExistsForDueDate,
 } from "./services/payments.service";
+import { portalPath } from "@/lib/portal";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const raw = {
     studentId: formData.get("studentId") as string,
@@ -42,11 +44,16 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
     };
   }
 
+  // Dos cuotas del mismo alumno con el mismo vencimiento casi siempre son una carga duplicada (SCRUM-324).
+  if (await paymentExistsForDueDate(parsed.data.studentId, parsed.data.dueDate)) {
+    return { error: "Ese alumno ya tiene una cuota con ese vencimiento" };
+  }
+
   const payment = await createPayment(parsed.data);
 
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
-  return { success: "Pago registrado correctamente", redirectTo: `/director/payments/${payment.id}` };
+  return { success: "Pago registrado correctamente", redirectTo: portalPath(role, `/payments/${payment.id}`) };
 }
 
 export async function markAsPaidAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

@@ -20,9 +20,8 @@ test.describe("Director · Marketing", () => {
     await expect(page.getByText(NAME).first()).toBeVisible({ timeout: 20_000 });
   });
 
-  // V5 / SCRUM-240 — endDate anterior a startDate debería rechazarse. Hoy NO se
-  // valida, así que este test se espera que falle hasta agregar el .refine().
-  test.fail("V5: una campaña con fin anterior al inicio debería rechazarse", async ({ page }) => {
+  // V5 / SCRUM-240 (corregido) — endDate anterior a startDate se rechaza (.refine en cliente y servidor).
+  test("V5: una campaña con fin anterior al inicio debería rechazarse", async ({ page }) => {
     await page.goto("/director/marketing/new");
     await page.waitForLoadState("networkidle");
     await page.locator("#name").fill(`E2E FechaMala ${stamp}`);
@@ -30,7 +29,7 @@ test.describe("Director · Marketing", () => {
     await page.locator("#startDate").fill("2026-06-01");
     await page.locator("#endDate").fill("2026-01-01"); // fin antes del inicio
     await page.getByRole("button", { name: "Registrar campaña" }).click();
-    // Debería mostrar error y NO navegar. Hoy crea igual → el test falla.
+    // Muestra error y NO navega.
     await expect(page.getByText(/fin.*inicio|posterior|inv[aá]lid|rango/i)).toBeVisible({ timeout: 8_000 });
     await expect(page).toHaveURL(/\/director\/marketing\/new/);
   });

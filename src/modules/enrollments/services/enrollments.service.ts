@@ -183,12 +183,27 @@ async function checkActiveEnrollmentRules(
   excludeEnrollmentId?: string,
 ): Promise<{ error: string } | null> {
   const [course] = await tx
-    .select({ maxCapacity: courses.maxCapacity, schedule: courses.schedule })
+    .select({ maxCapacity: courses.maxCapacity, schedule: courses.schedule, status: courses.status })
     .from(courses)
     .where(eq(courses.id, courseId))
     .for("update");
 
   if (!course) return { error: "Curso no encontrado" };
+  // SCRUM-321: un curso inactivo o completado no admite inscripciones nuevas.
+  if (course.status !== "active") return { error: "El curso no está activo: no admite inscripciones" };
+
+  const [student] = await tx
+    .select({ status: students.status, accessRestricted: students.accessRestricted })
+    .from(students)
+    .where(eq(students.id, studentId))
+    .limit(1);
+  if (!student) return { error: "Alumno no encontrado" };
+  if (student.status === "suspended" || student.accessRestricted) {
+    return { error: "El alumno tiene deuda pendiente: regularizá antes de inscribir" };
+  }
+  if (student.status === "inactive" || student.status === "graduated") {
+    return { error: "El alumno está inactivo o egresado: reactivalo antes de inscribirlo" };
+  }
 
   const notSelf = excludeEnrollmentId ? ne(enrollments.id, excludeEnrollmentId) : undefined;
 

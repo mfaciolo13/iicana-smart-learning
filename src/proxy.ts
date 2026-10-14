@@ -1,21 +1,8 @@
 ﻿import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { checkDirectorAccess } from "@/lib/auth/route-access";
 
 const PROTECTED_PREFIXES = ["/director", "/admin", "/profesor", "/alumno", "/administrativo"];
-
-// Rutas de /admin exclusivas del director — el rol 'administrativo' es bloqueado
-const ADMIN_ONLY_ROUTES = [
-  "/director/users",
-  "/director/teachers",
-  "/director/courses",
-  "/director/teacher-evaluations",
-  "/director/assessments",
-  "/director/year-end",
-  "/director/marketing",
-  "/director/promotions",
-  "/director/profile",
-  "/director/settings",
-];
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -56,14 +43,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Bloquear al rol 'administrativo' de rutas exclusivas del director
+  // Control de acceso a /director/*. El rol sale de profiles (no de user_metadata, que edita el
+  // propio usuario) y se evalúa en cada request, incluidas las navegaciones del lado cliente
+  // que no vuelven a ejecutar los layouts (SCRUM-278).
   if (user && pathname.startsWith("/director")) {
-    const role = user.user_metadata?.role as string | undefined;
-    if (role === "administrativo") {
-      const isRestricted = ADMIN_ONLY_ROUTES.some((r) => pathname.startsWith(r));
-      if (isRestricted) {
-        return NextResponse.redirect(new URL("/403", request.url));
-      }
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    const access = checkDirectorAccess(profile?.role, pathname);
+    if (!access.allowed) {
+      return NextResponse.redirect(new URL(access.redirectTo, request.url));
     }
   }
 

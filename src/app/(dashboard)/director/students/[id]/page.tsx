@@ -1,9 +1,10 @@
-﻿import { notFound } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getStudentById } from "@/modules/students/services/students.service";
 import { getEnrollmentsByStudent } from "@/modules/enrollments/services/enrollments.service";
 import { getPaymentsByStudent } from "@/modules/payments/services/payments.service";
+import { removalPrompt } from "@/modules/students/lib/removal";
 import { deleteStudentAction, toggleAccessRestrictedAction } from "@/modules/students/actions";
 import { resendInvitationAction } from "@/modules/users/actions";
 import { FormButton } from "@/components/ui/FormButton";
@@ -42,7 +43,15 @@ export default async function StudentDetailPage({
     getPaymentsByStudent(id),
   ]);
 
-  if (!student) notFound();
+  // SCRUM-234: tras dar de baja o eliminar desde este detalle, la revalidación ya no encuentra al alumno;
+  // se vuelve al listado en lugar de mostrar un 404 antes de que navegue el cliente.
+  if (!student) redirect("/director/students");
+
+  const removal = removalPrompt(
+    { fullName: student.profile.fullName, dni: student.dni },
+    { paymentsCount: studentPayments.length, enrollmentsCount: studentEnrollments.length },
+    "director"
+  );
 
   const status = STATUS_CONFIG[student.status] ?? { label: student.status, variant: "neutral" as const };
 
@@ -63,9 +72,9 @@ export default async function StudentDetailPage({
             action={deleteStudentAction}
             fields={{ id: student.id }}
             variant="danger"
-            confirmMessage="¿Estás seguro de eliminar este alumno? Esta acción no se puede deshacer."
+            confirmMessage={removal.message}
           >
-            Eliminar
+            {removal.label}
           </FormButton>
         </div>
       </div>

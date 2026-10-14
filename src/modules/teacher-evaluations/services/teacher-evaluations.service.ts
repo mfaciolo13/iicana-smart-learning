@@ -6,6 +6,7 @@ import {
   courses,
   teachers,
   profiles,
+  students,
 } from "@/lib/drizzle/schema";
 import { eq, and, sql, isNotNull } from "drizzle-orm";
 import type {
@@ -177,4 +178,30 @@ export async function getTeacherObservations(teacherId: string): Promise<ClassOb
     .orderBy(classObservations.observedAt);
 
   return rows.map((r) => ({ ...r, observerName: r.observerName ?? "—" })) as ClassObservationDetail[];
+}
+
+/**
+ * Inscripción activa del alumno (por id de perfil) en el curso, con el docente real del curso.
+ * La encuesta se arma con estos datos del servidor, no con los que llegan en el formulario.
+ */
+export async function getActiveEnrollmentForSurvey(
+  studentProfileId: string,
+  courseId: string
+): Promise<{ enrollmentId: string; teacherId: string } | null> {
+  const [row] = await db
+    .select({ enrollmentId: enrollments.id, teacherId: courses.teacherId })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(
+      and(
+        eq(students.profileId, studentProfileId),
+        eq(enrollments.courseId, courseId),
+        eq(enrollments.status, "active"),
+        isNotNull(courses.teacherId)
+      )
+    )
+    .limit(1);
+  if (!row || !row.teacherId) return null;
+  return { enrollmentId: row.enrollmentId, teacherId: row.teacherId };
 }

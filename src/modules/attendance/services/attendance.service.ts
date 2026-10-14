@@ -411,3 +411,14 @@ export async function deleteAttendanceSession(courseId: string, classDate: strin
 
   return deleted.length;
 }
+
+export async function allEnrollmentsInCourse(courseId: string, enrollmentIds: string[]): Promise<boolean> {
+  // true si todas las inscripciones pertenecen al curso (evita tomar lista con inscripciones ajenas).
+  const unique = [...new Set(enrollmentIds)];
+  if (unique.length === 0) return true;
+  const rows = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .where(and(eq(enrollments.courseId, courseId), inArray(enrollments.id, unique)));
+  return rows.length === unique.length;
+}
