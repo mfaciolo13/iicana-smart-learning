@@ -16,6 +16,7 @@ import {
   getRecentEnrollments,
   getRecentPayments,
 } from "@/modules/reports/services/dashboard.service";
+import { countOpenComplaints } from "@/modules/complaints/services/complaints.service";
 
 function formatARS(amount: number): string {
   return new Intl.NumberFormat("es-AR", {
@@ -44,11 +45,11 @@ export default async function AdministrativoDashboardPage() {
   const supabase = await createClient();
   const profile = await getServerProfile();
 
-  const [studentsRes, paymentsRes, complaintsRes, enrollmentsRes, recentEnrollments, recentPayments] =
+  const [studentsRes, paymentsRes, openComplaints, enrollmentsRes, recentEnrollments, recentPayments] =
     await Promise.all([
       supabase.from("students").select("id, status"),
       supabase.from("payments").select("id, status, amount, paid_at"),
-      supabase.from("complaints").select("id, status"),
+      countOpenComplaints(),
       supabase.from("enrollments").select("id, status, enrolled_at").order("enrolled_at", { ascending: false }).limit(5),
       getRecentEnrollments(),
       getRecentPayments(),
@@ -58,9 +59,6 @@ export default async function AdministrativoDashboardPage() {
   const totalStudents = studentsRes.data?.length ?? 0;
   const pendingPayments = (paymentsRes.data ?? []).filter((p) => p.status === "pending").length;
   const overduePayments = (paymentsRes.data ?? []).filter((p) => p.status === "overdue").length;
-  const openComplaints = (complaintsRes.data ?? []).filter(
-    (c) => c.status === "open" || c.status === "in_progress"
-  ).length;
   const recentEnrollmentCount = (enrollmentsRes.data ?? []).filter(
     (e) => e.status === "active"
   ).length;

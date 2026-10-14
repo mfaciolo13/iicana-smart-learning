@@ -33,6 +33,8 @@ export async function createComplaintAction(_prev: ActionResult, formData: FormD
   revalidatePath("/alumno/complaints");
   revalidatePath("/director/complaints");
   revalidatePath("/administrativo/complaints");
+  revalidatePath("/director");
+  revalidatePath("/administrativo");
   return { success: "Reclamo enviado correctamente", redirectTo: "/alumno/complaints" };
 }
 
@@ -63,6 +65,8 @@ export async function createComplaintAsProfesorAction(_prev: ActionResult, formD
   revalidatePath("/profesor/complaints");
   revalidatePath("/director/complaints");
   revalidatePath("/administrativo/complaints");
+  revalidatePath("/director");
+  revalidatePath("/administrativo");
   return { success: "Reclamo enviado correctamente", redirectTo: "/profesor/complaints" };
 }
 
@@ -91,5 +95,10 @@ export async function updateComplaintStatusAction(_prev: ActionResult, formData:
 
   revalidatePath("/director/complaints");
   revalidatePath("/administrativo/complaints");
+  revalidatePath(`/director/complaints/${parsed.data.id}`);
+  revalidatePath(`/administrativo/complaints/${parsed.data.id}`);
+  // El contador de reclamos abiertos de los dashboards depende del estado.
+  revalidatePath("/director");
+  revalidatePath("/administrativo");
   return { success: "Estado actualizado" };
 }

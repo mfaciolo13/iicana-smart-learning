@@ -21,6 +21,7 @@ import {
   getRecentEnrollments,
   getRecentPayments,
 } from "@/modules/reports/services/dashboard.service";
+import { countOpenComplaints } from "@/modules/complaints/services/complaints.service";
 
 function formatARS(amount: number): string {
   return new Intl.NumberFormat("es-AR", {
@@ -50,13 +51,13 @@ export default async function AdminDashboardPage() {
   const profile = await getServerProfile();
 
   // Phase 1: all independent queries in parallel
-  const [studentsRes, coursesRes, teachersRes, paymentsRes, complaintsRes, recentEnrollments, recentPayments] =
+  const [studentsRes, coursesRes, teachersRes, paymentsRes, openComplaints, recentEnrollments, recentPayments] =
     await Promise.all([
       supabase.from("students").select("id, status"),
       supabase.from("courses").select("id, name, level, status"),
       supabase.from("teachers").select("id"),
       supabase.from("payments").select("id, status, amount, paid_at"),
-      supabase.from("complaints").select("id, status"),
+      countOpenComplaints(),
       getRecentEnrollments(),
       getRecentPayments(),
     ]);
@@ -68,9 +69,6 @@ export default async function AdminDashboardPage() {
   const totalTeachers = teachersRes.data?.length ?? 0;
   const pendingPayments = (paymentsRes.data ?? []).filter((p) => p.status === "pending").length;
   const overduePayments = (paymentsRes.data ?? []).filter((p) => p.status === "overdue").length;
-  const openComplaints = (complaintsRes.data ?? []).filter(
-    (c) => c.status === "open" || c.status === "in_progress"
-  ).length;
 
   // Monthly income: paid payments with paid_at in current calendar month
   const now = new Date();
