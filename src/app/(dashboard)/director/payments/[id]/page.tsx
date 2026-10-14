@@ -40,6 +40,8 @@ export default async function PaymentDetailPage({
   const statusKey = isOverdue && payment.status !== "paid" ? "overdue" : payment.status;
   const statusCfg = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pending;
   const isPendingOrOverdue = payment.status === "pending" || payment.status === "overdue";
+  // Una cuota suspendida también se puede cobrar: el alumno que regulariza no puede quedar sin poder pagar (SCRUM-289).
+  const isCollectable = isPendingOrOverdue || payment.status === "suspended";
   const isCancelled = payment.status === "cancelled";
 
   return (
@@ -120,9 +122,9 @@ export default async function PaymentDetailPage({
             </dl>
           </Card>
 
+          {isCollectable && <MarkAsPaidForm paymentId={payment.id} action={markAsPaidAction} />}
           {isPendingOrOverdue && (
             <>
-              <MarkAsPaidForm paymentId={payment.id} action={markAsPaidAction} />
               <PaymentEditForm
                 paymentId={payment.id}
                 amount={payment.amount}

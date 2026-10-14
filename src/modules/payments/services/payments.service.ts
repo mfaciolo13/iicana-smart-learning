@@ -280,7 +280,8 @@ export async function getPaymentSummary() {
       suspended: sql<number>`cast(coalesce(sum(case when ${payments.status} = 'suspended' then 1 else 0 end), 0) as int)`,
       cancelled: sql<number>`cast(coalesce(sum(case when ${payments.status} = 'cancelled' then 1 else 0 end), 0) as int)`,
       total: sql<number>`cast(count(*) as int)`,
-      totalPendingAmount: sql<string>`coalesce(sum(case when ${unpaid} then ${payments.amount} else 0 end), 0)::text`,
+      // La deuda incluye las cuotas suspendidas (SCRUM-289).
+      totalPendingAmount: sql<string>`coalesce(sum(case when ${payments.status} in ('pending','overdue','suspended') then ${payments.amount} else 0 end), 0)::text`,
     })
     .from(payments);
 

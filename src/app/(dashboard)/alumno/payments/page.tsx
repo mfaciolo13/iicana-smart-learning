@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getServerUser } from "@/lib/auth/helpers";
 import { Badge } from "@/components/ui/Badge";
+import { todayInstitute } from "@/lib/validation";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   paid: { label: "Pagado", variant: "success" },
@@ -25,7 +26,7 @@ export default async function AlumnoPaymentsPage() {
         .order("due_date", { ascending: false })
     : { data: [] };
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayInstitute();
 
   const payments = (paymentRows ?? []).map((p) => ({
     id: p.id,
@@ -37,7 +38,8 @@ export default async function AlumnoPaymentsPage() {
   }));
 
   const totalPending = payments
-    .filter((p) => p.status === "pending" || p.status === "overdue")
+    // La deuda incluye las cuotas suspendidas (SCRUM-289).
+    .filter((p) => p.status === "pending" || p.status === "overdue" || p.status === "suspended")
     .reduce((sum, p) => sum + Number(p.amount), 0);
 
   return (
