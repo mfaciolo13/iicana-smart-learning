@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
-import { eq, and, ilike, or, count } from "drizzle-orm";
+import { eq, ne, and, ilike, or, count } from "drizzle-orm";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { CreateEnrollmentInput, UpdateEnrollmentInput } from "../schemas";
 import type { EnrollmentListItem, EnrollmentWithDetails } from "../types";
@@ -165,63 +165,84 @@ function schedulesOverlap(a: string, b: string): boolean {
   return pa.start < pb.end && pb.start < pa.end;
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Reglas de negocio para que un alumno tenga una inscripción ACTIVA en un curso:
+ * duplicado, cupo y superposición de horario. Se usa tanto al inscribir como al
+ * reactivar (SCRUM-244). Debe ejecutarse dentro de una transacción.
+ *
+ * Bloquea la fila del curso primero: serializa todos los intentos concurrentes sobre
+ * este curso, así el chequeo de cupo no puede ser burlado por una race condition (dos
+ * requests leyendo el mismo "total" antes de que cualquiera escriba).
+ */
+async function checkActiveEnrollmentRules(
+  tx: Tx,
+  studentId: string,
+  courseId: string,
+  excludeEnrollmentId?: string,
+): Promise<{ error: string } | null> {
+  const [course] = await tx
+    .select({ maxCapacity: courses.maxCapacity, schedule: courses.schedule })
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .for("update");
+
+  if (!course) return { error: "Curso no encontrado" };
+
+  const notSelf = excludeEnrollmentId ? ne(enrollments.id, excludeEnrollmentId) : undefined;
+
+  const existing = await tx
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .where(
+      and(
+        eq(enrollments.studentId, studentId),
+        eq(enrollments.courseId, courseId),
+        eq(enrollments.status, "active"),
+        notSelf,
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    return { error: "El alumno ya está inscripto en este curso" };
+  }
+
+  const [{ total }] = await tx
+    .select({ total: count() })
+    .from(enrollments)
+    .where(
+      and(
+        eq(enrollments.courseId, courseId),
+        eq(enrollments.status, "active"),
+        notSelf,
+      )
+    );
+
+  if (total >= course.maxCapacity) {
+    return { error: `El curso alcanzó el cupo máximo de ${course.maxCapacity} alumnos` };
+  }
+
+  const activeEnrollments = await tx
+    .select({ schedule: courses.schedule, courseName: courses.name })
+    .from(enrollments)
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(and(eq(enrollments.studentId, studentId), eq(enrollments.status, "active"), notSelf));
+
+  const conflict = activeEnrollments.find((e) => schedulesOverlap(course.schedule, e.schedule));
+  if (conflict) {
+    return { error: `El horario se superpone con el curso "${conflict.courseName}"` };
+  }
+
+  return null;
+}
+
 export async function validateAndCreateEnrollment(input: CreateEnrollmentInput) {
   try {
     return await db.transaction(async (tx) => {
-      // Lock the course row first: serializa todos los intentos de inscripción concurrentes
-      // a este mismo curso, así el chequeo de cupo de abajo no puede ser burlado por una
-      // race condition (dos requests leyendo el mismo "total" antes de que cualquiera inserte).
-      const [course] = await tx
-        .select({ maxCapacity: courses.maxCapacity, schedule: courses.schedule, name: courses.name })
-        .from(courses)
-        .where(eq(courses.id, input.courseId))
-        .for("update");
-
-      if (!course) return { error: "Curso no encontrado" };
-
-      // Check for duplicate active enrollment
-      const existing = await tx
-        .select({ id: enrollments.id })
-        .from(enrollments)
-        .where(
-          and(
-            eq(enrollments.studentId, input.studentId),
-            eq(enrollments.courseId, input.courseId),
-            eq(enrollments.status, "active")
-          )
-        )
-        .limit(1);
-
-      if (existing.length > 0) {
-        return { error: "El alumno ya está inscripto en este curso" };
-      }
-
-      // Check course capacity — ahora race-free gracias al lock de arriba
-      const [{ total }] = await tx
-        .select({ total: count() })
-        .from(enrollments)
-        .where(
-          and(
-            eq(enrollments.courseId, input.courseId),
-            eq(enrollments.status, "active")
-          )
-        );
-
-      if (total >= course.maxCapacity) {
-        return { error: `El curso alcanzó el cupo máximo de ${course.maxCapacity} alumnos` };
-      }
-
-      // Check schedule conflicts with student's other active enrollments
-      const activeEnrollments = await tx
-        .select({ schedule: courses.schedule, courseName: courses.name })
-        .from(enrollments)
-        .innerJoin(courses, eq(enrollments.courseId, courses.id))
-        .where(and(eq(enrollments.studentId, input.studentId), eq(enrollments.status, "active")));
-
-      const conflict = activeEnrollments.find((e) => schedulesOverlap(course.schedule, e.schedule));
-      if (conflict) {
-        return { error: `El horario se superpone con el curso "${conflict.courseName}"` };
-      }
+      const violation = await checkActiveEnrollmentRules(tx, input.studentId, input.courseId);
+      if (violation) return violation;
 
       const [enrollment] = await tx
         .insert(enrollments)
@@ -244,13 +265,34 @@ export async function validateAndCreateEnrollment(input: CreateEnrollmentInput) 
   }
 }
 
-export async function updateEnrollment(input: UpdateEnrollmentInput) {
-  const [updated] = await db
-    .update(enrollments)
-    .set({ status: input.status })
-    .where(eq(enrollments.id, input.id))
-    .returning();
-  return updated;
+export async function updateEnrollment(
+  input: UpdateEnrollmentInput,
+): Promise<{ error: string } | { enrollment: typeof enrollments.$inferSelect }> {
+  try {
+    return await db.transaction(async (tx) => {
+      const [current] = await tx.select().from(enrollments).where(eq(enrollments.id, input.id)).limit(1);
+      if (!current) return { error: "Inscripción no encontrada" };
+
+      // Reactivar una inscripción retirada/finalizada tiene que respetar las mismas
+      // reglas que una inscripción nueva (SCRUM-244).
+      if (input.status === "active" && current.status !== "active") {
+        const violation = await checkActiveEnrollmentRules(tx, current.studentId, current.courseId, current.id);
+        if (violation) return violation;
+      }
+
+      const [enrollment] = await tx
+        .update(enrollments)
+        .set({ status: input.status })
+        .where(eq(enrollments.id, input.id))
+        .returning();
+      return { enrollment };
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return { error: "El alumno ya está inscripto en este curso" };
+    }
+    throw err;
+  }
 }
 
 export async function deleteEnrollment(id: string) {

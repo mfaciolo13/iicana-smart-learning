@@ -36,7 +36,7 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
   }
 
   const result = await validateAndCreateEnrollment(parsed.data);
-  if (result.error) return { error: result.error };
+  if ("error" in result) return { error: result.error };
 
   // Send enrollment confirmation email (non-blocking on failure)
   try {
@@ -96,7 +96,8 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
     };
   }
 
-  await updateEnrollment(parsed.data);
+  const result = await updateEnrollment(parsed.data);
+  if ("error" in result) return { error: result.error };
 
   updateTag("enrollments");
   updateTag("students");
