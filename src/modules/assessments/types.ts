@@ -7,6 +7,19 @@ export interface QuizQuestion {
   explanation: string;
 }
 
+/** Pregunta tal como la recibe el alumno: sin la respuesta correcta ni la explicación (SCRUM-301). */
+export interface PublicQuizQuestion {
+  question: string;
+  options: string[];
+}
+
+/** Resultado de corregir una respuesta en el servidor. */
+export interface AnswerFeedback {
+  correct: boolean;
+  correctIndex: number;
+  explanation: string;
+}
+
 export interface AssessmentListItem {
   id: string;
   courseId: string;

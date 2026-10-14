@@ -23,7 +23,7 @@ import {
   isStudentEnrolledInCourse,
   hasAttempt,
 } from "./services/assessments.service";
-import type { QuizQuestion } from "./types";
+import type { QuizQuestion, AnswerFeedback } from "./types";
 import type { ActionResult } from "@/lib/action-result";
 
 // MIME types supported by Claude's API
@@ -357,6 +357,39 @@ export async function archiveAssessmentProfesorAction(_prev: ActionResult, formD
   revalidatePath("/profesor/assessments");
   revalidatePath(`/profesor/assessments/${id}`);
   redirect(`/profesor/assessments/${id}`);
+}
+
+/**
+ * Corrige UNA respuesta en el servidor y devuelve el feedback (correcta, explicación). El payload
+ * inicial del quiz ya no trae las respuestas (SCRUM-301): el alumno las conoce sólo después de
+ * responder cada pregunta.
+ */
+export async function checkAnswerAction(
+  assessmentId: string,
+  questionIndex: number,
+  chosenIndex: number
+): Promise<{ error: string } | AnswerFeedback> {
+  await requireRole(["alumno"]);
+  const user = await getCurrentUser();
+  if (!user) return { error: "No autorizado" };
+
+  if (!Number.isInteger(questionIndex) || !Number.isInteger(chosenIndex) || chosenIndex < 0) {
+    return { error: "Respuesta inválida" };
+  }
+
+  const detail = await getAssessmentDetail(assessmentId);
+  if (!detail || detail.status !== "published") return { error: "Evaluación no disponible" };
+  if (!(await isStudentEnrolledInCourse(user.id, detail.courseId))) return { error: "Evaluación no disponible" };
+  if (await hasAttempt(assessmentId, user.id)) return { error: "Ya respondiste esta autoevaluación" };
+
+  const question = (detail.questions as unknown as QuizQuestion[])[questionIndex];
+  if (!question || chosenIndex >= question.options.length) return { error: "Respuesta inválida" };
+
+  return {
+    correct: chosenIndex === question.correct,
+    correctIndex: question.correct,
+    explanation: question.explanation,
+  };
 }
 
 export async function submitAttemptAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
