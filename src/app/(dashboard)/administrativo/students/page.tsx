@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { StudentList } from "@/modules/students/components/StudentList";
 import { buttonVariants } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import type { StudentListItem } from "@/modules/students/types";
 import { getCachedStudents } from "@/lib/query-cache";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { matchesSearch } from "@/lib/search";
 
 export default async function StudentsPage({
   searchParams,
@@ -19,12 +20,9 @@ export default async function StudentsPage({
   }));
 
   if (q) {
-    const lower = q.toLowerCase();
     students = students.filter(
       (s) =>
-        s.fullName.toLowerCase().includes(lower) ||
-        s.email.toLowerCase().includes(lower) ||
-        s.dni.toLowerCase().includes(lower)
+        matchesSearch(s.fullName, q) || matchesSearch(s.email, q) || matchesSearch(s.dni, q)
     );
   }
 
@@ -43,15 +41,7 @@ export default async function StudentsPage({
         </Link>
       </div>
 
-      <form className="mb-4">
-        <Input
-          name="q"
-          type="search"
-          defaultValue={q}
-          placeholder="Buscar por nombre, email o DNI..."
-          className="w-full sm:max-w-sm"
-        />
-      </form>
+      <SearchInput placeholder="Buscar por nombre, email o DNI..." resultCount={students.length} className="mb-4" />
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-4 sm:px-6">
         <StudentList students={students} basePath="/administrativo/students" />

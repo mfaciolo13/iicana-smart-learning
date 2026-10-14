@@ -2,8 +2,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { CourseList } from "@/modules/courses/components/CourseList";
 import { buttonVariants } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import type { CourseListItem } from "@/modules/courses/types";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { matchesSearch } from "@/lib/search";
 
 export default async function CoursesPage({
   searchParams,
@@ -41,8 +42,7 @@ export default async function CoursesPage({
   });
 
   if (q) {
-    const lower = q.toLowerCase();
-    courses = courses.filter((c) => c.name.toLowerCase().includes(lower));
+    courses = courses.filter((c) => matchesSearch(c.name, q));
   }
 
   const active = courses.filter((c) => c.status === "active").length;
@@ -61,15 +61,7 @@ export default async function CoursesPage({
         </Link>
       </div>
 
-      <form className="mb-4">
-        <Input
-          name="q"
-          type="search"
-          defaultValue={q}
-          placeholder="Buscar por nombre..."
-          className="w-full sm:max-w-sm"
-        />
-      </form>
+      <SearchInput placeholder="Buscar por nombre..." resultCount={courses.length} className="mb-4" />
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-4 sm:px-6">
         <CourseList courses={courses} />

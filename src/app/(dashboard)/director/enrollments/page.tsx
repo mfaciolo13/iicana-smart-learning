@@ -2,7 +2,7 @@
 import { getEnrollments } from "@/modules/enrollments/services/enrollments.service";
 import { EnrollmentList } from "@/modules/enrollments/components/EnrollmentList";
 import { buttonVariants } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { SearchInput } from "@/components/ui/SearchInput";
 
 export default async function EnrollmentsPage({
   searchParams,
@@ -28,15 +28,7 @@ export default async function EnrollmentsPage({
         </Link>
       </div>
 
-      <form className="mb-4">
-        <Input
-          name="q"
-          type="search"
-          defaultValue={q}
-          placeholder="Buscar por alumno, DNI o curso..."
-          className="w-full sm:max-w-sm"
-        />
-      </form>
+      <SearchInput placeholder="Buscar por alumno, DNI o curso..." resultCount={enrollments.length} className="mb-4" />
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-4 sm:px-6">
         <EnrollmentList enrollments={enrollments} showNewLink />
