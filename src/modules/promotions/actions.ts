@@ -12,7 +12,8 @@ export async function promoteStudentAction(_prev: ActionResult, formData: FormDa
   const enrollmentId = formData.get("enrollmentId") as string;
   if (!enrollmentId) return { error: "Datos incompletos" };
 
-  await promoteEnrollment(enrollmentId);
+  const result = await promoteEnrollment(enrollmentId);
+  if ("error" in result) return { error: result.error };
 
   updateTag("students");
   updateTag("enrollments");
