@@ -30,12 +30,12 @@ export default async function AlumnoEvaluationsPage() {
 
   const { data: surveyRows } = enrollmentIds.length > 0
     ? await supabase
-        .from("teacher_surveys")
-        .select("id, enrollment_id")
+        .from("teacher_survey_submissions")
+        .select("enrollment_id")
         .in("enrollment_id", enrollmentIds)
     : { data: [] };
 
-  const surveyByEnrollment = new Map((surveyRows ?? []).map((s) => [s.enrollment_id, s.id]));
+  const surveyByEnrollment = new Map((surveyRows ?? []).map((s) => [s.enrollment_id, s.enrollment_id]));
 
   type CourseRaw = {
     id: string;
