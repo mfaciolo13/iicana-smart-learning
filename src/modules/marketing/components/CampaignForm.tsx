@@ -15,6 +15,9 @@ const campaignClientSchema = z.object({
   endDate: z.string().optional(),
   budget: z.string().regex(/^\d+(\.\d{1,2})?$/, "Ingresá un número válido (ej: 5000.00)").optional().or(z.literal("")),
   description: z.string().optional(),
+}).refine((v) => !v.endDate || v.endDate >= v.startDate, {
+  message: "La fecha de fin no puede ser anterior a la de inicio",
+  path: ["endDate"],
 });
 type FormValues = z.infer<typeof campaignClientSchema>;
 

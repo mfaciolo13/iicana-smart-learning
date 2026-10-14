@@ -17,6 +17,9 @@ const campaignSchema = z.object({
     .regex(/^\d+(\.\d{1,2})?$/, "El presupuesto debe ser un número válido")
     .optional(),
   description: z.string().optional(),
+}).refine((v) => !v.endDate || v.endDate >= v.startDate, {
+  message: "La fecha de fin no puede ser anterior a la de inicio",
+  path: ["endDate"],
 });
 
 const inquirySchema = z.object({

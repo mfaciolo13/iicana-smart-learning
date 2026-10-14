@@ -98,6 +98,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Pagos", href: "/alumno/payments", icon: CreditCard },
     { label: "Material", href: "/alumno/documents", icon: BookOpen },
     { label: "Mensajes", href: "/alumno/notifications", icon: MessageSquare },
+    { label: "Reclamos", href: "/alumno/complaints", icon: AlertCircle },
     { label: "Mi Perfil", href: "/alumno/profile", icon: UserCircle },
   ],
 };

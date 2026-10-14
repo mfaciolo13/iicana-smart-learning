@@ -21,7 +21,7 @@ export function DocumentUploadForm() {
     defaultValues: { name: "", description: "" },
   });
   const { register, formState: { errors } } = form;
-  const { formRef, onSubmit, isPending } = useFormAction(form, uploadDocumentAction);
+  const { formRef, onSubmit, isPending } = useFormAction(form, uploadDocumentAction, { resetOnSuccess: true });
 
   return (
     <form ref={formRef} onSubmit={onSubmit} encType="multipart/form-data" className="space-y-4">
