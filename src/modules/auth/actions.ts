@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { getSiteUrl } from "@/lib/site-url";
 import { z } from "zod";
 import { loginSchema } from "./schemas";
 import { sendPasswordResetEmail } from "@/lib/email";
@@ -58,7 +58,8 @@ export async function loginAction(_prev: unknown, formData: FormData) {
 
 export async function logoutAction() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // scope "local": cierra sólo esta sesión, no las de otros dispositivos del usuario (SCRUM-274).
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/login");
 }
 
@@ -67,8 +68,7 @@ export async function forgotPasswordAction(_prev: ActionResult, formData: FormDa
   const parsed = z.email("Email inválido").safeParse(email);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const origin = (await headers()).get("origin") ?? "https://cervantes-smart-learning.com.ar";
-  const redirectTo = `${origin}/update-password`;
+  const redirectTo = `${await getSiteUrl()}/update-password`;
 
   try {
     const admin = createAdminClient();

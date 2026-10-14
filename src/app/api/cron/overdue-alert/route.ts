@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAuthorizedCron } from "@/lib/cron-auth";
 import { db } from "@/lib/drizzle";
 import { payments, students } from "@/lib/drizzle/schema";
 import { eq, count } from "drizzle-orm";
@@ -6,11 +7,8 @@ import { getOverdueAlertRecipients } from "@/modules/notifications/services/cron
 import { sendPaymentOverdueAlertEmail } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
-  if (process.env.NODE_ENV !== "development") {
-    const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!isAuthorizedCron(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const recipients = await getOverdueAlertRecipients();
