@@ -217,14 +217,14 @@ export async function getOverdueAlertTargets(): Promise<OverdueAlertTarget[]> {
       and(
         inArray(payments.status, ["pending", "overdue"]),
         lt(payments.dueDate, cutoffStr),
-        isNull(payments.overdueAlertSentAt)
+        isNull(payments.directorAlertSentAt)
       )
     );
 }
 
 export async function markOverdueAlertSent(paymentIds: string[]) {
   if (!paymentIds.length) return;
-  await db.update(payments).set({ overdueAlertSentAt: new Date() }).where(inArray(payments.id, paymentIds));
+  await db.update(payments).set({ directorAlertSentAt: new Date() }).where(inArray(payments.id, paymentIds));
 }
 
 export interface SuspensionTarget {

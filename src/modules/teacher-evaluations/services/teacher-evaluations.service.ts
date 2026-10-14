@@ -1,6 +1,7 @@
 import { db } from "@/lib/drizzle";
 import {
   teacherSurveys,
+  teacherSurveySubmissions,
   classObservations,
   enrollments,
   courses,
@@ -37,12 +38,12 @@ export async function getEnrollmentsForSurvey(studentId: string): Promise<Enroll
       courseLevel: courses.level,
       teacherId: courses.teacherId,
       teacherName: teacherProfiles.fullName,
-      surveyId: teacherSurveys.id,
+      surveyId: teacherSurveySubmissions.enrollmentId,
     })
     .from(enrollments)
     .innerJoin(courses, eq(enrollments.courseId, courses.id))
     .leftJoin(teacherProfiles, eq(courses.teacherId, teacherProfiles.teacherId))
-    .leftJoin(teacherSurveys, eq(teacherSurveys.enrollmentId, enrollments.id))
+    .leftJoin(teacherSurveySubmissions, eq(teacherSurveySubmissions.enrollmentId, enrollments.id))
     .where(and(eq(enrollments.studentId, studentId), eq(enrollments.status, "active")));
 
   return rows.map((r) => ({
@@ -53,28 +54,39 @@ export async function getEnrollmentsForSurvey(studentId: string): Promise<Enroll
   })) as EnrollmentForSurvey[];
 }
 
-export async function submitSurvey(input: TeacherSurveyInput) {
-  const [survey] = await db
-    .insert(teacherSurveys)
-    .values({
+/**
+ * Guarda la respuesta y, aparte, la marca de que la inscripción ya respondió (SCRUM-250).
+ * Ambos registros no comparten ningún dato que permita unirlos. Devuelve false si esa
+ * inscripción ya había respondido (la clave primaria de la marca lo impide aunque haya
+ * dos envíos simultáneos).
+ */
+export async function submitSurvey(input: TeacherSurveyInput & { enrollmentId: string }): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const marked = await tx
+      .insert(teacherSurveySubmissions)
+      .values({ enrollmentId: input.enrollmentId, courseId: input.courseId })
+      .onConflictDoNothing()
+      .returning({ id: teacherSurveySubmissions.enrollmentId });
+    if (marked.length === 0) return false;
+
+    await tx.insert(teacherSurveys).values({
       teacherId: input.teacherId,
       courseId: input.courseId,
-      enrollmentId: input.enrollmentId ?? null,
       rating1: input.rating1,
       rating2: input.rating2,
       rating3: input.rating3,
       rating4: input.rating4,
       comment: input.comment ?? null,
-    })
-    .returning();
-  return survey;
+    });
+    return true;
+  });
 }
 
 export async function hasSurveySubmitted(enrollmentId: string): Promise<boolean> {
   const [row] = await db
-    .select({ id: teacherSurveys.id })
-    .from(teacherSurveys)
-    .where(eq(teacherSurveys.enrollmentId, enrollmentId))
+    .select({ id: teacherSurveySubmissions.enrollmentId })
+    .from(teacherSurveySubmissions)
+    .where(eq(teacherSurveySubmissions.enrollmentId, enrollmentId))
     .limit(1);
   return !!row;
 }
