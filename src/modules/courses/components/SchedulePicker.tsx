@@ -75,7 +75,6 @@ export function SchedulePicker({ defaultDays = [], defaultTime = "", defaultDura
             value={time}
             onChange={(e) => changeTime(e.target.value)}
             className="w-32"
-            required
           />
         </div>
         <div className="flex flex-col gap-1">

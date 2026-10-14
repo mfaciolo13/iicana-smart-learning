@@ -2,8 +2,9 @@ import { db } from "@/lib/drizzle";
 import { enrollments, students, profiles, courses, attendance, grades } from "@/lib/drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 
-export const ATTENDANCE_THRESHOLD = 80;
-export const GRADE_THRESHOLD = 7.0;
+import { ATTENDANCE_THRESHOLD, GRADE_THRESHOLD, meetsAttendance, meetsGrades, displayAverage } from "../eligibility";
+
+export { ATTENDANCE_THRESHOLD, GRADE_THRESHOLD };
 
 export interface PromotionRow {
   enrollmentId: string;
@@ -48,7 +49,7 @@ export async function getPromotionEligibility(enrollmentId?: string): Promise<Pr
       db
         .select({
           enrollmentId: grades.enrollmentId,
-          avg: sql<number | null>`round(avg(${grades.score}), 1)`,
+          avg: sql<number | null>`round(avg(${grades.score}), 4)`,
         })
         .from(grades)
         .groupBy(grades.enrollmentId)
@@ -80,11 +81,11 @@ export async function getPromotionEligibility(enrollmentId?: string): Promise<Pr
     const total = r.totalClasses ?? 0;
     const present = r.presentClasses ?? 0;
     const attendancePct = total > 0 ? Math.round((present / total) * 100) : null;
-    const gradeAvg = r.gradeAvg !== null && r.gradeAvg !== undefined ? Number(r.gradeAvg) : null;
+    const rawAvg = r.gradeAvg !== null && r.gradeAvg !== undefined ? Number(r.gradeAvg) : null;
+    const gradeAvg = displayAverage(rawAvg);
 
-    const meetsAttendance = attendancePct !== null && attendancePct >= ATTENDANCE_THRESHOLD;
-    const meetsGrades = gradeAvg !== null && gradeAvg >= GRADE_THRESHOLD;
-    const isEligible = meetsAttendance && meetsGrades;
+    // La elegibilidad usa los valores exactos, no los redondeados que se muestran (SCRUM-286).
+    const isEligible = meetsAttendance(present, total) && meetsGrades(rawAvg);
 
     return {
       enrollmentId: r.enrollmentId,

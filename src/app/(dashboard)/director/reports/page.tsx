@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getReportsSummary } from "@/modules/reports/services/dashboard.service";
 import { FileSpreadsheet, CalendarCheck, Star, CreditCard, Stethoscope, TrendingUp } from "lucide-react";
 import {
   getRiskBreakdown,
@@ -27,52 +27,12 @@ function monthLabel(ym: string) {
 }
 
 export default async function ReportsPage() {
-  const supabase = await createClient();
+  // Resumen calculado en SQL: PostgREST corta en 1000 filas (SCRUM-283).
+  const summary = await getReportsSummary();
+  const attendanceSummary = summary.attendance;
+  const gradesSummary = summary.grades;
+  const paymentsSummary = summary.payments;
 
-  const [{ data: attendanceRows }, { data: gradeRows }, { data: paymentRows }] = await Promise.all([
-    supabase.from("attendance").select("status"),
-    supabase.from("grades").select("score"),
-    supabase.from("payments").select("status, amount"),
-  ]);
-
-  const totalAttendance = attendanceRows?.length ?? 0;
-  const presentCount = (attendanceRows ?? []).filter(
-    (a) => a.status === "present" || a.status === "late"
-  ).length;
-  const attendanceSummary = {
-    totalRecords: totalAttendance,
-    avgPct:
-      totalAttendance > 0
-        ? Math.round((presentCount / totalAttendance) * 100 * 10) / 10
-        : 0,
-  };
-
-  const totalGrades = gradeRows?.length ?? 0;
-  const gradeSum = (gradeRows ?? []).reduce((s, g) => s + parseFloat(g.score), 0);
-  const passingGrades = (gradeRows ?? []).filter((g) => parseFloat(g.score) >= 7).length;
-  const gradesSummary = {
-    totalGrades,
-    avgScore:
-      totalGrades > 0
-        ? (Math.round((gradeSum / totalGrades) * 100) / 100).toFixed(2)
-        : "—",
-    passing: passingGrades,
-  };
-
-  const paidPayments = (paymentRows ?? []).filter((p) => p.status === "paid");
-  const pendingCount = (paymentRows ?? []).filter(
-    (p) => p.status === "pending" || p.status === "overdue"
-  ).length;
-  const amountCollected = paidPayments
-    .reduce((s, p) => s + parseFloat(p.amount), 0)
-    .toString();
-  const paymentsSummary = {
-    totalPaid: paidPayments.length,
-    totalPending: pendingCount,
-    amountCollected,
-  };
-
-  // Secuencial (no Promise.all): el cliente Drizzle tiene max:1 conexión.
   const riskBreakdown = await getRiskBreakdown();
   const correlation = await getAttendanceGradeCorrelation();
   const paymentTrend = await getPaymentTrend();

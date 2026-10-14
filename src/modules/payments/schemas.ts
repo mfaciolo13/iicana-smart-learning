@@ -15,7 +15,7 @@ export const createPaymentSchema = z.object({
       max.setFullYear(max.getFullYear() + 2);
       return new Date(v) <= max;
     }, "La fecha no puede ser más de 2 años en el futuro"),
-  notes: z.string().optional(),
+  notes: z.string().max(500, "Las observaciones no pueden superar los 500 caracteres").optional(),
 });
 
 export const markAsPaidSchema = z.object({

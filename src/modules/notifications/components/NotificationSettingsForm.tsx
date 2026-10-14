@@ -106,7 +106,11 @@ export function NotificationSettingsForm({ settings }: NotificationSettingsFormP
             <Field
               label="Horas de anticipación"
               id="timingHours"
-              helper={`El recordatorio se enviará ${timingHours} horas antes de cada clase.`}
+              helper={
+                Number.isInteger(timingHours) && timingHours >= 1 && timingHours <= 72
+                  ? `El recordatorio se enviará ${timingHours} horas antes de cada clase.`
+                  : "Ingresá un valor entero entre 1 y 72 horas."
+              }
             >
               <Input
                 id="timingHours"

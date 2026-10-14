@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import Anthropic from "@anthropic-ai/sdk";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
+import { assertCourseAccess } from "@/lib/auth/course-access";
+import { isStudentAccessRestricted } from "@/modules/students/services/students.service";
 import { sendAssessmentPublishedEmail } from "@/lib/email";
 import { getEmailsForCourse } from "@/modules/notifications/services/notifications.service";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -19,8 +21,12 @@ import {
   archiveAssessment,
   submitAttempt,
   getAssessmentDetail,
+  isStudentEnrolledInCourse,
+  hasAttempt,
+  countAssessmentsToday,
 } from "./services/assessments.service";
-import type { QuizQuestion } from "./types";
+import { parseQuestions, isTimeoutError, AI_TIMEOUT_MS, AI_MAX_TOKENS, MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY } from "./lib/questions";
+import type { QuizQuestion, AnswerFeedback } from "./types";
 import type { ActionResult } from "@/lib/action-result";
 
 // MIME types supported by Claude's API
@@ -107,6 +113,10 @@ export async function generateAssessmentAction(_prev: ActionResult, formData: Fo
     };
   }
 
+  if ((await countAssessmentsToday(parsed.data.courseId)) >= MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY) {
+    return { error: `Se alcanzó el límite de ${MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY} autoevaluaciones por curso por día.` };
+  }
+
   const prompt = `Sos un profesor experto de inglés en Argentina.
 Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
 Tema de la semana: "${parsed.data.topic}"
@@ -144,22 +154,25 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
       { type: "text", text: prompt },
     ];
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: userContent }],
-    });
+    const message = await client.messages.create(
+      {
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: AI_MAX_TOKENS,
+        messages: [{ role: "user", content: userContent }],
+      },
+      { timeout: AI_TIMEOUT_MS }
+    );
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return { error: "Error generando preguntas. Intentá de nuevo." };
-
-    questions = JSON.parse(jsonMatch[0]) as QuizQuestion[];
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return { error: "Respuesta inválida del modelo. Intentá de nuevo." };
-    }
-  } catch {
-    return { error: "Error al conectar con el modelo de IA. Verificá tu conexión." };
+    const result = parseQuestions(text);
+    if (!result.ok) return { error: result.error };
+    questions = result.questions;
+  } catch (e) {
+    return {
+      error: isTimeoutError(e)
+        ? "La generación tardó demasiado. Intentá de nuevo en unos minutos."
+        : "Error al conectar con el modelo de IA. Verificá tu conexión.",
+    };
   }
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
@@ -215,7 +228,7 @@ export async function archiveAssessmentAction(_prev: ActionResult, formData: For
 }
 
 export async function generateAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["profesor"]);
+  const role = await requireRole(["profesor"]);
   const user = await getCurrentUser();
   if (!user) return { error: "No autorizado" };
 
@@ -237,6 +250,12 @@ export async function generateAssessmentProfesorAction(_prev: ActionResult, form
           .filter(([, v]) => v)
       ) as Record<string, string>,
     };
+  }
+
+  await assertCourseAccess(role, parsed.data.courseId);
+
+  if ((await countAssessmentsToday(parsed.data.courseId)) >= MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY) {
+    return { error: `Se alcanzó el límite de ${MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY} autoevaluaciones por curso por día.` };
   }
 
   const prompt = `Sos un profesor experto de inglés en Argentina.
@@ -276,22 +295,25 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
       { type: "text", text: prompt },
     ];
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: userContent }],
-    });
+    const message = await client.messages.create(
+      {
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: AI_MAX_TOKENS,
+        messages: [{ role: "user", content: userContent }],
+      },
+      { timeout: AI_TIMEOUT_MS }
+    );
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return { error: "Error generando preguntas. Intentá de nuevo." };
-
-    questions = JSON.parse(jsonMatch[0]) as QuizQuestion[];
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return { error: "Respuesta inválida del modelo. Intentá de nuevo." };
-    }
-  } catch {
-    return { error: "Error al conectar con el modelo de IA. Verificá tu conexión." };
+    const result = parseQuestions(text);
+    if (!result.ok) return { error: result.error };
+    questions = result.questions;
+  } catch (e) {
+    return {
+      error: isTimeoutError(e)
+        ? "La generación tardó demasiado. Intentá de nuevo en unos minutos."
+        : "Error al conectar con el modelo de IA. Verificá tu conexión.",
+    };
   }
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
@@ -301,10 +323,14 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
 }
 
 export async function publishAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "profesor"]);
+  const role = await requireRole(["director", "profesor"]);
 
   const parsed = publishAssessmentSchema.safeParse({ id: formData.get("id") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const target = await getAssessmentDetail(parsed.data.id);
+  if (!target) return { error: "Evaluación no encontrada" };
+  await assertCourseAccess(role, target.courseId);
 
   const assessment = await publishAssessment(parsed.data.id);
   const detail = await getAssessmentDetail(parsed.data.id);
@@ -334,16 +360,55 @@ export async function publishAssessmentProfesorAction(_prev: ActionResult, formD
 }
 
 export async function archiveAssessmentProfesorAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "profesor"]);
+  const role = await requireRole(["director", "profesor"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
+
+  const target = await getAssessmentDetail(id);
+  if (!target) return { error: "Evaluación no encontrada" };
+  await assertCourseAccess(role, target.courseId);
 
   await archiveAssessment(id);
 
   revalidatePath("/profesor/assessments");
   revalidatePath(`/profesor/assessments/${id}`);
   redirect(`/profesor/assessments/${id}`);
+}
+
+/**
+ * Corrige UNA respuesta en el servidor y devuelve el feedback (correcta, explicación). El payload
+ * inicial del quiz ya no trae las respuestas (SCRUM-301): el alumno las conoce sólo después de
+ * responder cada pregunta.
+ */
+export async function checkAnswerAction(
+  assessmentId: string,
+  questionIndex: number,
+  chosenIndex: number
+): Promise<{ error: string } | AnswerFeedback> {
+  await requireRole(["alumno"]);
+  const user = await getCurrentUser();
+  if (!user) return { error: "No autorizado" };
+
+  if (await isStudentAccessRestricted(user.id)) return { error: "Tu acceso está restringido por cuotas impagas. Regularizá tus pagos con la administración." };
+
+  if (!Number.isInteger(questionIndex) || !Number.isInteger(chosenIndex) || chosenIndex < 0) {
+    return { error: "Respuesta inválida" };
+  }
+
+  const detail = await getAssessmentDetail(assessmentId);
+  if (!detail || detail.status !== "published") return { error: "Evaluación no disponible" };
+  if (!(await isStudentEnrolledInCourse(user.id, detail.courseId))) return { error: "Evaluación no disponible" };
+  if (await hasAttempt(assessmentId, user.id)) return { error: "Ya respondiste esta autoevaluación" };
+
+  const question = (detail.questions as unknown as QuizQuestion[])[questionIndex];
+  if (!question || chosenIndex >= question.options.length) return { error: "Respuesta inválida" };
+
+  return {
+    correct: chosenIndex === question.correct,
+    correctIndex: question.correct,
+    explanation: question.explanation,
+  };
 }
 
 export async function submitAttemptAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -375,8 +440,13 @@ export async function submitAttemptAction(_prev: ActionResult, formData: FormDat
     };
   }
 
+  if (await isStudentAccessRestricted(user.id)) return { error: "Tu acceso está restringido por cuotas impagas. Regularizá tus pagos con la administración." };
+
   const detail = await getAssessmentDetail(parsed.data.assessmentId);
   if (!detail || detail.status !== "published") return { error: "Evaluación no disponible" };
+  // Sólo alumnos inscriptos en el curso, y una sola vez por autoevaluación (SCRUM-251).
+  if (!(await isStudentEnrolledInCourse(user.id, detail.courseId))) return { error: "Evaluación no disponible" };
+  if (await hasAttempt(parsed.data.assessmentId, user.id)) return { error: "Ya respondiste esta autoevaluación" };
 
   await submitAttempt(parsed.data, user.id, detail.questions);
 

@@ -26,9 +26,12 @@ function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
 const inquiryClientSchema = z.object({
   name: personNameField("El nombre"),
   receivedAt: z.string().min(1, "Fecha requerida"),
-  email: z.string().optional(),
+  email: z.email("Email inválido").optional().or(z.literal("")),
   phone: phoneField(),
   notes: z.string().optional(),
+}).refine((v) => !!(v.email?.trim() || v.phone?.trim()), {
+  message: "Ingresá al menos un email o un teléfono de contacto",
+  path: ["email"],
 });
 type FormValues = z.infer<typeof inquiryClientSchema>;
 

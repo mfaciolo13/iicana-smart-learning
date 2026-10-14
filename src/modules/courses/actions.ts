@@ -3,8 +3,8 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
 import { db } from "@/lib/drizzle";
-import { teachers, profiles } from "@/lib/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { teachers, profiles, enrollments } from "@/lib/drizzle/schema";
+import { eq, and, count } from "drizzle-orm";
 import { sendTeacherAssignmentEmail } from "@/lib/email";
 import { createCourseSchema, updateCourseSchema } from "./schemas";
 import { createCourse, updateCourse, deleteCourse, getCourseById } from "./services/courses.service";
@@ -57,7 +57,8 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
     classDays: classDays.length > 0 ? classDays : undefined,
     classTime: (formData.get("classTime") as string) || undefined,
     classDurationMinutes: (formData.get("classDurationMinutes") as string) || undefined,
-    classroom: (formData.get("classroom") as string) || undefined,
+    // Si el campo viene vacío se limpia el aula (antes "" se descartaba y no se podía quitar).
+    classroom: formData.has("classroom") ? (formData.get("classroom") as string) : undefined,
     maxCapacity: (formData.get("maxCapacity") as string) || undefined,
     teacherId: (formData.get("teacherId") as string) || undefined,
     status: (formData.get("status") as string) || undefined,
@@ -77,10 +78,22 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
     };
   }
 
-  const [prevCourse, updatedCourse] = await Promise.all([
-    getCourseById(parsed.data.id),
-    updateCourse(parsed.data),
-  ]);
+  // El cupo no puede quedar por debajo de los alumnos activos ya inscriptos (SCRUM-324).
+  if (parsed.data.maxCapacity !== undefined) {
+    const [{ n }] = await db
+      .select({ n: count() })
+      .from(enrollments)
+      .where(and(eq(enrollments.courseId, parsed.data.id), eq(enrollments.status, "active")));
+    if (n > parsed.data.maxCapacity) {
+      return {
+        error: `El curso tiene ${n} alumnos inscriptos: el cupo no puede ser menor.`,
+        fieldErrors: { maxCapacity: `Hay ${n} alumnos inscriptos` },
+      };
+    }
+  }
+
+  const prevCourse = await getCourseById(parsed.data.id);
+  const updatedCourse = await updateCourse(parsed.data);
 
   // Email teacher only when they are newly assigned (not already in that role)
   if (parsed.data.teacherId && parsed.data.teacherId !== prevCourse?.teacherId) {

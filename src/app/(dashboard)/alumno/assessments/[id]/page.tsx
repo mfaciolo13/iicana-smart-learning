@@ -4,7 +4,7 @@ import { db } from "@/lib/drizzle";
 import { assessments, assessmentAttempts, courses } from "@/lib/drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { QuizPlayer } from "@/modules/assessments/components/QuizPlayer";
-import type { QuizQuestion } from "@/modules/assessments/types";
+import type { QuizQuestion, PublicQuizQuestion } from "@/modules/assessments/types";
 
 export default async function AlumnoAssessmentPage({
   params,
@@ -45,7 +45,11 @@ export default async function AlumnoAssessmentPage({
   if (!assessmentRow || assessmentRow.status !== "published") notFound();
   if (attemptRows.length > 0) redirect(`/alumno/assessments/${id}/resultado`);
 
-  const questions = assessmentRow.questions as unknown as QuizQuestion[];
+  // Al navegador sólo viaja el enunciado y las opciones: la corrección se hace en el servidor (SCRUM-301).
+  const questions: PublicQuizQuestion[] = (assessmentRow.questions as unknown as QuizQuestion[]).map((q) => ({
+    question: q.question,
+    options: q.options,
+  }));
 
   return (
     <div>

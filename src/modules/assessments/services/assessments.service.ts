@@ -7,7 +7,8 @@ import {
   students,
   teachers,
 } from "@/lib/drizzle/schema";
-import { eq, desc, asc, sql, and, inArray } from "drizzle-orm";
+import { eq, desc, asc, sql, and, inArray, gte } from "drizzle-orm";
+import { todayInstitute } from "@/lib/validation";
 import type {
   AssessmentListItem,
   AssessmentDetail,
@@ -273,4 +274,35 @@ export async function submitAttempt(
     })
     .returning();
   return row;
+}
+
+/** El alumno (por id de perfil) tiene una inscripción activa en el curso. */
+export async function isStudentEnrolledInCourse(studentProfileId: string, courseId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: enrollments.id })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .where(and(eq(students.profileId, studentProfileId), eq(enrollments.courseId, courseId), eq(enrollments.status, "active")))
+    .limit(1);
+  return !!row;
+}
+
+/** El alumno ya respondió esta autoevaluación. */
+export async function hasAttempt(assessmentId: string, studentProfileId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: assessmentAttempts.id })
+    .from(assessmentAttempts)
+    .where(and(eq(assessmentAttempts.assessmentId, assessmentId), eq(assessmentAttempts.studentId, studentProfileId)))
+    .limit(1);
+  return !!row;
+}
+
+/** Autoevaluaciones creadas hoy (hora del instituto) para el curso: base de la cuota diaria de IA. */
+export async function countAssessmentsToday(courseId: string): Promise<number> {
+  const startOfDay = new Date(`${todayInstitute()}T00:00:00-03:00`);
+  const [row] = await db
+    .select({ n: sql<number>`cast(count(*) as int)` })
+    .from(assessments)
+    .where(and(eq(assessments.courseId, courseId), gte(assessments.createdAt, startOfDay)));
+  return row?.n ?? 0;
 }

@@ -2,14 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { submitAttemptAction } from "../actions";
-import type { QuizQuestion } from "../types";
+import { submitAttemptAction, checkAnswerAction } from "../actions";
+import type { PublicQuizQuestion, AnswerFeedback } from "../types";
 
 const OPTION_LETTERS = ["A", "B", "C", "D"];
 
 interface QuizPlayerProps {
   assessmentId: string;
-  questions: QuizQuestion[];
+  questions: PublicQuizQuestion[];
   weekLabel: string;
   topic: string;
   courseName: string;
@@ -18,17 +18,20 @@ interface QuizPlayerProps {
 export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseName }: QuizPlayerProps) {
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState<(number | null)[]>(Array(questions.length).fill(null));
-  const [confirmed, setConfirmed] = useState<boolean[]>(Array(questions.length).fill(false));
+  // Feedback devuelto por el servidor al confirmar cada pregunta (SCRUM-301).
+  const [feedback, setFeedback] = useState<(AnswerFeedback | null)[]>(Array(questions.length).fill(null));
+  const [checking, startCheck] = useTransition();
   const [submitting, startSubmit] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const q = questions[current];
   const chosenIndex = selected[current];
-  const isConfirmed = confirmed[current];
-  const isCorrect = isConfirmed && chosenIndex === q.correct;
-  const _isWrong = isConfirmed && chosenIndex !== null && chosenIndex !== q.correct;
+  const currentFeedback = feedback[current];
+  const isConfirmed = currentFeedback !== null;
+  const correctIndex = currentFeedback?.correctIndex ?? -1;
+  const isCorrect = currentFeedback?.correct ?? false;
 
-  const answeredCount = confirmed.filter(Boolean).length;
+  const answeredCount = feedback.filter(Boolean).length;
   const allAnswered = answeredCount === questions.length;
   const progress = (answeredCount / questions.length) * 100;
 
@@ -38,8 +41,17 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
   }
 
   function confirm() {
-    if (chosenIndex === null || isConfirmed) return;
-    setConfirmed((prev) => prev.map((v, i) => (i === current ? true : v)));
+    if (chosenIndex === null || isConfirmed || checking) return;
+    setError(null);
+    const questionIndex = current;
+    startCheck(async () => {
+      const result = await checkAnswerAction(assessmentId, questionIndex, chosenIndex);
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      setFeedback((prev) => prev.map((v, i) => (i === questionIndex ? result : v)));
+    });
   }
 
   function next() {
@@ -57,7 +69,9 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
     formData.set("assessmentId", assessmentId);
     formData.set("answers", JSON.stringify(answersPayload));
     startSubmit(async () => {
-      await submitAttemptAction(undefined, formData);
+      // Si el envío falla la action devuelve { error } (si sale bien, redirige al resultado).
+      const result = await submitAttemptAction(undefined, formData);
+      if (result?.error) setError(result.error);
     });
   }
 
@@ -96,8 +110,8 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
                 "w-7 h-7 rounded-full text-xs font-bold transition-all",
                 i === current
                   ? "text-white shadow-md scale-110"
-                  : confirmed[i]
-                    ? selected[i] === questions[i].correct
+                  : feedback[i]
+                    ? feedback[i]!.correct
                       ? "bg-emerald-100 text-emerald-700"
                       : "bg-red-100 text-red-600"
                     : "bg-slate-100 text-slate-400 hover:bg-slate-200",
@@ -122,7 +136,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
         <div className="space-y-3">
           {q.options.map((option, i) => {
             const isChosen = chosenIndex === i;
-            const isCorrectOption = i === q.correct;
+            const isCorrectOption = i === correctIndex;
 
             let optionClass = "flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-150 ";
             let letterClass = "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ";
@@ -182,7 +196,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             <p className="font-semibold mb-1">
               {isCorrect ? "¡Excelente! 🎉" : "Casi... 💪"}
             </p>
-            <p className="leading-relaxed">{q.explanation}</p>
+            <p className="leading-relaxed">{currentFeedback?.explanation}</p>
           </div>
         )}
       </div>
@@ -203,10 +217,11 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             <button
               type="button"
               onClick={confirm}
+              disabled={checking}
               className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
               style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
             >
-              Confirmar
+              {checking ? "Verificando..." : "Confirmar"}
             </button>
           )}
 

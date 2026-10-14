@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { complaints, profiles } from "@/lib/drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray, sql } from "drizzle-orm";
 import type { ComplaintItem, ComplaintType, ComplaintStatus } from "../types";
 import type { CreateComplaintInput } from "../schemas";
 
@@ -93,4 +93,13 @@ export async function updateComplaintStatus(id: string, status: ComplaintStatus)
     .where(eq(complaints.id, id))
     .returning();
   return updated;
+}
+
+/** Reclamos abiertos o en proceso (para el contador de los dashboards del personal). */
+export async function countOpenComplaints(): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`cast(count(*) as int)` })
+    .from(complaints)
+    .where(inArray(complaints.status, ["open", "in_progress"]));
+  return row?.n ?? 0;
 }

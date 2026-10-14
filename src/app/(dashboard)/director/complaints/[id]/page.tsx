@@ -1,12 +1,12 @@
 ﻿import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth/helpers";
+import { getComplaintById } from "@/modules/complaints/services/complaints.service";
 import { updateComplaintStatusAction } from "@/modules/complaints/actions";
 import { ComplaintStatusForm } from "@/modules/complaints/components/ComplaintStatusForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import type { ComplaintItem } from "@/modules/complaints/types";
 
 const TYPE_LABELS: Record<string, string> = {
   academic: "Académico",
@@ -22,8 +22,11 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "warning" | "info"
   closed: { label: "Cerrado", variant: "neutral" },
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const ROLE_LABELS: Record<string, string> = {
-  admin: "Administrador",
+  director: "Director",
+  administrativo: "Administrativo",
   profesor: "Docente",
   alumno: "Alumno",
 };
@@ -35,30 +38,10 @@ export default async function ComplaintDetailPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const { data: row } = await supabase
-    .from("complaints")
-    .select("id, user_id, type, description, status, resolved_at, created_at, updated_at, profiles!user_id(full_name, role)")
-    .eq("id", id)
-    .single();
-
-  if (!row) notFound();
-
-  type ProfileRaw = { full_name: string; role: string } | null;
-  const profile = row.profiles as unknown as ProfileRaw;
-
-  const complaint: ComplaintItem = {
-    id: row.id,
-    userId: row.user_id,
-    type: row.type as ComplaintItem["type"],
-    description: row.description,
-    status: row.status as ComplaintItem["status"],
-    resolvedAt: row.resolved_at ? new Date(row.resolved_at) : null,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
-    authorName: profile?.full_name ?? "",
-    authorRole: profile?.role ?? "",
-  };
+  await requireRole(["director", "administrativo"]);
+  // Lectura por Drizzle tras validar el rol: con el JWT del usuario, RLS devolvía 404 (SCRUM-272).
+  const complaint = UUID_RE.test(id) ? await getComplaintById(id) : null;
+  if (!complaint) notFound();
 
   const statusCfg = STATUS_CONFIG[complaint.status] ?? { label: complaint.status, variant: "neutral" as const };
   const isResolvable = complaint.status === "open" || complaint.status === "in_progress";

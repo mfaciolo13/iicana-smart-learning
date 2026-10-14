@@ -4,6 +4,9 @@ import { students, enrollments, courses, payments } from "@/lib/drizzle/schema";
 import { eq, and, or } from "drizzle-orm";
 import { getServerUser } from "@/lib/auth/helpers";
 import { LEVEL_LABELS } from "@/lib/level-labels";
+import { formatDateAR, formatMoneyAR } from "@/lib/format";
+import { todayInstitute } from "@/lib/validation";
+import { Badge } from "@/components/ui/Badge";
 
 export default async function AlumnoDashboardPage() {
   const user = await getServerUser();
@@ -31,12 +34,13 @@ export default async function AlumnoDashboardPage() {
 
   const pendingPayments = student
     ? await db
-        .select({ id: payments.id, amount: payments.amount, dueDate: payments.dueDate })
+        .select({ id: payments.id, amount: payments.amount, dueDate: payments.dueDate, status: payments.status })
         .from(payments)
         .where(
           and(
             eq(payments.studentId, student.id),
-            or(eq(payments.status, "pending"), eq(payments.status, "overdue"))
+            // La deuda incluye las cuotas suspendidas (SCRUM-289).
+            or(eq(payments.status, "pending"), eq(payments.status, "overdue"), eq(payments.status, "suspended"))
           )
         )
     : [];
@@ -63,13 +67,25 @@ export default async function AlumnoDashboardPage() {
 
       {pendingPayments.length > 0 && (
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-5 mb-4">
-          <h3 className="text-sm font-semibold text-amber-800 mb-2">Pagos pendientes</h3>
-          {pendingPayments.map((p) => (
-            <div key={p.id} className="flex justify-between text-xs text-amber-700">
-              <span>Vence: {p.dueDate}</span>
-              <span className="font-medium">${p.amount}</span>
-            </div>
-          ))}
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-amber-800">Pagos pendientes</h3>
+            <Link href="/alumno/payments" className="text-xs font-medium text-amber-800 underline underline-offset-2">
+              Ver mis pagos
+            </Link>
+          </div>
+          {pendingPayments.map((p) => {
+            // Mismo criterio que Pagos: sin cobrar y con vencimiento anterior a hoy = vencida (SCRUM-292).
+            const overdue = p.status === "suspended" || p.status === "overdue" || p.dueDate < todayInstitute();
+            return (
+              <div key={p.id} className="flex items-center justify-between gap-2 text-xs text-amber-700 py-0.5">
+                <span className="flex items-center gap-2">
+                  Vence: {formatDateAR(p.dueDate)}
+                  {overdue && <Badge variant={p.status === "suspended" ? "neutral" : "danger"}>{p.status === "suspended" ? "Suspendida" : "Vencida"}</Badge>}
+                </span>
+                <span className="font-medium">{formatMoneyAR(p.amount)}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 

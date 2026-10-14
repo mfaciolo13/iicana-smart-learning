@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, startTransition } from "react";
 import { useRouter } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -31,7 +32,16 @@ export function FormButton({
   className,
 }: FormButtonProps) {
   const router = useRouter();
-  const [state, formAction, isPending] = useActionState(action, undefined);
+  // Una excepción del servidor se convierte en aviso en lugar de la pantalla de error (SCRUM-287).
+  const safeAction = async (prev: ActionResult, formData: FormData): Promise<ActionResult> => {
+    try {
+      return await action(prev, formData);
+    } catch (e) {
+      if (isRedirectError(e)) throw e;
+      return { error: "No se pudo completar la acción. Revisá los permisos o intentá de nuevo." };
+    }
+  };
+  const [state, formAction, isPending] = useActionState(safeAction, undefined);
   const formRef = useRef<HTMLFormElement>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 

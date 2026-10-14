@@ -1,10 +1,12 @@
 import { db } from "@/lib/drizzle";
+import { todayInstitute } from "@/lib/validation";
 import { payments, students, profiles } from "@/lib/drizzle/schema";
-import { eq, ne, desc, and, lt, sql, inArray, isNull } from "drizzle-orm";
+import { eq, ne, desc, and, lt, gte, sql, inArray, isNull } from "drizzle-orm";
 import type { CreatePaymentInput, MarkAsPaidInput } from "../schemas";
 import type { PaymentListItem, PaymentWithStudent } from "../types";
 
-const today = () => new Date().toISOString().split("T")[0];
+// Fecha de hoy en la zona horaria del instituto (con UTC, a partir de las 21:00 ya era "mañana").
+const today = () => todayInstitute();
 
 export async function getPayments(status?: string): Promise<PaymentListItem[]> {
   const rows = await db
@@ -28,7 +30,9 @@ export async function getPayments(status?: string): Promise<PaymentListItem[]> {
               inArray(payments.status, ["pending", "overdue"]),
               lt(payments.dueDate, today())
             )
-          : eq(payments.status, status as "pending" | "paid" | "overdue" | "suspended")
+          : status === "pending"
+            ? and(inArray(payments.status, ["pending", "overdue"]), gte(payments.dueDate, today()))
+            : eq(payments.status, status as "pending" | "paid" | "overdue" | "suspended" | "cancelled")
         : undefined
     )
     .orderBy(desc(payments.dueDate));
@@ -259,15 +263,37 @@ export async function suspendStudentAndPayments(studentId: string, paymentIds: s
     .where(eq(students.id, studentId));
 }
 
+/**
+ * Resumen de cuotas. Los estados son excluyentes y suman el total (SCRUM-285):
+ * pendiente = sin cobrar y con vencimiento de hoy en adelante; vencida = sin cobrar y con
+ * vencimiento anterior a hoy (aunque el status todavía diga "pending"); más pagadas,
+ * suspendidas y anuladas. El mismo criterio usan los dashboards.
+ */
 export async function getPaymentSummary() {
+  const t = today();
+  const unpaid = sql`${payments.status} in ('pending','overdue')`;
   const [row] = await db
     .select({
-      pending: sql<number>`cast(sum(case when ${payments.status} = 'pending' then 1 else 0 end) as int)`,
-      paid: sql<number>`cast(sum(case when ${payments.status} = 'paid' then 1 else 0 end) as int)`,
-      overdue: sql<number>`cast(sum(case when (${payments.status} = 'overdue' or (${payments.status} = 'pending' and ${payments.dueDate} < current_date)) then 1 else 0 end) as int)`,
-      totalPendingAmount: sql<string>`coalesce(sum(case when ${payments.status} in ('pending','overdue') then ${payments.amount} else 0 end), 0)::text`,
+      pending: sql<number>`cast(coalesce(sum(case when ${unpaid} and ${payments.dueDate} >= ${t} then 1 else 0 end), 0) as int)`,
+      overdue: sql<number>`cast(coalesce(sum(case when ${unpaid} and ${payments.dueDate} < ${t} then 1 else 0 end), 0) as int)`,
+      paid: sql<number>`cast(coalesce(sum(case when ${payments.status} = 'paid' then 1 else 0 end), 0) as int)`,
+      suspended: sql<number>`cast(coalesce(sum(case when ${payments.status} = 'suspended' then 1 else 0 end), 0) as int)`,
+      cancelled: sql<number>`cast(coalesce(sum(case when ${payments.status} = 'cancelled' then 1 else 0 end), 0) as int)`,
+      total: sql<number>`cast(count(*) as int)`,
+      // La deuda incluye las cuotas suspendidas (SCRUM-289).
+      totalPendingAmount: sql<string>`coalesce(sum(case when ${payments.status} in ('pending','overdue','suspended') then ${payments.amount} else 0 end), 0)::text`,
     })
     .from(payments);
 
   return row;
+}
+
+/** Ya hay una cuota vigente (no anulada) del alumno con ese vencimiento. */
+export async function paymentExistsForDueDate(studentId: string, dueDate: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: payments.id })
+    .from(payments)
+    .where(and(eq(payments.studentId, studentId), eq(payments.dueDate, dueDate), ne(payments.status, "cancelled")))
+    .limit(1);
+  return !!row;
 }

@@ -28,7 +28,7 @@ export default async function NewPaymentPage({
         <p className="text-sm text-slate-400 mt-0.5">Creá un nuevo pago para un alumno</p>
       </div>
 
-      <PaymentForm
+      <PaymentForm cancelHref="/administrativo/payments"
         students={students}
         defaultStudentId={studentId}
         action={createPaymentAction}

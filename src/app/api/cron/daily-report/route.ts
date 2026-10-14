@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAuthorizedCron } from "@/lib/cron-auth";
 import { getDailyReportData } from "@/modules/notifications/services/daily-report.service";
 import { sendDailyReportEmail } from "@/lib/email";
 
+// SCRUM-319: hasta 60 s por corrida (envíos de email en tanda).
+export const maxDuration = 60;
+
 export async function GET(request: NextRequest) {
-  if (process.env.NODE_ENV !== "development") {
-    const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!isAuthorizedCron(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const data = await getDailyReportData();

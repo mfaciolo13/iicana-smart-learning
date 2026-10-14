@@ -88,7 +88,8 @@ export async function sendToUser(userId: string, payload: NotifPayload) {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: "Directivos",
+  director: "Directores",
+  administrativo: "Personal administrativo",
   profesor: "Profesores",
   alumno: "Alumnos",
 };
@@ -168,12 +169,12 @@ export async function getAllNotificationsAdmin(): Promise<{
     .limit(500);
 }
 
-export async function getProfilesForSelector(): Promise<Pick<Profile, "id" | "fullName" | "role">[]> {
+export async function getProfilesForSelector(): Promise<Pick<Profile, "id" | "fullName" | "role" | "email">[]> {
   const rows = await db
-    .select({ id: profiles.id, fullName: profiles.fullName, role: profiles.role })
+    .select({ id: profiles.id, fullName: profiles.fullName, role: profiles.role, email: profiles.email })
     .from(profiles)
     .orderBy(profiles.fullName);
-  return rows as Pick<Profile, "id" | "fullName" | "role">[];
+  return rows as Pick<Profile, "id" | "fullName" | "role" | "email">[];
 }
 
 export async function sendToCourse(courseId: string, payload: NotifPayload) {

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
+import { portalPath } from "@/lib/portal";
 import { sendInstitutionalNotificationEmail } from "@/lib/email";
 import { sendNotificationSchema, updateNotificationSettingSchema, updateUserNotificationPreferenceSchema } from "./schemas";
 import {
@@ -18,8 +19,21 @@ import { updateNotificationSetting } from "./services/notification-settings.serv
 import { upsertUserNotificationPreference } from "./services/notification-preferences.service";
 import type { ActionResult } from "@/lib/action-result";
 
+const SEND_ERROR = "No se pudo enviar la notificación. Intentá de nuevo.";
+
+// Un fallo al guardar la notificación (rol inexistente, base caída) no debe romper la página.
+async function trySend(fn: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await fn();
+    return true;
+  } catch (e) {
+    console.error("[notification send]", e);
+    return false;
+  }
+}
+
 export async function sendNotificationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const senderRole = await requireRole(["director", "administrativo"]);
 
   const raw = {
     targetId: formData.get("targetId") as string,
@@ -46,7 +60,7 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
 
   if (targetId.startsWith("role:")) {
     const role = targetId.replace("role:", "");
-    await sendToRole(role, payload);
+    if (!(await trySend(() => sendToRole(role, payload)))) return { error: SEND_ERROR };
     try {
       const recipients = await getEmailsForRole(role);
       await Promise.all(
@@ -57,7 +71,7 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
     }
   } else if (targetId.startsWith("course:")) {
     const courseId = targetId.replace("course:", "");
-    await sendToCourse(courseId, payload);
+    if (!(await trySend(() => sendToCourse(courseId, payload)))) return { error: SEND_ERROR };
     try {
       const recipients = await getEmailsForCourse(courseId);
       await Promise.all(
@@ -67,7 +81,7 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
       console.error("[notification email course]", e);
     }
   } else {
-    await sendToUser(targetId, payload);
+    if (!(await trySend(() => sendToUser(targetId, payload)))) return { error: SEND_ERROR };
     try {
       const user = await getEmailForUser(targetId);
       if (user) await sendInstitutionalNotificationEmail({ to: user.email, fullName: user.fullName, title, body });
@@ -78,7 +92,7 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
 
   revalidatePath("/director/notifications");
   revalidatePath("/administrativo/notifications");
-  return { success: "Notificación enviada correctamente", redirectTo: "/director/notifications" };
+  return { success: "Notificación enviada correctamente", redirectTo: portalPath(senderRole, "/notifications") };
 }
 
 export async function markAsReadAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

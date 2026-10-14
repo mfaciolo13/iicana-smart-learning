@@ -27,9 +27,8 @@ test.describe("Director · Asistencia", () => {
     await expect(page.getByRole("radio", { name: "Presente" }).first()).toBeVisible();
   });
 
-  // V1 / SCRUM-240 — no se debería poder tomar lista de una clase FUTURA.
-  // Hoy no hay validación de fecha, así que se espera que este test falle.
-  test.fail("V1: tomar asistencia de una clase futura debería rechazarse", async ({ page }) => {
+  // V1 / SCRUM-240 (corregido) — no se puede tomar lista de una clase FUTURA.
+  test("V1: tomar asistencia de una clase futura debería rechazarse", async ({ page }) => {
     await page.goto("/director/attendance/new");
     await selectCourse(page);
     await page.locator("#date").fill("2027-12-31"); // clase futura
@@ -37,7 +36,7 @@ test.describe("Director · Asistencia", () => {
     const saveBtn = page.getByRole("button", { name: /Guardar asistencia/ });
     await expect(saveBtn).toBeVisible({ timeout: 30_000 });
     await saveBtn.click();
-    // Debería mostrar un error de "fecha futura"; hoy guarda igual → el test falla.
+    // Muestra un error de "fecha futura".
     await expect(page.locator("[data-sonner-toast]", { hasText: /futura|no puede|posterior/i })).toBeVisible({ timeout: 10_000 });
   });
 });

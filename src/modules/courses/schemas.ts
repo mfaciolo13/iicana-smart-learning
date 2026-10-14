@@ -10,7 +10,7 @@ export const createCourseSchema = z.object({
     "intermediate",
     "upper_intermediate",
     "advanced",
-  ]),
+  ], { error: "Seleccioná un nivel" }),
   classDays: z.array(z.enum(DAY_OF_WEEK_VALUES)).min(1, "Seleccioná al menos un día"),
   classTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida"),
   classDurationMinutes: z.coerce.number().int("Debe ser un número entero").min(15, "La duración mínima es 15 minutos").max(240, "La duración máxima es 240 minutos").default(90),

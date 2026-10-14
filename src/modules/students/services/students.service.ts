@@ -1,6 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { students, profiles } from "@/lib/drizzle/schema";
-import { eq, ilike, or } from "drizzle-orm";
+import { eq, ilike, or, sql } from "drizzle-orm";
 import type { CreateStudentInput, UpdateStudentInput } from "../schemas";
 import type { StudentListItem, StudentWithProfile } from "../types";
 
@@ -159,4 +159,19 @@ export async function setStudentAccessRestricted(id: string, restricted: boolean
     .update(students)
     .set({ accessRestricted: restricted, updatedAt: new Date() })
     .where(eq(students.id, id));
+}
+
+/** Pagos e inscripciones del alumno, para decidir entre baja lógica y borrado físico. */
+export async function getStudentRemovalInfo(id: string) {
+  const [row] = await db
+    .select({
+      profileId: students.profileId,
+      payments: sql<number>`(select cast(count(*) as int) from payments where payments.student_id = ${students.id})`,
+      enrollments: sql<number>`(select cast(count(*) as int) from enrollments where enrollments.student_id = ${students.id})`,
+    })
+    .from(students)
+    .where(eq(students.id, id))
+    .limit(1);
+  if (!row) return null;
+  return { profileId: row.profileId, impact: { paymentsCount: row.payments, enrollmentsCount: row.enrollments } };
 }

@@ -1,9 +1,29 @@
 import { Resend } from "resend";
+import { formatDateAR } from "@/lib/format";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "Smart Learning <no-reply@cervantes-smart-learning.com.ar>";
 const IS_DEV = process.env.NODE_ENV === "development";
+
+/** Escapa texto de usuario antes de interpolarlo en el HTML del email (SCRUM-325). */
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Resend no lanza cuando el envío falla: devuelve { error }. Se convierte en excepción para que
+ * los llamadores (crons, alertas) cuenten el fallo en lugar de marcar el aviso como enviado (SCRUM-304).
+ */
+async function sendOrThrow(payload: Parameters<typeof resend.emails.send>[0]): Promise<void> {
+  const { error } = await resend.emails.send(payload);
+  if (error) throw new Error(`Resend: ${error.message}`);
+}
 
 const ROLE_LABELS: Record<string, string> = {
   alumno: "alumno/a",
@@ -54,12 +74,12 @@ export async function sendInvitationEmail({
   const roleLabel = ROLE_LABELS[role] ?? role;
   const firstName = fullName.split(" ")[0];
 
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: "Tu acceso a Smart Learning",
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Tu cuenta de <strong>${roleLabel}</strong> en Smart Learning fue creada por el equipo administrativo.
         Para ingresar por primera vez, establecé tu contraseña haciendo clic en el botón de abajo.
@@ -68,7 +88,7 @@ export async function sendInvitationEmail({
       <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
         <tr>
           <td style="background:#1d4ed8;border-radius:8px;">
-            <a href="${inviteLink}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
+            <a href="${esc(inviteLink)}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
               Establecer mi contraseña →
             </a>
           </td>
@@ -76,7 +96,7 @@ export async function sendInvitationEmail({
       </table>
       <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
         Si no esperabas este email, podés ignorarlo.<br />
-        Si el botón no funciona, copiá este link: <a href="${inviteLink}" style="color:#3b82f6;word-break:break-all;">${inviteLink}</a>
+        Si el botón no funciona, copiá este link: <a href="${esc(inviteLink)}" style="color:#3b82f6;word-break:break-all;">${esc(inviteLink)}</a>
       </p>
     `),
   });
@@ -98,18 +118,18 @@ export async function sendEnrollmentEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Te inscribieron en ${courseName} — Smart Learning`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Te informamos que fuiste inscripto/a en el siguiente curso:
       </p>
       <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
-        <p style="margin:0;color:#475569;font-size:13px;">Horario: ${courseSchedule}</p>
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${esc(courseName)}</p>
+        <p style="margin:0;color:#475569;font-size:13px;">Horario: ${esc(courseSchedule)}</p>
       </div>
       <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
         Ingresá a Smart Learning para ver el detalle de tu inscripción.
@@ -134,18 +154,18 @@ export async function sendTeacherAssignmentEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Te asignaron al curso ${courseName} — Smart Learning`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Te asignaron como docente del siguiente curso:
       </p>
       <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
-        <p style="margin:0;color:#475569;font-size:13px;">Horario: ${courseSchedule}</p>
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${esc(courseName)}</p>
+        <p style="margin:0;color:#475569;font-size:13px;">Horario: ${esc(courseSchedule)}</p>
       </div>
       <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
         Ingresá a Smart Learning para ver el detalle del curso.
@@ -170,14 +190,14 @@ export async function sendInstitutionalNotificationEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `${title} — Smart Learning`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
-      <p style="margin:0 0 8px;color:#1e293b;font-size:15px;font-weight:600;">${title}</p>
-      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">${body}</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
+      <p style="margin:0 0 8px;color:#1e293b;font-size:15px;font-weight:600;">${esc(title)}</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">${esc(body)}</p>
       <p style="margin:0;color:#94a3b8;font-size:12px;">Podés ver esta notificación en Smart Learning.</p>
     `),
   });
@@ -194,7 +214,7 @@ export async function sendPasswordResetEmail({
     console.log(`\n📧 [DEV] Password reset email for ${to}\n🔗 Link: ${resetLink}\n`);
     return;
   }
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: "Restablecer contraseña — Smart Learning",
@@ -210,14 +230,14 @@ export async function sendPasswordResetEmail({
       <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
         <tr>
           <td style="background:#1d4ed8;border-radius:8px;">
-            <a href="${resetLink}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
+            <a href="${esc(resetLink)}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
               Restablecer mi contraseña →
             </a>
           </td>
         </tr>
       </table>
       <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
-        Si el botón no funciona, copiá este link: <a href="${resetLink}" style="color:#3b82f6;word-break:break-all;">${resetLink}</a>
+        Si el botón no funciona, copiá este link: <a href="${esc(resetLink)}" style="color:#3b82f6;word-break:break-all;">${esc(resetLink)}</a>
       </p>
     `),
   });
@@ -241,18 +261,18 @@ export async function sendAbsenceAlertEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Ausencia registrada en ${courseName} — Smart Learning`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Te informamos que registramos tu ausencia en el siguiente curso:
       </p>
       <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
-        <p style="margin:0 0 4px;color:#475569;font-size:13px;">Fecha: ${new Date(classDate).toLocaleDateString("es-AR")}</p>
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${esc(courseName)}</p>
+        <p style="margin:0 0 4px;color:#475569;font-size:13px;">Fecha: ${formatDateAR(classDate)}</p>
         <p style="margin:0;color:#475569;font-size:13px;">Asistencia acumulada: ${attendancePercentage}%</p>
       </div>
       <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
@@ -280,17 +300,17 @@ export async function sendGradePublishedEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Nueva nota publicada en ${courseName} — Smart Learning`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Se publicó una nueva nota en tu curso:
       </p>
       <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 4px;color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">${courseName} · ${evaluationTypeLabel}</p>
+        <p style="margin:0 0 4px;color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">${esc(courseName)} · ${evaluationTypeLabel}</p>
         <p style="margin:0;color:#1e293b;font-size:24px;font-weight:700;">${score}<span style="font-size:14px;font-weight:400;color:#94a3b8;">/10</span></p>
       </div>
       <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
@@ -323,17 +343,17 @@ export async function sendClassReminderEmail({
     day: "numeric",
     month: "long",
   });
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Recordatorio de clase mañana — ${courseName}`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Te recordamos que mañana tenés clase en Smart Learning:
       </p>
       <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${esc(courseName)}</p>
         <p style="margin:0 0 4px;color:#475569;font-size:13px;">📅 ${formattedDate}</p>
         <p style="margin:0;color:#475569;font-size:13px;">🕐 ${classTime} hs</p>
       </div>
@@ -372,22 +392,22 @@ export async function sendPaymentReminderEmail({
     currency: "ARS",
     maximumFractionDigits: 0,
   }).format(amount);
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Recordatorio de pago — ${courseName}`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Tu cuota mensual está próxima a vencer. Podés abonarla en el instituto antes de la fecha límite.
       </p>
       <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${esc(courseName)}</p>
         <p style="margin:0 0 4px;color:#475569;font-size:13px;">Importe: <strong>${formattedAmount}</strong></p>
         <p style="margin:0;color:#475569;font-size:13px;">Vencimiento: <strong>${formattedDate}</strong></p>
       </div>
       <p style="margin:0;color:#94a3b8;font-size:12px;">
-        Ante cualquier consulta, comunicате con el equipo administrativo de Smart Learning.
+        Ante cualquier consulta, comunicate con el equipo administrativo de Smart Learning.
       </p>
     `),
   });
@@ -434,17 +454,17 @@ export async function sendDailyReportEmail({
     : `<tr><td colspan="3" style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">Sin cobros registrados</td></tr>`;
 
   const lowAttRows = lowAttendanceStudents.length > 0
-    ? lowAttendanceStudents.map((s) => `<tr><td style="padding:6px 12px;color:#b45309;font-size:13px;">${s.studentName}</td><td style="padding:6px 12px;color:#475569;font-size:13px;">${s.courseName}</td><td style="padding:6px 12px;color:#dc2626;font-size:13px;font-weight:600;text-align:right;">${s.attendancePct}%</td></tr>`).join("")
+    ? lowAttendanceStudents.map((s) => `<tr><td style="padding:6px 12px;color:#b45309;font-size:13px;">${esc(s.studentName)}</td><td style="padding:6px 12px;color:#475569;font-size:13px;">${esc(s.courseName)}</td><td style="padding:6px 12px;color:#dc2626;font-size:13px;font-weight:600;text-align:right;">${s.attendancePct}%</td></tr>`).join("")
     : `<tr><td colspan="3" style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">Ningún alumno en situación crítica</td></tr>`;
 
   const newStudentRows = newStudents.length > 0
-    ? newStudents.map((s) => `<tr><td style="padding:6px 12px;color:#475569;font-size:13px;">${s.fullName}</td><td style="padding:6px 12px;color:#475569;font-size:13px;">${s.courseName}</td></tr>`).join("")
+    ? newStudents.map((s) => `<tr><td style="padding:6px 12px;color:#475569;font-size:13px;">${esc(s.fullName)}</td><td style="padding:6px 12px;color:#475569;font-size:13px;">${esc(s.courseName)}</td></tr>`).join("")
     : `<tr><td colspan="2" style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">Sin inscripciones nuevas</td></tr>`;
 
   const tableStyle = `width:100%;border-collapse:collapse;margin:0 0 24px;`;
   const thStyle = `padding:6px 12px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;text-align:left;border-bottom:1px solid #e2e8f0;`;
 
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Resumen del día — ${formattedDate}`,
@@ -492,18 +512,18 @@ export async function sendTeacherAttendanceAlertEmail({
     return;
   }
   const firstName = teacherName.split(" ")[0];
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Alumno con asistencia crítica — ${courseName}`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Te informamos que uno de tus alumnos <strong>bajó por debajo del 70% de asistencia</strong> en tu curso:
       </p>
       <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 6px;color:#92400e;font-size:15px;font-weight:600;">${studentName}</p>
-        <p style="margin:0 0 4px;color:#b45309;font-size:13px;">Curso: ${courseName}</p>
+        <p style="margin:0 0 6px;color:#92400e;font-size:15px;font-weight:600;">${esc(studentName)}</p>
+        <p style="margin:0 0 4px;color:#b45309;font-size:13px;">Curso: ${esc(courseName)}</p>
         <p style="margin:0;color:#b45309;font-size:13px;">Asistencia actual: <strong>${attendancePct}%</strong></p>
       </div>
       <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
@@ -528,18 +548,18 @@ export async function sendPromotionCongratulationsEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `¡Felicitaciones por tu promoción! — Smart Learning`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">¡Hola <strong>${firstName}</strong>!</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">¡Hola <strong>${esc(firstName)}</strong>!</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Es un placer comunicarte que <strong>aprobaste exitosamente</strong> el curso de inglés. Felicitaciones por tu esfuerzo y dedicación a lo largo del ciclo lectivo.
       </p>
       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
         <p style="margin:0 0 4px;color:#166534;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">Curso aprobado</p>
-        <p style="margin:0;color:#15803d;font-size:16px;font-weight:700;">${courseName}</p>
+        <p style="margin:0;color:#15803d;font-size:16px;font-weight:700;">${esc(courseName)}</p>
       </div>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Tu certificado de promoción ya está disponible en Smart Learning. Podés descargarlo ingresando a tu portal de alumno.
@@ -579,23 +599,23 @@ export async function sendPaymentOverdueAlertEmail({
     currency: "ARS",
     maximumFractionDigits: 0,
   }).format(amount);
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Cuota vencida — ${courseName}`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Tu cuota mensual en Smart Learning se encuentra <strong style="color:#dc2626;">vencida</strong>.
         Te pedimos que te acerques al instituto a regularizar tu situación a la brevedad.
       </p>
       <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 6px;color:#991b1b;font-size:15px;font-weight:600;">${courseName}</p>
+        <p style="margin:0 0 6px;color:#991b1b;font-size:15px;font-weight:600;">${esc(courseName)}</p>
         <p style="margin:0 0 4px;color:#b91c1c;font-size:13px;">Importe: <strong>${formattedAmount}</strong></p>
         <p style="margin:0;color:#b91c1c;font-size:13px;">Venció el: <strong>${formattedDate}</strong></p>
       </div>
       <p style="margin:0;color:#94a3b8;font-size:12px;">
-        Ante cualquier consulta, comunicате con el equipo administrativo de Smart Learning.
+        Ante cualquier consulta, comunicate con el equipo administrativo de Smart Learning.
       </p>
     `),
   });
@@ -619,18 +639,18 @@ export async function sendAssessmentPublishedEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  await resend.emails.send({
+  await sendOrThrow({
     from: FROM,
     to,
     subject: `Nueva autoevaluación disponible — Smart Learning`,
     html: emailShell(`
-      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${firstName}</strong>,</p>
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px;">Hola <strong>${esc(firstName)}</strong>,</p>
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
         Hay una nueva autoevaluación disponible en tu curso:
       </p>
       <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-        <p style="margin:0 0 4px;color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">${courseName} · ${weekLabel}</p>
-        <p style="margin:0;color:#1e293b;font-size:15px;font-weight:600;">${topic}</p>
+        <p style="margin:0 0 4px;color:#475569;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;">${esc(courseName)} · ${esc(weekLabel)}</p>
+        <p style="margin:0;color:#1e293b;font-size:15px;font-weight:600;">${esc(topic)}</p>
       </div>
       <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">
         Ingresá a Smart Learning para realizarla cuando quieras.

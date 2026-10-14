@@ -4,8 +4,9 @@ import { db } from "@/lib/drizzle";
 import { profiles } from "@/lib/drizzle/schema";
 import { asc } from "drizzle-orm";
 import { UserList } from "@/modules/users/components/UserList";
-import { Input } from "@/components/ui/Input";
 import type { UserListItem } from "@/modules/users/types";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { matchesSearch } from "@/lib/search";
 
 const ROLE_TABS = [
   { value: "all", label: "Todos" },
@@ -46,9 +47,7 @@ export default async function UsersPage({
 
   const searched = q
     ? allUsers.filter(
-        (u) =>
-          u.fullName.toLowerCase().includes(q.toLowerCase()) ||
-          u.email.toLowerCase().includes(q.toLowerCase())
+        (u) => matchesSearch(u.fullName, q) || matchesSearch(u.email, q)
       )
     : allUsers;
 
@@ -97,16 +96,7 @@ export default async function UsersPage({
 
       {/* Search + role filter */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <form>
-          <input type="hidden" name="role" value={activeRole === "all" ? "" : activeRole} />
-          <Input
-            name="q"
-            type="search"
-            defaultValue={q}
-            placeholder="Buscar por nombre o email..."
-            className="w-full sm:max-w-sm"
-          />
-        </form>
+        <SearchInput placeholder="Buscar por nombre o email..." resultCount={filtered.length} />
 
         <div className="flex flex-wrap gap-1 bg-slate-100 rounded-lg p-1 w-fit">
           {ROLE_TABS.map((tab) => {

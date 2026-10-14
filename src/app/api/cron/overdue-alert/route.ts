@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAuthorizedCron } from "@/lib/cron-auth";
 import { db } from "@/lib/drizzle";
 import { payments, students } from "@/lib/drizzle/schema";
-import { eq, count } from "drizzle-orm";
+import { eq, count, inArray } from "drizzle-orm";
 import { getOverdueAlertRecipients } from "@/modules/notifications/services/cron.service";
 import { sendPaymentOverdueAlertEmail } from "@/lib/email";
+import { markOverduePayments } from "@/modules/payments/services/payments.service";
+
+// SCRUM-319: hasta 60 s por corrida (envíos de email en tanda).
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
-  if (process.env.NODE_ENV !== "development") {
-    const authHeader = request.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!isAuthorizedCron(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // SCRUM-284: antes de avisar, pasar a "Vencida" toda cuota pendiente con vencimiento anterior a hoy
+  // (las alertas, la restricción de acceso y el riesgo dependen del estado real en la base).
+  const markedOverdue = await markOverduePayments();
 
   const recipients = await getOverdueAlertRecipients();
 
@@ -43,7 +49,8 @@ export async function GET(request: NextRequest) {
   const studentRows = await db
     .select({ studentId: payments.studentId, overdueCount: count() })
     .from(payments)
-    .where(eq(payments.status, "overdue"))
+    // Una cuota suspendida cuenta como impaga junto con las vencidas (SCRUM-305).
+    .where(inArray(payments.status, ["overdue", "suspended"]))
     .groupBy(payments.studentId);
 
   for (const row of studentRows) {
@@ -64,6 +71,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log(`[cron/overdue-alert] sent=${sent} failed=${failed} restricted=${restricted} total=${recipients.length}`);
-  return NextResponse.json({ sent, failed, restricted, total: recipients.length });
+  console.log(`[cron/overdue-alert] markedOverdue=${markedOverdue} sent=${sent} failed=${failed} restricted=${restricted} total=${recipients.length}`);
+  return NextResponse.json({ markedOverdue, sent, failed, restricted, total: recipients.length });
 }

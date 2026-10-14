@@ -134,7 +134,8 @@ export async function updateCourse(input: UpdateCourseInput) {
 
   const [updated] = await db
     .update(courses)
-    .set({ ...data, ...scheduleFields, updatedAt: new Date() })
+    // "" (campo vaciado en el formulario) limpia el aula.
+    .set({ ...data, ...(data.classroom === "" ? { classroom: null } : {}), ...scheduleFields, updatedAt: new Date() })
     .where(eq(courses.id, id))
     .returning();
   return updated;

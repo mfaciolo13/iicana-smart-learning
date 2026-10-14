@@ -11,7 +11,7 @@ export default async function NewStudentPage() {
         </p>
       </div>
 
-      <StudentForm
+      <StudentForm cancelHref="/administrativo/students"
         action={createStudentAction}
         submitLabel="Registrar alumno"
       />

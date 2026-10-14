@@ -1,4 +1,4 @@
-﻿import { notFound } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -43,7 +43,8 @@ export default async function GradeDetailPage({
       .eq("status", "active"),
   ]);
 
-  if (!gradeRow) notFound();
+  // SCRUM-234: tras eliminar desde el detalle, volver al listado en lugar de mostrar un 404.
+  if (!gradeRow) redirect("/director/grades");
 
   type EnrRaw = {
     course_id: string;

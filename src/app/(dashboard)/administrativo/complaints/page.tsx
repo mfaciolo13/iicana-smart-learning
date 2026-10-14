@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/auth/helpers";
+import { getAllComplaints } from "@/modules/complaints/services/complaints.service";
 import { ComplaintList } from "@/modules/complaints/components/ComplaintList";
 
 const STATUS_TABS = [
@@ -17,27 +18,9 @@ export default async function AdminComplaintsPage({
   const { status } = await searchParams;
   const activeTab = status ?? "all";
 
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("complaints")
-    .select("id, user_id, type, description, status, resolved_at, created_at, updated_at, profiles!user_id(full_name, role)")
-    .order("created_at", { ascending: false });
-
-  const all = (data ?? []).map((c) => {
-    const profile = c.profiles as unknown as { full_name: string; role: string } | null;
-    return {
-      id: c.id,
-      userId: c.user_id,
-      type: c.type,
-      description: c.description,
-      status: c.status,
-      resolvedAt: c.resolved_at ? new Date(c.resolved_at) : null,
-      createdAt: new Date(c.created_at),
-      updatedAt: new Date(c.updated_at),
-      authorName: profile?.full_name ?? "",
-      authorRole: profile?.role ?? "",
-    };
-  });
+  await requireRole(["director", "administrativo"]);
+  // Lectura por Drizzle tras validar el rol: con el JWT del usuario, RLS devolvía 0 filas sin error (SCRUM-272).
+  const all = await getAllComplaints();
 
   const filtered = activeTab === "all" ? all : all.filter((c) => c.status === activeTab);
   const openCount = all.filter((c) => c.status === "open").length;
@@ -86,7 +69,7 @@ export default async function AdminComplaintsPage({
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-4 sm:px-6">
-        <ComplaintList complaints={filtered} adminView />
+        <ComplaintList complaints={filtered} adminView detailBase="/administrativo/complaints" />
       </div>
     </div>
   );

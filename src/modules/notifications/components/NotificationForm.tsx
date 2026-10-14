@@ -25,12 +25,14 @@ const TYPE_OPTIONS = [
 ];
 
 interface NotificationFormProps {
+  /** Destino del botón "Cancelar" (por defecto, portal director). */
+  cancelHref?: string;
   courses: CourseListItem[];
-  users: Pick<Profile, "id" | "fullName" | "role">[];
+  users: Pick<Profile, "id" | "fullName" | "role" | "email">[];
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
 }
 
-export function NotificationForm({ courses, users, action }: NotificationFormProps) {
+export function NotificationForm({ courses, users, action, cancelHref = "/director/notifications" }: NotificationFormProps) {
   const [targetGroup, setTargetGroup] = useState<"role" | "course" | "user">("role");
   const form = useForm<FormValues>({
     resolver: zodResolver(sendNotificationSchema),
@@ -72,14 +74,15 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
                 <>
                   <option value="role:alumno">Todos los alumnos</option>
                   <option value="role:profesor">Todos los docentes</option>
-                  <option value="role:admin">Administradores</option>
+                  <option value="role:director">Directores</option>
+                  <option value="role:administrativo">Personal administrativo</option>
                 </>
               )}
               {targetGroup === "course" && courses.map((c) => (
                 <option key={c.id} value={`course:${c.id}`}>{c.name}</option>
               ))}
               {targetGroup === "user" && users.map((u) => (
-                <option key={u.id} value={u.id}>{u.fullName} ({u.role})</option>
+                <option key={u.id} value={u.id}>{u.fullName} ({u.role}) · {u.email}</option>
               ))}
             </Select>
           </Field>
@@ -107,7 +110,7 @@ export function NotificationForm({ courses, users, action }: NotificationFormPro
       </Card>
 
       <div className="flex justify-end gap-3">
-        <Link href="/director/notifications" className={buttonVariants({ variant: "secondary" })}>
+        <Link href={cancelHref} className={buttonVariants({ variant: "secondary" })}>
           Cancelar
         </Link>
         <Button type="submit" variant="primary" loading={isPending}>

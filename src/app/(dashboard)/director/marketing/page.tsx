@@ -2,6 +2,7 @@
 import { ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCampaigns } from "@/modules/marketing/services/marketing.service";
+import { formatDateAR } from "@/lib/format";
 
 const CHANNEL_LABELS: Record<string, string> = {
   social_media: "Redes sociales",
@@ -68,8 +69,8 @@ export default async function MarketingPage() {
                   <td className="px-5 py-3 font-medium text-slate-800">{c.name}</td>
                   <td className="px-5 py-3 text-slate-600">{CHANNEL_LABELS[c.channel] ?? c.channel}</td>
                   <td className="px-5 py-3 text-slate-500">
-                    {new Date(c.startDate).toLocaleDateString("es-AR")}
-                    {c.endDate ? ` → ${new Date(c.endDate).toLocaleDateString("es-AR")}` : " →"}
+                    {formatDateAR(c.startDate)}
+                    {c.endDate ? ` → ${formatDateAR(c.endDate)}` : " →"}
                   </td>
                   <td className="px-5 py-3 text-slate-600">{c.totalInquiries}</td>
                   <td className="px-5 py-3 text-slate-600">{c.enrolledCount}</td>

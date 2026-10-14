@@ -17,6 +17,7 @@ export function ComplaintStatusForm({ complaintId, currentStatus, action }: Comp
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) toast.success(state.success);
   }, [state]);
 
   return (

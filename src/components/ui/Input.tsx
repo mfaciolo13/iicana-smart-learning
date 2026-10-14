@@ -18,7 +18,11 @@ interface FieldProps {
 
 export function Field({ label, required, helper, error, className, children, id }: FieldProps) {
   const childrenWithProps = Children.map(children, (child) =>
-    isValidElement(child) ? cloneElement(child as React.ReactElement<{ error?: boolean }>, { error: !!error }) : child
+    // `error` sólo se inyecta en los controles que lo aceptan; en un elemento DOM crudo (botones de cupo o
+    // nota, input hidden) React emitía "Received `false` for a non-boolean attribute `error`" (SCRUM-237).
+    isValidElement(child) && (child.type === Input || child.type === Select || child.type === Textarea)
+      ? cloneElement(child as React.ReactElement<{ error?: boolean }>, { error: !!error })
+      : child
   );
 
   return (

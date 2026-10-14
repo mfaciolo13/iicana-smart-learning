@@ -65,7 +65,7 @@ export default async function NewEnrollmentPage({
           Inscribí un alumno en un curso activo con cupo disponible
         </p>
       </div>
-      <EnrollmentForm
+      <EnrollmentForm cancelHref="/administrativo/enrollments"
         students={activeStudents}
         courses={courses}
         action={createEnrollmentAction}
