@@ -1,6 +1,7 @@
 ﻿"use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireRole, getServerProfile } from "@/lib/auth/helpers";
 import { assertCourseAccess } from "@/lib/auth/course-access";
 import { portalPath } from "@/lib/portal";
@@ -114,12 +115,15 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
     });
   }
 
-  // Trigger auto-diagnostic assessment if course frequency is configured (non-blocking)
-  try {
-    await checkAndTriggerDiagnosticAssessment(courseId);
-  } catch (err) {
-    console.error("[attendance] auto-assessment trigger failed:", err);
-  }
+  // Autoevaluación diagnóstica automática si el curso la tiene configurada. Corre después de
+  // responder: llamar a la IA dentro del request bloqueaba la toma de asistencia (SCRUM-317).
+  after(async () => {
+    try {
+      await checkAndTriggerDiagnosticAssessment(courseId);
+    } catch (err) {
+      console.error("[attendance] auto-assessment trigger failed:", err);
+    }
+  });
 
   revalidatePath("/director/attendance");
   revalidatePath("/profesor/attendance");

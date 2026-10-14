@@ -22,7 +22,9 @@ import {
   getAssessmentDetail,
   isStudentEnrolledInCourse,
   hasAttempt,
+  countAssessmentsToday,
 } from "./services/assessments.service";
+import { parseQuestions, isTimeoutError, AI_TIMEOUT_MS, AI_MAX_TOKENS, MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY } from "./lib/questions";
 import type { QuizQuestion, AnswerFeedback } from "./types";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -110,6 +112,10 @@ export async function generateAssessmentAction(_prev: ActionResult, formData: Fo
     };
   }
 
+  if ((await countAssessmentsToday(parsed.data.courseId)) >= MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY) {
+    return { error: `Se alcanzó el límite de ${MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY} autoevaluaciones por curso por día.` };
+  }
+
   const prompt = `Sos un profesor experto de inglés en Argentina.
 Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
 Tema de la semana: "${parsed.data.topic}"
@@ -147,22 +153,25 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
       { type: "text", text: prompt },
     ];
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: userContent }],
-    });
+    const message = await client.messages.create(
+      {
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: AI_MAX_TOKENS,
+        messages: [{ role: "user", content: userContent }],
+      },
+      { timeout: AI_TIMEOUT_MS }
+    );
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return { error: "Error generando preguntas. Intentá de nuevo." };
-
-    questions = JSON.parse(jsonMatch[0]) as QuizQuestion[];
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return { error: "Respuesta inválida del modelo. Intentá de nuevo." };
-    }
-  } catch {
-    return { error: "Error al conectar con el modelo de IA. Verificá tu conexión." };
+    const result = parseQuestions(text);
+    if (!result.ok) return { error: result.error };
+    questions = result.questions;
+  } catch (e) {
+    return {
+      error: isTimeoutError(e)
+        ? "La generación tardó demasiado. Intentá de nuevo en unos minutos."
+        : "Error al conectar con el modelo de IA. Verificá tu conexión.",
+    };
   }
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
@@ -244,6 +253,10 @@ export async function generateAssessmentProfesorAction(_prev: ActionResult, form
 
   await assertCourseAccess(role, parsed.data.courseId);
 
+  if ((await countAssessmentsToday(parsed.data.courseId)) >= MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY) {
+    return { error: `Se alcanzó el límite de ${MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY} autoevaluaciones por curso por día.` };
+  }
+
   const prompt = `Sos un profesor experto de inglés en Argentina.
 Generá exactamente 10 preguntas de opción múltiple para una autoevaluación semanal de alumnos de inglés.
 Tema de la semana: "${parsed.data.topic}"
@@ -281,22 +294,25 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
       { type: "text", text: prompt },
     ];
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: userContent }],
-    });
+    const message = await client.messages.create(
+      {
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: AI_MAX_TOKENS,
+        messages: [{ role: "user", content: userContent }],
+      },
+      { timeout: AI_TIMEOUT_MS }
+    );
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return { error: "Error generando preguntas. Intentá de nuevo." };
-
-    questions = JSON.parse(jsonMatch[0]) as QuizQuestion[];
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return { error: "Respuesta inválida del modelo. Intentá de nuevo." };
-    }
-  } catch {
-    return { error: "Error al conectar con el modelo de IA. Verificá tu conexión." };
+    const result = parseQuestions(text);
+    if (!result.ok) return { error: result.error };
+    questions = result.questions;
+  } catch (e) {
+    return {
+      error: isTimeoutError(e)
+        ? "La generación tardó demasiado. Intentá de nuevo en unos minutos."
+        : "Error al conectar con el modelo de IA. Verificá tu conexión.",
+    };
   }
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);

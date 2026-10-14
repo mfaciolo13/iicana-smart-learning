@@ -7,7 +7,8 @@ import {
   students,
   teachers,
 } from "@/lib/drizzle/schema";
-import { eq, desc, asc, sql, and, inArray } from "drizzle-orm";
+import { eq, desc, asc, sql, and, inArray, gte } from "drizzle-orm";
+import { todayInstitute } from "@/lib/validation";
 import type {
   AssessmentListItem,
   AssessmentDetail,
@@ -294,4 +295,14 @@ export async function hasAttempt(assessmentId: string, studentProfileId: string)
     .where(and(eq(assessmentAttempts.assessmentId, assessmentId), eq(assessmentAttempts.studentId, studentProfileId)))
     .limit(1);
   return !!row;
+}
+
+/** Autoevaluaciones creadas hoy (hora del instituto) para el curso: base de la cuota diaria de IA. */
+export async function countAssessmentsToday(courseId: string): Promise<number> {
+  const startOfDay = new Date(`${todayInstitute()}T00:00:00-03:00`);
+  const [row] = await db
+    .select({ n: sql<number>`cast(count(*) as int)` })
+    .from(assessments)
+    .where(and(eq(assessments.courseId, courseId), gte(assessments.createdAt, startOfDay)));
+  return row?.n ?? 0;
 }

@@ -12,6 +12,7 @@ import {
 import { eq, and, sql } from "drizzle-orm";
 import { LEVEL_LABELS } from "@/lib/level-labels";
 import type { QuizQuestion } from "../types";
+import { parseQuestions, AI_TIMEOUT_MS, AI_MAX_TOKENS } from "../lib/questions";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -91,16 +92,21 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional:
 
   let questions: QuizQuestion[];
   try {
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
-    });
+    const message = await client.messages.create(
+      {
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: AI_MAX_TOKENS,
+        messages: [{ role: "user", content: prompt }],
+      },
+      { timeout: AI_TIMEOUT_MS }
+    );
     const text = message.content[0].type === "text" ? message.content[0].text : "";
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return false;
-    questions = JSON.parse(jsonMatch[0]) as QuizQuestion[];
-    if (!Array.isArray(questions) || questions.length === 0) return false;
+    const result = parseQuestions(text);
+    if (!result.ok) {
+      console.error("[auto-assessment] respuesta inválida del modelo:", result.error);
+      return false;
+    }
+    questions = result.questions;
   } catch (err) {
     console.error("[auto-assessment] AI generation failed:", err);
     return false;
