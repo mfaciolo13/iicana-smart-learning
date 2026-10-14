@@ -2,8 +2,8 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { requireRole, getServerUser } from "@/lib/auth/helpers";
+import { buildInviteUrl } from "@/lib/site-url";
 import { db } from "@/lib/drizzle";
 import { profiles } from "@/lib/drizzle/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -68,13 +68,7 @@ export async function createAdministrativoAction(_prev: ActionResult, formData: 
     return { error: "No se pudo crear el usuario. Verificá los datos e intentá de nuevo." };
   }
 
-  const hdrs = await headers();
-  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
-  const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
-  const siteUrl = `${proto}://${host}`;
-
-  const encoded = Buffer.from(parsed.data.email).toString("base64url");
-  const safeInviteUrl = `${siteUrl}/invite/${encoded}`;
+  const safeInviteUrl = await buildInviteUrl(authData.user.id);
 
   await sendInvitationEmail({
     to: parsed.data.email,
@@ -153,13 +147,15 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
 
   if (!email) return { error: "Email requerido" };
 
-  const hdrs = await headers();
-  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
-  const proto = hdrs.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
-  const siteUrl = `${proto}://${host}`;
-
-  const encoded = Buffer.from(email).toString("base64url");
-  const safeInviteUrl = `${siteUrl}/invite/${encoded}`;
+  // El link va atado al id del usuario y sólo se genera para cuentas que nunca iniciaron sesión.
+  const adminSupabase = createAdminClient();
+  const { data: target } = await adminSupabase.from("profiles").select("id").eq("email", email).maybeSingle();
+  if (!target) return { error: "No existe un usuario con ese email" };
+  const { data: authUser } = await adminSupabase.auth.admin.getUserById(target.id);
+  if (authUser?.user?.last_sign_in_at) {
+    return { error: "Esa cuenta ya está activa. Si olvidó su contraseña, debe usar \"Olvidé mi contraseña\"." };
+  }
+  const safeInviteUrl = await buildInviteUrl(target.id);
 
   await sendInvitationEmail({
     to: email,
