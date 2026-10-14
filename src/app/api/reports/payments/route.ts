@@ -22,7 +22,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "director") return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
+  if (profile?.role !== "director" && profile?.role !== "administrativo") return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
 
   const rows = await getPaymentsReport();
 

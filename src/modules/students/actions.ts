@@ -21,6 +21,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
     dni: formData.get("dni") as string,
     birthDate: formData.get("birthDate") as string,
     level: (formData.get("level") as string) || undefined,
+    placementTestScore: (formData.get("placementTestScore") as string) || undefined,
   };
 
   const parsed = createStudentSchema.safeParse(raw);
@@ -94,7 +95,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
 }
 
 export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const raw = {
     id: formData.get("id") as string,
@@ -103,6 +104,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
     dni: (formData.get("dni") as string) || undefined,
     birthDate: (formData.get("birthDate") as string) || undefined,
     level: (formData.get("level") as string) || undefined,
+    placementTestScore: (formData.get("placementTestScore") as string) || undefined,
     status: (formData.get("status") as string) || undefined,
   };
 
@@ -135,7 +137,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
   updateTag("students");
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
-  return { success: "Alumno actualizado", redirectTo: `/director/students/${parsed.data.id}` };
+  return { success: "Alumno actualizado", redirectTo: portalPath(role, `/students/${parsed.data.id}`) };
 }
 
 export async function toggleAccessRestrictedAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

@@ -67,7 +67,7 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
 
 /**
  * Rutas de /director exclusivas del director de las que el rol 'administrativo'
- * es explícitamente expulsado a /403 (fuente: src/proxy.ts → ADMIN_ONLY_ROUTES).
+ * es explícitamente expulsado a /403 (fuente: src/lib/auth/route-access.ts; el proxy usa una lista blanca).
  */
 export const ADMIN_ONLY_ROUTES = [
   "/director/users",

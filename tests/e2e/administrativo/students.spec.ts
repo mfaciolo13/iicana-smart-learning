@@ -38,8 +38,8 @@ test.describe("Administrativo · Alumnos", () => {
     await expect(page.getByRole("cell", { name: NEW.dni, exact: true }).first()).toBeVisible({ timeout: 20_000 });
   });
 
-  // SCRUM-253 — al operar como administrativo, tras crear queda en /director (portal ajeno).
-  test.fail("SCRUM-253: crear un alumno como administrativo debería quedar en /administrativo", async ({ page }) => {
+  // SCRUM-253 / SCRUM-348 (corregido) — tras crear, el administrativo queda en su propio portal.
+  test("SCRUM-253: crear un alumno como administrativo debería quedar en /administrativo", async ({ page }) => {
     const s = String(Date.now()).slice(-8);
     await page.goto("/administrativo/students/new");
     await page.waitForLoadState("networkidle");

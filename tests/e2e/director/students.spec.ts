@@ -76,11 +76,8 @@ test.describe("Director · Alumnos · validaciones (casos borde)", () => {
     await expect(page).toHaveURL(/\/director\/students\/new/);
   });
 
-  // BUG-C — dejar "Nivel" sin asignar (default "Sin asignar") bloquea el submit
-  // en SILENCIO: level="" no pasa el enum Zod client-side, `.optional()` no acepta
-  // "", y ese Field no muestra error. Como el nivel es OPCIONAL, el alta debería
-  // funcionar sin nivel. Se espera que falle hasta arreglarlo.
-  test.fail("BUG-C: crear alumno sin asignar nivel se bloquea en silencio", async ({ page }) => {
+  // BUG-C / SCRUM-235 (corregido) — "Nivel" es opcional: "Sin asignar" no bloquea el alta.
+  test("BUG-C: crear alumno sin asignar nivel se bloquea en silencio", async ({ page }) => {
     const s = String(Date.now()).slice(-8);
     await page.goto("/director/students/new");
     await fillNewStudent(page, {
@@ -91,7 +88,7 @@ test.describe("Director · Alumnos · validaciones (casos borde)", () => {
       // level: intencionalmente NO se asigna
     });
     await page.getByRole("button", { name: "Registrar alumno" }).click();
-    // Nivel es opcional → debería crear y redirigir a la lista. Hoy no lo hace.
+    // Nivel es opcional → crea y redirige a la lista.
     await page.waitForURL(/\/director\/students$/, { timeout: 15_000 });
   });
 });
