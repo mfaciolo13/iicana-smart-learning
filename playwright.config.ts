@@ -90,17 +90,21 @@ export default defineConfig({
       // E2E_PROD=1 → build de producción (next start). Producción no tiene la
       // compilación on-demand ni la staleness del unstable_cache de `next dev`
       // que desincronizaban las listas sembradas en la corrida completa.
-      // Prefijamos RESEND_API_KEY=disabled-for-e2e al comando de build para que
-      // `next build` no falle al colectar rutas que instancian el cliente Resend
-      // en top-level (e.g. /api/cron/class-reminder).
+      //
+      // Usamos `cross-env` para inyectar RESEND_API_KEY en AMBOS subcomandos
+      // (build y start) de forma portable entre shells (Linux, macOS, Windows).
+      // El prefijo inline `VAR=val cmd` no se propaga al child process en todos
+      // los entornos CI; `cross-env` resuelve eso de forma determinista.
       command: process.env.E2E_PROD
-        ? "RESEND_API_KEY=disabled-for-e2e pnpm build && pnpm start"
+        ? "cross-env RESEND_API_KEY=disabled-for-e2e pnpm build && cross-env RESEND_API_KEY=disabled-for-e2e pnpm start"
         : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
       // En producción NODE_ENV=production hace que se envíen emails reales; los
       // neutralizamos para la suite (las actions atrapan el fallo de envío).
+      // `env` aquí solo aplica al proceso final (pnpm start), por eso también
+      // lo incluimos explícitamente en el comando de build mediante cross-env.
       env: { RESEND_API_KEY: "disabled-for-e2e" },
     },
   }),
