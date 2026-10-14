@@ -10,6 +10,7 @@ export function useFormAction<T extends FieldValues>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: UseFormReturn<T, any, any>,
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>,
+  options?: { /** Limpia el formulario tras un éxito sin redirección. */ resetOnSuccess?: boolean },
 ) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -18,7 +19,14 @@ export function useFormAction<T extends FieldValues>(
   // eslint-disable-next-line react-hooks/refs
   const onSubmit = form.handleSubmit(() => {
     startTransition(async () => {
-      const result = await action(undefined, new FormData(formRef.current!));
+      let result: Awaited<ReturnType<typeof action>>;
+      try {
+        result = await action(undefined, new FormData(formRef.current!));
+      } catch {
+        // Una excepción del servidor no debe tumbar la página ni perder lo escrito.
+        toast.error("No se pudo completar la acción. Revisá los datos e intentá de nuevo.");
+        return;
+      }
       if (result?.error) toast.error(result.error);
       if (result?.fieldErrors) {
         const entries = Object.entries(result.fieldErrors);
@@ -33,6 +41,10 @@ export function useFormAction<T extends FieldValues>(
       }
       if (result?.success) {
         toast.success(result.success);
+        if (options?.resetOnSuccess && !result.redirectTo) {
+          form.reset();
+          formRef.current?.reset();
+        }
         if (result.redirectTo) router.push(result.redirectTo);
       }
     });

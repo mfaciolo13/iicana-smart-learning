@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
+import { portalPath } from "@/lib/portal";
 import { assertEnrollmentAccess, assertGradeAccess } from "@/lib/auth/course-access";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createGradeSchema, updateGradeSchema } from "./schemas";
@@ -84,7 +85,10 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
 
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
-  const redirectTo = (formData.get("redirectTo") as string) || "/director/grades";
+  const requested = formData.get("redirectTo") as string | null;
+  // Sólo rutas internas del portal del rol (evita redirecciones a otro portal o a sitios externos).
+  const redirectTo =
+    requested && requested.startsWith(portalPath(role, "/")) ? requested : portalPath(role, "/grades");
   return { success: "Nota cargada correctamente", redirectTo };
 }
 
@@ -127,7 +131,7 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
 
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
-  return { success: "Nota actualizada", redirectTo: `/director/grades/${parsed.data.id}` };
+  return { success: "Nota actualizada", redirectTo: role === "director" ? `/director/grades/${parsed.data.id}` : portalPath(role, "/grades") };
 }
 
 export async function deleteGradeAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -144,5 +148,5 @@ export async function deleteGradeAction(_prev: ActionResult, formData: FormData)
 
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
-  return { success: "Nota eliminada", redirectTo: "/director/grades" };
+  return { success: "Nota eliminada", redirectTo: portalPath(role, "/grades") };
 }

@@ -26,7 +26,7 @@ export default async function NewNotificationPage() {
         <p className="text-sm text-slate-400 mt-0.5">Enviá un mensaje a uno o varios destinatarios</p>
       </div>
 
-      <NotificationForm
+      <NotificationForm cancelHref="/administrativo/notifications"
         courses={courses}
         users={users}
         action={sendNotificationAction}

@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
+import { portalPath } from "@/lib/portal";
 import { createStudentSchema, updateStudentSchema } from "./schemas";
 import { createStudent, updateStudent, deleteStudent, setStudentAccessRestricted, dniExists } from "./services/students.service";
 import { sendInvitationEmail } from "@/lib/email";
@@ -11,7 +12,7 @@ import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
 
 export async function createStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const raw = {
     email: formData.get("email") as string,
@@ -95,7 +96,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   updateTag("students");
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
-  return { success: "Alumno registrado correctamente", redirectTo: "/director/students" };
+  return { success: "Alumno registrado correctamente", redirectTo: portalPath(role, "/students") };
 }
 
 export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -159,7 +160,7 @@ export async function toggleAccessRestrictedAction(_prev: ActionResult, formData
 }
 
 export async function deleteStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director", "administrativo"]);
+  const role = await requireRole(["director", "administrativo"]);
 
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
@@ -169,5 +170,5 @@ export async function deleteStudentAction(_prev: ActionResult, formData: FormDat
   updateTag("students");
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
-  return { success: "Alumno eliminado", redirectTo: "/director/students" };
+  return { success: "Alumno eliminado", redirectTo: portalPath(role, "/students") };
 }

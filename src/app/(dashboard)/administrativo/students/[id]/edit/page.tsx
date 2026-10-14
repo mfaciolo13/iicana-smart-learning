@@ -47,7 +47,7 @@ export default async function EditStudentPage({
         <h2 className="text-2xl font-bold text-slate-900">Editar alumno</h2>
         <p className="text-sm text-slate-400 mt-0.5">{student.profile.fullName}</p>
       </div>
-      <StudentForm student={student} action={updateStudentAction} submitLabel="Guardar cambios" />
+      <StudentForm cancelHref="/administrativo/students" student={student} action={updateStudentAction} submitLabel="Guardar cambios" />
     </div>
   );
 }
