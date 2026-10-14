@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import type { FieldValues, Path, UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import type { ActionResult } from "./action-result";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+
+const ACTION_TIMEOUT_MS = 20_000;
 
 export function useFormAction<T extends FieldValues>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,10 +24,19 @@ export function useFormAction<T extends FieldValues>(
     startTransition(async () => {
       let result: Awaited<ReturnType<typeof action>>;
       try {
-        result = await action(undefined, new FormData(formRef.current!));
-      } catch {
+        // Timeout de 20 s: una mutación que no responde no debe dejar el botón girando sin aviso.
+        result = await Promise.race([
+          action(undefined, new FormData(formRef.current!)),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ACTION_TIMEOUT_MS)),
+        ]);
+      } catch (e) {
+        if (isRedirectError(e)) throw e;
         // Una excepción del servidor no debe tumbar la página ni perder lo escrito.
-        toast.error("No se pudo completar la acción. Revisá los datos e intentá de nuevo.");
+        toast.error(
+          e instanceof Error && e.message === "timeout"
+            ? "No pudimos guardar, reintentá."
+            : "No se pudo completar la acción. Revisá los datos e intentá de nuevo."
+        );
         return;
       }
       if (result?.error) toast.error(result.error);

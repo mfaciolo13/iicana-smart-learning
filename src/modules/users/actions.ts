@@ -139,18 +139,19 @@ export async function banUserAction(_prev: ActionResult, formData: FormData): Pr
 }
 
 export async function resendInvitationAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireRole(["director"]);
+  const actorRole = await requireRole(["director", "administrativo"]);
 
   const email = formData.get("email") as string;
   const fullName = formData.get("fullName") as string;
-  const role = formData.get("role") as string;
 
   if (!email) return { error: "Email requerido" };
 
   // El link va atado al id del usuario y sólo se genera para cuentas que nunca iniciaron sesión.
   const adminSupabase = createAdminClient();
-  const { data: target } = await adminSupabase.from("profiles").select("id").eq("email", email).maybeSingle();
+  const { data: target } = await adminSupabase.from("profiles").select("id, role").eq("email", email).maybeSingle();
   if (!target) return { error: "No existe un usuario con ese email" };
+  // El administrativo da de alta alumnos, así que sólo puede reenviar invitaciones a alumnos.
+  if (actorRole === "administrativo" && target.role !== "alumno") return { error: "No autorizado" };
   const { data: authUser } = await adminSupabase.auth.admin.getUserById(target.id);
   if (authUser?.user?.last_sign_in_at) {
     return { error: "Esa cuenta ya está activa. Si olvidó su contraseña, debe usar \"Olvidé mi contraseña\"." };
@@ -160,7 +161,7 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
   await sendInvitationEmail({
     to: email,
     fullName: fullName || email,
-    role: role || "alumno",
+    role: target.role,
     inviteLink: safeInviteUrl,
   }).catch(() => {});
 
