@@ -3,6 +3,7 @@ import { FormButton } from "@/components/ui/FormButton";
 import { AttendanceTaker } from "./AttendanceTaker";
 import { updateAttendanceAction, deleteAttendanceSessionAction } from "../actions";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
+import { formatDateAR } from "@/lib/format";
 
 interface AttendanceSessionEditorProps {
   /** Inscripciones del curso — se filtran a las que tienen registro en esta fecha. */
@@ -33,7 +34,7 @@ export function AttendanceSessionEditor({
     existingRecords.map((r) => [r.enrollmentId, r.status])
   );
   const recordedEnrollments = enrollments.filter((e) => e.id in statusByEnrollment);
-  const formattedDate = new Date(classDate).toLocaleDateString("es-AR");
+  const formattedDate = formatDateAR(classDate);
 
   return (
     <div>

@@ -64,6 +64,7 @@ export function PaymentStatusForm({ paymentId, currentStatus, action }: PaymentS
 
   useEffect(() => {
     if (state?.error) toast.error(state.error);
+    if (state?.success) toast.success(state.success);
   }, [state]);
 
   return (

@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentsReport } from "@/modules/reports/services/reports.service";
 import { buildStyledReport } from "@/lib/excel";
+import { formatDateAR } from "@/lib/format";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
@@ -32,7 +33,7 @@ export async function GET() {
     r.studentName,
     r.studentDni,
     parseFloat(r.amount),
-    new Date(r.dueDate).toLocaleDateString("es-AR"),
+    formatDateAR(r.dueDate),
     r.paidAt ? new Date(r.paidAt).toLocaleDateString("es-AR") : "—",
     r.method ? METHOD_LABELS[r.method] ?? r.method : "—",
     STATUS_LABELS[r.status] ?? r.status,

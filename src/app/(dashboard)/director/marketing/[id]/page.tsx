@@ -6,6 +6,7 @@ import { createInquiryAction, updateInquiryStatusAction } from "@/modules/market
 import { InquiryForm } from "@/modules/marketing/components/InquiryForm";
 import { FormButton } from "@/components/ui/FormButton";
 import type { CampaignDetail } from "@/modules/marketing/services/marketing.service";
+import { formatDateAR } from "@/lib/format";
 
 const CHANNEL_LABELS: Record<string, string> = {
   social_media: "Redes sociales",
@@ -88,8 +89,8 @@ export default async function CampaignDetailPage({
         <h2 className="text-2xl font-bold text-slate-900">{campaign.name}</h2>
         <p className="text-sm text-slate-400 mt-0.5">
           {CHANNEL_LABELS[campaign.channel] ?? campaign.channel} ·{" "}
-          {new Date(campaign.startDate).toLocaleDateString("es-AR")}
-          {campaign.endDate ? ` → ${new Date(campaign.endDate).toLocaleDateString("es-AR")}` : ""}
+          {formatDateAR(campaign.startDate)}
+          {campaign.endDate ? ` → ${formatDateAR(campaign.endDate)}` : ""}
         </p>
       </div>
 
@@ -139,7 +140,7 @@ export default async function CampaignDetailPage({
                       {!inq.email && !inq.phone && "—"}
                     </td>
                     <td className="px-5 py-3 text-slate-500">
-                      {new Date(inq.receivedAt).toLocaleDateString("es-AR")}
+                      {formatDateAR(inq.receivedAt)}
                     </td>
                     <td className="px-5 py-3">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLE[inq.status] ?? ""}`}>

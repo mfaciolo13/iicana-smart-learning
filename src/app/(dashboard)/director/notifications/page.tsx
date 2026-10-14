@@ -3,6 +3,7 @@ import { getAllNotificationsAdmin } from "@/modules/notifications/services/notif
 import { SentNotificationList } from "@/modules/notifications/components/SentNotificationList";
 import { buttonVariants } from "@/components/ui/Button";
 import type { SentNotificationItem } from "@/modules/notifications/types";
+import { plural } from "@/lib/plural";
 
 export default async function AdminNotificationsPage() {
   const rows = await getAllNotificationsAdmin();
@@ -59,7 +60,7 @@ export default async function AdminNotificationsPage() {
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Comunicaciones</h2>
           <p className="text-sm text-slate-400 mt-0.5">
-            {sent.length} comunicación{sent.length !== 1 ? "es" : ""} enviada{sent.length !== 1 ? "s" : ""}
+            {plural(sent.length, "comunicación enviada", "comunicaciones enviadas")}
           </p>
         </div>
         <Link href="/director/notifications/new" className={buttonVariants({ variant: "primary" })}>

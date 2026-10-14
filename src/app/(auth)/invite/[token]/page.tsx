@@ -88,7 +88,13 @@ export default async function InvitePage({
   params: Promise<{ token: string }>;
 }) {
   const { token: rawToken } = await params;
-  const token = decodeURIComponent(rawToken);
+  // Un link malformado (ej: /invite/%%%) no debe terminar en un 400 del framework (SCRUM-330).
+  let token = rawToken;
+  try {
+    token = decodeURIComponent(rawToken);
+  } catch {
+    token = "";
+  }
   const invite = await resolveInvite(token);
 
   if (invite.status !== "ok") {

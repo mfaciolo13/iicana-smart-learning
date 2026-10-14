@@ -4,6 +4,7 @@ import { getServerUser } from "@/lib/auth/helpers";
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/Button";
 import type { AttendanceSession } from "@/modules/attendance/types";
+import { formatDateAR } from "@/lib/format";
 
 const STATUS_COLORS = {
   high: "bg-emerald-500",
@@ -81,7 +82,7 @@ export default async function ProfesorAttendancePage() {
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Asistencia</h2>
           <p className="text-sm text-slate-400 mt-0.5">
-            {sessions.length > 0 ? `Últimas ${sessions.length} clases registradas` : "Sin registros aún"}
+            {sessions.length > 0 ? (sessions.length === 1 ? "Última clase registrada" : `Últimas ${sessions.length} clases registradas`) : "Sin registros aún"}
           </p>
         </div>
         <Link href="/profesor/attendance/new" className={buttonVariants({ variant: "primary" })}>
@@ -121,7 +122,7 @@ export default async function ProfesorAttendancePage() {
                 return (
                   <tr key={`${s.courseId}-${s.classDate}`} className="hover:bg-brand-50 transition-colors">
                     <td className="py-3.5 pl-6 pr-4 font-medium text-slate-900">
-                      {new Date(s.classDate).toLocaleDateString("es-AR")}
+                      {formatDateAR(s.classDate)}
                     </td>
                     <td className="py-3.5 pr-4 text-slate-700">{s.courseName}</td>
                     <td className="py-3.5 pr-4 hidden sm:table-cell">

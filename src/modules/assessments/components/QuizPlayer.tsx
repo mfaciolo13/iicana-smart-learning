@@ -57,7 +57,9 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
     formData.set("assessmentId", assessmentId);
     formData.set("answers", JSON.stringify(answersPayload));
     startSubmit(async () => {
-      await submitAttemptAction(undefined, formData);
+      // Si el envío falla la action devuelve { error } (si sale bien, redirige al resultado).
+      const result = await submitAttemptAction(undefined, formData);
+      if (result?.error) setError(result.error);
     });
   }
 

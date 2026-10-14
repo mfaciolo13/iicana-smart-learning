@@ -9,6 +9,7 @@ import { getEnrollmentsByCourse } from "@/modules/enrollments/services/enrollmen
 import { getAttendanceByCourse, isAttendanceRecorded } from "@/modules/attendance/services/attendance.service";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import type { AttendanceRecord } from "@/modules/attendance/types";
+import { formatDateAR } from "@/lib/format";
 
 export default async function ProfesorTakeAttendancePage({
   searchParams,
@@ -96,7 +97,7 @@ export default async function ProfesorTakeAttendancePage({
           ) : (
             <>
               <h3 className="text-base font-semibold text-slate-900 mb-1">
-                Clase del {new Date(classDate).toLocaleDateString("es-AR")}
+                Clase del {formatDateAR(classDate)}
               </h3>
               <p className="text-xs text-slate-400 mb-4">
                 {activeEnrollments.length} alumno{activeEnrollments.length !== 1 ? "s" : ""} inscriptos

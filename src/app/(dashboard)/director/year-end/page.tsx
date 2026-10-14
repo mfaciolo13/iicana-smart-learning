@@ -141,7 +141,7 @@ export default async function YearEndPage() {
 
       {hasPending && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mb-4 text-sm text-blue-800">
-          Hay <strong>{summary.eligible}</strong> alumno(s) apto(s) pendientes de promoción. Usá el botón &ldquo;Cerrar ciclo lectivo&rdquo; para procesarlos.
+          Hay <strong>{summary.eligible}</strong> {summary.eligible === 1 ? "alumno apto pendiente" : "alumnos aptos pendientes"} de promoción. Usá el botón &ldquo;Cerrar ciclo lectivo&rdquo; para procesarlos.
         </div>
       )}
 

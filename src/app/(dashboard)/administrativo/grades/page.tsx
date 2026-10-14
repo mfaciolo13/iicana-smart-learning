@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getGrades } from "@/modules/grades/services/grades.service";
 import { GradeList } from "@/modules/grades/components/GradeList";
 import { Select } from "@/components/ui/Input";
+import { plural } from "@/lib/plural";
 
 export default async function GradesPage({
   searchParams,
@@ -24,7 +25,7 @@ export default async function GradesPage({
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Notas</h2>
           <p className="text-sm text-slate-400 mt-0.5">
-            {gradesList.length} evaluación{gradesList.length !== 1 ? "es" : ""} registrada{gradesList.length !== 1 ? "s" : ""}
+            {plural(gradesList.length, "evaluación registrada", "evaluaciones registradas")}
           </p>
         </div>
       </div>

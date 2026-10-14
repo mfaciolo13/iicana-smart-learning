@@ -11,6 +11,7 @@ import { sendAlert } from "@/lib/notifications/send-alert";
 import { sendAbsenceAlertEmail, sendTeacherAttendanceAlertEmail } from "@/lib/email";
 import { checkAndTriggerDiagnosticAssessment } from "@/modules/assessments/services/auto-assessment.service";
 import type { ActionResult } from "@/lib/action-result";
+import { formatDateAR } from "@/lib/format";
 
 const STATUSES = ["present", "absent", "late"] as const;
 type AttendanceStatus = (typeof STATUSES)[number];
@@ -77,7 +78,7 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
           notification: {
             type: "absence",
             title: "Ausencia registrada",
-            body: `Registramos tu ausencia en ${info.courseName} el ${new Date(classDate).toLocaleDateString("es-AR")}. Asistencia acumulada: ${info.attendancePct}%.`,
+            body: `Registramos tu ausencia en ${info.courseName} el ${formatDateAR(classDate)}. Asistencia acumulada: ${info.attendancePct}%.`,
           },
           sendEmail: () =>
             sendAbsenceAlertEmail({

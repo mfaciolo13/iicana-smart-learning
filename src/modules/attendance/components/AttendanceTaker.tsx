@@ -63,14 +63,15 @@ export function AttendanceTaker({
         {enrollments.map((enrollment) => (
           <div
             key={enrollment.id}
-            className="flex items-center gap-4 px-4 py-3 rounded-lg border border-slate-100 hover:bg-slate-50"
+            // En celular el nombre ocupa su propia línea y los botones van debajo (SCRUM-312).
+            className="flex flex-col gap-2 px-4 py-3 rounded-lg border border-slate-100 hover:bg-slate-50 sm:flex-row sm:items-center sm:gap-4"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 truncate">{enrollment.studentName}</p>
+              <p className="text-sm font-medium text-slate-900 break-words sm:truncate">{enrollment.studentName}</p>
               <p className="text-xs text-slate-400 font-mono">{enrollment.studentDni}</p>
             </div>
 
-            <div className="flex gap-1.5 shrink-0">
+            <div className="flex flex-wrap gap-1.5 sm:shrink-0">
               {STATUS_OPTIONS.map((opt) => (
                 <label key={opt.value} className="flex items-center gap-1 cursor-pointer">
                   <input

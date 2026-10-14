@@ -7,6 +7,7 @@ import { MarkAsPaidForm, PaymentStatusForm } from "@/modules/payments/components
 import { PaymentEditForm, PaymentCancelForm } from "@/modules/payments/components/PaymentEditForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { formatDateAR } from "@/lib/format";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   pending: { label: "Pendiente", variant: "warning" },
@@ -80,7 +81,7 @@ export default async function PaymentDetailPage({
               <div>
                 <dt className="text-slate-400 font-medium mb-0.5">Vencimiento</dt>
                 <dd className={`font-semibold ${isOverdue ? "text-red-600" : "text-slate-900"}`}>
-                  {new Date(payment.dueDate).toLocaleDateString("es-AR")}
+                  {formatDateAR(payment.dueDate)}
                 </dd>
               </div>
               {payment.paidAt && (

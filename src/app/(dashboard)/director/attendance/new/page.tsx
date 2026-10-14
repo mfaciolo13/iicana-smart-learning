@@ -5,6 +5,7 @@ import { AttendanceTaker } from "@/modules/attendance/components/AttendanceTaker
 import { AttendanceSessionEditor } from "@/modules/attendance/components/AttendanceSessionEditor";
 import { Input, Field, Select } from "@/components/ui/Input";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
+import { formatDateAR } from "@/lib/format";
 
 export default async function TakeAttendancePage({
   searchParams,
@@ -97,7 +98,7 @@ export default async function TakeAttendancePage({
           ) : (
             <>
               <h3 className="text-base font-semibold text-slate-900 mb-1">
-                Clase del {new Date(classDate).toLocaleDateString("es-AR")}
+                Clase del {formatDateAR(classDate)}
               </h3>
               <p className="text-xs text-slate-400 mb-4">
                 {activeEnrollments.length} alumno{activeEnrollments.length !== 1 ? "s" : ""} inscriptos

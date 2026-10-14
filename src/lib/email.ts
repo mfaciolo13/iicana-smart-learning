@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { formatDateAR } from "@/lib/format";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -271,7 +272,7 @@ export async function sendAbsenceAlertEmail({
       </p>
       <div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
         <p style="margin:0 0 6px;color:#1e293b;font-size:15px;font-weight:600;">${esc(courseName)}</p>
-        <p style="margin:0 0 4px;color:#475569;font-size:13px;">Fecha: ${new Date(classDate).toLocaleDateString("es-AR")}</p>
+        <p style="margin:0 0 4px;color:#475569;font-size:13px;">Fecha: ${formatDateAR(classDate)}</p>
         <p style="margin:0;color:#475569;font-size:13px;">Asistencia acumulada: ${attendancePercentage}%</p>
       </div>
       <p style="margin:0;color:#475569;font-size:14px;line-height:1.6;">

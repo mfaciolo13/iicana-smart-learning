@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { formatDateAR } from "@/lib/format";
 
 const QUESTIONS = [
   "Claridad al explicar",
@@ -162,7 +163,7 @@ export default async function TeacherEvalDetailPage({
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div>
                       <p className="text-xs font-medium text-slate-700">
-                        {new Date(obs.observedAt).toLocaleDateString("es-AR")} · {obs.courseName}
+                        {formatDateAR(obs.observedAt)} · {obs.courseName}
                       </p>
                       <p className="text-xs text-slate-400 mt-0.5">por {obs.observerName}</p>
                     </div>
