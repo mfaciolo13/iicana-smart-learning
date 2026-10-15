@@ -1,4 +1,4 @@
-import { db } from "@/lib/drizzle";
+import { db, dbTx } from "@/lib/drizzle";
 import { teachers, profiles } from "@/lib/drizzle/schema";
 import { eq, ilike, or } from "drizzle-orm";
 import type { CreateTeacherInput, UpdateTeacherInput } from "../schemas";
@@ -79,7 +79,7 @@ export async function updateTeacher(input: UpdateTeacherInput) {
   // fullName y phone viven en `profiles`, no en `teachers` (SCRUM-242).
   const { id, fullName, phone, ...rest } = input;
   const teacherData = rest.specialization === "" ? { ...rest, specialization: null } : rest;
-  return db.transaction(async (tx) => {
+  return dbTx.transaction(async (tx) => {
     const [teacher] =
       Object.keys(teacherData).length > 0
         ? await tx.update(teachers).set(teacherData).where(eq(teachers.id, id)).returning()

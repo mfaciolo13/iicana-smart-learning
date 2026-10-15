@@ -1,4 +1,4 @@
-import { db } from "@/lib/drizzle";
+import { db, dbTx } from "@/lib/drizzle";
 import { enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
 import { eq, ne, and, ilike, or, count } from "drizzle-orm";
 import { isUniqueViolation } from "@/lib/db-errors";
@@ -255,7 +255,7 @@ async function checkActiveEnrollmentRules(
 
 export async function validateAndCreateEnrollment(input: CreateEnrollmentInput) {
   try {
-    return await db.transaction(async (tx) => {
+    return await dbTx.transaction(async (tx) => {
       const violation = await checkActiveEnrollmentRules(tx, input.studentId, input.courseId);
       if (violation) return violation;
 
@@ -284,7 +284,7 @@ export async function updateEnrollment(
   input: UpdateEnrollmentInput,
 ): Promise<{ error: string } | { enrollment: typeof enrollments.$inferSelect }> {
   try {
-    return await db.transaction(async (tx) => {
+    return await dbTx.transaction(async (tx) => {
       const [current] = await tx.select().from(enrollments).where(eq(enrollments.id, input.id)).limit(1);
       if (!current) return { error: "Inscripción no encontrada" };
 
