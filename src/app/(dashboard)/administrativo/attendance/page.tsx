@@ -5,5 +5,5 @@ export default async function AttendancePage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  return <AttendanceListPage sp={await searchParams} basePath="/administrativo/attendance" />;
+  return <AttendanceListPage sp={await searchParams} basePath="/administrativo/attendance" exportHref="/api/reports/attendance-sessions" />;
 }

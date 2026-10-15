@@ -9,44 +9,11 @@ import { FilteredEmpty } from "@/components/ui/FilteredEmpty";
 import { Pagination } from "@/components/ui/TableControls";
 import { markOverduePaymentsAction, runOverdueChecksAction } from "../actions";
 import { effectiveStatus, summarizePayments } from "../lib/buckets";
-import { matchesSearch } from "@/lib/search";
 import { paginate, parseTableQuery, sortRows, tableHref } from "@/lib/table";
-import { inDateRange, parseFilters, type FilterField } from "@/lib/filters";
+import { ExportButton } from "@/components/ui/ExportButton";
+import { PAYMENT_FILTER_FIELDS as FIELDS, PAYMENT_STATUS_TABS as STATUS_TABS, filterPayments } from "../lib/filters";
 
 const STATUS_ORDER = ["overdue", "pending", "suspended", "paid", "cancelled"];
-
-const STATUS_TABS = [
-  { value: "all", label: "Todos" },
-  { value: "pending", label: "Pendientes" },
-  { value: "overdue", label: "Vencidos" },
-  { value: "paid", label: "Pagados" },
-  { value: "suspended", label: "Suspendidos" },
-  { value: "cancelled", label: "Anulados" },
-];
-
-const FIELDS: FilterField[] = [
-  {
-    key: "metodo",
-    label: "Método de pago",
-    type: "select",
-    options: [
-      { value: "cash", label: "Efectivo" },
-      { value: "transfer", label: "Transferencia" },
-      { value: "card", label: "Tarjeta" },
-    ],
-  },
-  {
-    key: "recibo",
-    label: "Recibo",
-    type: "select",
-    options: [
-      { value: "con", label: "Con recibo" },
-      { value: "sin", label: "Sin recibo" },
-    ],
-  },
-  { key: "desde", label: "Vence desde", type: "date" },
-  { key: "hasta", label: "Vence hasta", type: "date" },
-];
 
 type SearchParams = Record<string, string | undefined>;
 
@@ -58,17 +25,10 @@ export async function PaymentsListPage({ sp, basePath }: { sp: SearchParams; bas
     defaultSort: "due",
     defaultDir: "desc",
   });
-  const activeTab = STATUS_TABS.some((t) => t.value === sp.status) ? (sp.status as string) : "all";
-  const filters = parseFilters(sp, FIELDS);
 
   const allPayments = await getPayments();
   const summary = summarizePayments(allPayments);
-
-  let list = activeTab === "all" ? allPayments : allPayments.filter((p) => effectiveStatus(p) === activeTab);
-  if (q) list = list.filter((p) => matchesSearch(p.studentName, q) || matchesSearch(p.studentDni, q) || matchesSearch(p.receiptNumber ?? "", q));
-  if (filters.metodo) list = list.filter((p) => p.method === filters.metodo);
-  if (filters.recibo) list = list.filter((p) => Boolean(p.receiptNumber) === (filters.recibo === "con"));
-  if (filters.desde || filters.hasta) list = list.filter((p) => inDateRange(p.dueDate, filters.desde, filters.hasta));
+  const { list, activeTab, filters } = filterPayments(allPayments, sp);
 
   const sorted = sortRows(list, query, {
     student: (p) => p.studentName,
@@ -90,6 +50,7 @@ export async function PaymentsListPage({ sp, basePath }: { sp: SearchParams; bas
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <ExportButton href="/api/reports/payments" searchParams={sp} />
           <FormButton action={markOverduePaymentsAction} variant="secondary" size="sm">
             Actualizar vencidos
           </FormButton>

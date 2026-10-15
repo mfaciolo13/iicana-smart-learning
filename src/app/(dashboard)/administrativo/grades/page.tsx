@@ -11,5 +11,5 @@ export default async function GradesPage({
   const supabase = await createClient();
   const [grades, { data: coursesData }] = await Promise.all([getGrades(), supabase.from("courses").select("name").order("name")]);
 
-  return <GradesListPage sp={sp} basePath="/administrativo/grades" grades={grades} courseNames={(coursesData ?? []).map((c) => c.name)} />;
+  return <GradesListPage sp={sp} basePath="/administrativo/grades" grades={grades} courseNames={(coursesData ?? []).map((c) => c.name)} exportHref="/api/reports/grades" />;
 }

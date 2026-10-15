@@ -5,66 +5,20 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { FilteredEmpty } from "@/components/ui/FilteredEmpty";
 import { Pagination } from "@/components/ui/TableControls";
-import type { StudentListItem } from "../types";
-import { getCachedStudents } from "@/lib/query-cache";
-import { matchesSearch } from "@/lib/search";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { paginate, parseTableQuery, sortRows } from "@/lib/table";
-import { parseFilters, type FilterField } from "@/lib/filters";
-import { LEVEL_LABELS, LEVEL_ORDER } from "@/lib/level-labels";
-import { getStudentIdsInCourse, getStudentIdsWithDebt, listActiveCourseOptions } from "../services/student-filters.service";
+import { LEVEL_ORDER } from "@/lib/level-labels";
+import { STUDENT_STATUS_ORDER, getFilteredStudents } from "../services/student-list.service";
 
-const STATUS_ORDER = ["active", "suspended", "inactive", "graduated"];
-const STATUS_LABELS: Record<string, string> = { active: "Activo", suspended: "Suspendido", inactive: "Inactivo", graduated: "Egresado" };
+const STATUS_ORDER = STUDENT_STATUS_ORDER;
 
 type SearchParams = Record<string, string | undefined>;
-
-function buildFields(courseOptions: { id: string; name: string }[]): FilterField[] {
-  return [
-    {
-      key: "nivel",
-      label: "Nivel",
-      type: "select",
-      options: [...LEVEL_ORDER.map((l) => ({ value: l, label: LEVEL_LABELS[l] ?? l })), { value: "none", label: "Sin nivel" }],
-    },
-    { key: "estado", label: "Estado", type: "select", options: STATUS_ORDER.map((s) => ({ value: s, label: STATUS_LABELS[s] })) },
-    { key: "curso", label: "Curso", type: "select", options: courseOptions.map((c) => ({ value: c.id, label: c.name })) },
-    {
-      key: "deuda",
-      label: "Deuda",
-      type: "select",
-      options: [
-        { value: "con", label: "Con deuda vencida" },
-        { value: "sin", label: "Sin deuda" },
-      ],
-    },
-  ];
-}
 
 /** Listado de alumnos con búsqueda, filtros, orden y paginación. Lo usan director y administrativo. */
 export async function StudentsListPage({ sp, basePath }: { sp: SearchParams; basePath: string }) {
   const { q } = sp;
   const query = parseTableQuery(sp, { sortable: ["name", "dni", "email", "level", "status"], defaultSort: "name" });
-  const fields = buildFields(await listActiveCourseOptions());
-  const filters = parseFilters(sp, fields);
-
-  const all: StudentListItem[] = (await getCachedStudents()).map((s) => ({
-    ...s,
-    level: s.level as StudentListItem["level"],
-    status: s.status as StudentListItem["status"],
-  }));
-
-  let students = all;
-  if (q) students = students.filter((s) => matchesSearch(s.fullName, q) || matchesSearch(s.email, q) || matchesSearch(s.dni, q));
-  if (filters.nivel) students = students.filter((s) => (filters.nivel === "none" ? !s.level : s.level === filters.nivel));
-  if (filters.estado) students = students.filter((s) => s.status === filters.estado);
-  if (filters.curso) {
-    const inCourse = await getStudentIdsInCourse(filters.curso);
-    students = students.filter((s) => inCourse.has(s.id));
-  }
-  if (filters.deuda) {
-    const withDebt = await getStudentIdsWithDebt();
-    students = students.filter((s) => withDebt.has(s.id) === (filters.deuda === "con"));
-  }
+  const { all, students, fields, filters } = await getFilteredStudents(sp);
 
   const sorted = sortRows(students, query, {
     name: (r) => r.fullName,
@@ -86,9 +40,12 @@ export async function StudentsListPage({ sp, basePath }: { sp: SearchParams; bas
             registrado{all.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link href={`${basePath}/new`} className={buttonVariants({ variant: "primary" })}>
-          + Nuevo alumno
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <ExportButton href="/api/reports/students" searchParams={sp} />
+          <Link href={`${basePath}/new`} className={buttonVariants({ variant: "primary" })}>
+            + Nuevo alumno
+          </Link>
+        </div>
       </div>
 
       <SearchInput placeholder="Buscar por nombre, email o DNI..." resultCount={students.length} className="mb-3" />

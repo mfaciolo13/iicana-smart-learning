@@ -74,3 +74,8 @@ export function inDateRange(date: string | null | undefined, from?: string, to?:
 export function filterKeys(fields: FilterField[]): string[] {
   return ["q", ...fields.map((f) => f.key)];
 }
+
+/** Día (YYYY-MM-DD) de una fecha en hora del instituto, para filtrar por rango sin corrimientos de zona horaria. */
+export function instituteDay(d: Date | string): string {
+  return new Date(d).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Cordoba" });
+}
