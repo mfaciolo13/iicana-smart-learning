@@ -1,4 +1,4 @@
-import { db } from "@/lib/drizzle";
+import { db, dbTx } from "@/lib/drizzle";
 import {
   teacherSurveys,
   teacherSurveySubmissions,
@@ -61,7 +61,7 @@ export async function getEnrollmentsForSurvey(studentId: string): Promise<Enroll
  * dos envíos simultáneos).
  */
 export async function submitSurvey(input: TeacherSurveyInput & { enrollmentId: string }): Promise<boolean> {
-  return db.transaction(async (tx) => {
+  return dbTx.transaction(async (tx) => {
     const marked = await tx
       .insert(teacherSurveySubmissions)
       .values({ enrollmentId: input.enrollmentId, courseId: input.courseId })

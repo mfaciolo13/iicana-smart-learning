@@ -1,4 +1,4 @@
-import { db } from "@/lib/drizzle";
+import { db, dbTx } from "@/lib/drizzle";
 import { students, profiles } from "@/lib/drizzle/schema";
 import { eq, ilike, or, sql } from "drizzle-orm";
 import type { CreateStudentInput, UpdateStudentInput } from "../schemas";
@@ -129,7 +129,7 @@ export async function updateStudent(input: UpdateStudentInput) {
   // fullName y phone viven en `profiles`, no en `students`: Drizzle ignoraría esas
   // claves en silencio (SCRUM-242), así que se actualizan por separado.
   const { id, fullName, phone, ...studentData } = input;
-  return db.transaction(async (tx) => {
+  return dbTx.transaction(async (tx) => {
     const [updated] = await tx
       .update(students)
       .set({ ...studentData, updatedAt: new Date() })
