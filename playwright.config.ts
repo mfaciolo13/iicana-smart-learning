@@ -91,20 +91,22 @@ export default defineConfig({
       // compilación on-demand ni la staleness del unstable_cache de `next dev`
       // que desincronizaban las listas sembradas en la corrida completa.
       //
-      // RESEND_API_KEY se inyecta vía `env` (abajo), que Playwright aplica al
-      // proceso shell completo — abarca tanto `pnpm build` como `pnpm start`
-      // dentro del mismo comando. NO usamos cross-env en el command string para
-      // evitar el doble-spawn que impedía que la variable llegara al build.
+      // RESEND_API_KEY se inyecta inline en el command string (sintaxis POSIX)
+      // para garantizar que la variable esté disponible en el mismo shell tanto
+      // durante `pnpm build` (collect/static-gen de /api/cron/daily-report y
+      // /api/cron/class-reminder) como durante `pnpm start`.
+      // No confiamos únicamente en `env` de webServer porque en algunas
+      // versiones de Playwright ese campo no se fusiona con el entorno heredado
+      // antes de que el build empiece, lo que origina el error:
+      //   "Missing API key. Pass it to the constructor new Resend("re_123")"
       command: process.env.E2E_PROD
-        ? "pnpm build && pnpm start"
-        : "pnpm dev",
+        ? "RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start"
+        : "RESEND_API_KEY=disabled-for-e2e pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // `env` se fusiona con el entorno del child process que ejecuta `command`.
-      // Al ser el mismo proceso shell, la variable está disponible tanto durante
-      // `pnpm build` (collect/static-gen de /api/cron/class-reminder) como
-      // durante `pnpm start`, neutralizando el cliente Resend en ambas fases.
+      // `env` se mantiene como capa adicional de seguridad para plataformas
+      // donde la asignación inline no sea soportada.
       env: { RESEND_API_KEY: "disabled-for-e2e" },
     },
   }),
