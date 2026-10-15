@@ -144,7 +144,7 @@ export async function PaymentsListPage({ sp, basePath }: { sp: SearchParams; bas
         ) : (
           <>
             <PaymentList payments={page.rows} showNewLink basePath={basePath} sort={{ basePath, searchParams: sp, query }} />
-            <Pagination basePath={basePath} searchParams={sp} page={page} noun="pagos" />
+            <Pagination basePath={basePath} searchParams={sp} page={page} noun="pagos" nounSingular="pago" />
           </>
         )}
       </div>

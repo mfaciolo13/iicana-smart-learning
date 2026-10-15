@@ -83,7 +83,7 @@ export async function EnrollmentsListPage({ sp, basePath }: { sp: SearchParams; 
         ) : (
           <>
             <EnrollmentList enrollments={page.rows} showNewLink basePath={basePath} sort={{ basePath, searchParams: sp, query }} />
-            <Pagination basePath={basePath} searchParams={sp} page={page} noun="inscripciones" />
+            <Pagination basePath={basePath} searchParams={sp} page={page} noun="inscripciones" nounSingular="inscripción" />
           </>
         )}
       </div>
