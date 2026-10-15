@@ -2,6 +2,7 @@
 import { Eye, ChevronRight } from "lucide-react";
 import type { UserListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
+import { Th, type SortContext } from "@/components/ui/TableControls";
 
 const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" | "warning" | "neutral" }> = {
   director: { label: "Director", variant: "warning" },
@@ -23,9 +24,11 @@ const AVATAR_GRADIENTS: Record<string, string> = {
 
 interface UserListProps {
   users: UserListItem[];
+  /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
+  sort?: SortContext;
 }
 
-export function UserList({ users }: UserListProps) {
+export function UserList({ users, sort }: UserListProps) {
   if (users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -76,10 +79,10 @@ export function UserList({ users }: UserListProps) {
         <table className="w-full text-sm" role="table">
           <thead>
             <tr className="border-b-2 border-brand-700">
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Usuario</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Email</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Rol</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alta</th>
+              <Th label="Usuario" field="name" sort={sort} />
+              <Th label="Email" field="email" sort={sort} className="hidden md:table-cell" />
+              <Th label="Rol" field="role" sort={sort} />
+              <Th label="Alta" field="created" sort={sort} />
               <th className="py-3" />
             </tr>
           </thead>

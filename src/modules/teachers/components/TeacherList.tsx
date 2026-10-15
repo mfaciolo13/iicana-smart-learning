@@ -1,12 +1,15 @@
 ﻿import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { TeacherListItem } from "../types";
+import { Th, type SortContext } from "@/components/ui/TableControls";
 
 interface TeacherListProps {
   teachers: TeacherListItem[];
+  /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
+  sort?: SortContext;
 }
 
-export function TeacherList({ teachers }: TeacherListProps) {
+export function TeacherList({ teachers, sort }: TeacherListProps) {
   if (teachers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -54,10 +57,10 @@ export function TeacherList({ teachers }: TeacherListProps) {
         <table className="w-full text-sm" role="table">
           <thead>
             <tr className="border-b-2 border-brand-700">
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Nombre</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">DNI</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Email</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Especialización</th>
+              <Th label="Nombre" field="name" sort={sort} />
+              <Th label="DNI" field="dni" sort={sort} />
+              <Th label="Email" field="email" sort={sort} className="hidden md:table-cell" />
+              <Th label="Especialización" field="specialization" sort={sort} />
               <th className="py-3" />
             </tr>
           </thead>

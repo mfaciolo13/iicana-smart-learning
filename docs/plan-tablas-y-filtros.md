@@ -166,3 +166,10 @@ Total de las fases 1 a 5: unos **9 a 13 días de trabajo**.
 - Pendiente: Fase 2 (orden y paginación en los otros 17 listados), Fase 3 (asistencia sin tope de 1500), Fase 4 (Excel con filtros) y Fase 6.
 - Decisiones aplicadas por defecto: 25 filas por página; pagos abre en "Todos".
 - **Fase 3 (asistencia sin tope)**: hecha. El listado ya no trae 1500 registros de alumno y muestra sólo las 30 clases más nuevas (las anteriores eran inalcanzables): las clases se agregan en SQL, se pueden filtrar por curso, fechas y porcentaje de asistencia, ordenar por cualquier columna y paginar. Un solo componente (`AttendanceListPage`) para director, administrativo y profesor; el docente ve sólo sus cursos.
+- **Fase 2, parte 1**: cursos, docentes, usuarios, notas y reclamos con orden, paginación y filtros.
+  - Cursos: nivel, estado, docente, cupo (con lugar / completo).
+  - Docentes: especialización.
+  - Usuarios: rango de fecha de alta (más las pestañas por rol, que ahora conservan el orden).
+  - Notas: curso, tipo de evaluación, aprobadas/desaprobadas, fechas y búsqueda por alumno o DNI (director, administrativo y profesor comparten un solo componente).
+  - Reclamos: tipo, quién reclama, fechas y búsqueda por usuario o texto (director y administrativo comparten un solo componente).
+  - Falta la parte 2: autoevaluaciones, material, marketing, promociones, cierre de ciclo, evaluación docente y las vistas del alumno.

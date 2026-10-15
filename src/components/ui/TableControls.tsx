@@ -40,6 +40,12 @@ export function SortableTh({ label, field, ctx, className }: SortableThProps) {
   );
 }
 
+/** Encabezado de columna: ordenable si el listado recibe su contexto de orden, texto plano si no. */
+export function Th({ label, field, sort, className }: { label: string; field: string; sort?: SortContext; className?: string }) {
+  if (sort) return <SortableTh label={label} field={field} ctx={sort} className={className} />;
+  return <th className={cn(TH_BASE, className)}>{label}</th>;
+}
+
 interface PaginationProps {
   basePath: string;
   searchParams: SearchParamsRecord;
