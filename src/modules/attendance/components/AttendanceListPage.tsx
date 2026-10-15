@@ -5,7 +5,8 @@ import { FilterBar } from "@/components/ui/FilterBar";
 import { FilteredEmpty } from "@/components/ui/FilteredEmpty";
 import { Pagination, SortableTh, type SortContext } from "@/components/ui/TableControls";
 import { formatDateAR } from "@/lib/format";
-import { inDateRange, parseFilters, type FilterField } from "@/lib/filters";
+import { ExportButton } from "@/components/ui/ExportButton";
+import { buildSessionFilterFields, filterSessions, sessionPct as pctOf } from "../lib/filters";
 import { paginate, parseTableQuery, sortRows } from "@/lib/table";
 import { getAttendanceSessions } from "../services/attendance-sessions.service";
 import type { AttendanceSession } from "../types";
@@ -14,7 +15,6 @@ const STATUS_COLORS = { high: "bg-emerald-500", mid: "bg-amber-400", low: "bg-re
 
 type SearchParams = Record<string, string | undefined>;
 
-const pctOf = (s: AttendanceSession) => (s.total > 0 ? Math.round(((s.present + s.late) / s.total) * 100) : 0);
 const barColor = (pct: number) => (pct >= 80 ? STATUS_COLORS.high : pct >= 60 ? STATUS_COLORS.mid : STATUS_COLORS.low);
 
 /**
@@ -22,7 +22,18 @@ const barColor = (pct: number) => (pct >= 80 ? STATUS_COLORS.high : pct >= 60 ? 
  * curso, fechas y porcentaje, orden por columna y paginación. `courseIds` limita a los cursos del
  * docente; sin él se ven todos. El detalle de cada clase abre la pantalla de toma de lista.
  */
-export async function AttendanceListPage({ sp, basePath, courseIds }: { sp: SearchParams; basePath: string; courseIds?: string[] }) {
+export async function AttendanceListPage({
+  sp,
+  basePath,
+  courseIds,
+  exportHref,
+}: {
+  sp: SearchParams;
+  basePath: string;
+  courseIds?: string[];
+  /** Si se pasa, se muestra "Exportar Excel" (con los filtros actuales) hacia esa ruta. */
+  exportHref?: string;
+}) {
   const query = parseTableQuery(sp, {
     sortable: ["date", "course", "present", "absent", "pct"],
     defaultSort: "date",
@@ -30,32 +41,8 @@ export async function AttendanceListPage({ sp, basePath, courseIds }: { sp: Sear
   });
 
   const all = await getAttendanceSessions(courseIds);
-  const courseOptions = [...new Map(all.map((s) => [s.courseId, s.courseName])).entries()]
-    .map(([value, label]) => ({ value, label }))
-    .sort((a, b) => a.label.localeCompare(b.label, "es"));
-  const fields: FilterField[] = [
-    { key: "curso", label: "Curso", type: "select", options: courseOptions },
-    { key: "desde", label: "Desde", type: "date" },
-    { key: "hasta", label: "Hasta", type: "date" },
-    {
-      key: "asistencia",
-      label: "Asistencia",
-      type: "select",
-      options: [
-        { value: "menos60", label: "Menos de 60%" },
-        { value: "menos80", label: "Menos de 80%" },
-        { value: "80mas", label: "80% o más" },
-      ],
-    },
-  ];
-  const filters = parseFilters(sp, fields);
-
-  let sessions = all;
-  if (filters.curso) sessions = sessions.filter((s) => s.courseId === filters.curso);
-  if (filters.desde || filters.hasta) sessions = sessions.filter((s) => inDateRange(s.classDate, filters.desde, filters.hasta));
-  if (filters.asistencia === "menos60") sessions = sessions.filter((s) => pctOf(s) < 60);
-  if (filters.asistencia === "menos80") sessions = sessions.filter((s) => pctOf(s) < 80);
-  if (filters.asistencia === "80mas") sessions = sessions.filter((s) => pctOf(s) >= 80);
+  const fields = buildSessionFilterFields(all);
+  const { list: sessions, filters } = filterSessions(all, sp, fields);
 
   const sorted = sortRows(sessions, query, {
     date: (s) => s.classDate,
@@ -82,9 +69,12 @@ export async function AttendanceListPage({ sp, basePath, courseIds }: { sp: Sear
                 : `${all.length} clase${all.length !== 1 ? "s" : ""} registrada${all.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Link href={`${basePath}/new`} className={buttonVariants({ variant: "primary" })}>
-          + Tomar asistencia
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {exportHref && all.length > 0 && <ExportButton href={exportHref} searchParams={sp} />}
+          <Link href={`${basePath}/new`} className={buttonVariants({ variant: "primary" })}>
+            + Tomar asistencia
+          </Link>
+        </div>
       </div>
 
       {all.length === 0 ? (
