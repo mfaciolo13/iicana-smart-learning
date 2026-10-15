@@ -44,11 +44,14 @@ interface PaginationProps {
   basePath: string;
   searchParams: SearchParamsRecord;
   page: Page<unknown>;
+  /** Plural ("alumnos"). */
   noun?: string;
+  /** Singular ("alumno"), para cuando hay un solo resultado. */
+  nounSingular?: string;
 }
 
 /** Pie del listado: "Mostrando 1–25 de 120" y navegación por páginas (todo con enlaces, sin JavaScript). */
-export function Pagination({ basePath, searchParams, page, noun = "resultados" }: PaginationProps) {
+export function Pagination({ basePath, searchParams, page, noun = "resultados", nounSingular }: PaginationProps) {
   if (page.total === 0) return null;
   const href = (p: number) => tableHref(basePath, searchParams, { page: p === 1 ? undefined : String(p) });
   const linkBase = "inline-flex items-center justify-center min-w-8 h-8 px-2 rounded-lg text-xs font-medium transition-colors";
@@ -56,7 +59,7 @@ export function Pagination({ basePath, searchParams, page, noun = "resultados" }
   return (
     <nav className="flex flex-wrap items-center justify-between gap-3 pt-4 text-xs text-slate-500" aria-label="Paginación">
       <p>
-        Mostrando {page.from}–{page.to} de {page.total} {noun}
+        Mostrando {page.from}–{page.to} de {page.total} {page.total === 1 && nounSingular ? nounSingular : noun}
       </p>
       {page.pageCount > 1 && (
         <div className="flex items-center gap-1">

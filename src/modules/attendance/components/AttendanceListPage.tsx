@@ -181,7 +181,7 @@ export async function AttendanceListPage({ sp, basePath, courseIds }: { sp: Sear
                 </table>
               </div>
               <div className="px-1">
-                <Pagination basePath={basePath} searchParams={sp} page={page} noun="clases" />
+                <Pagination basePath={basePath} searchParams={sp} page={page} noun="clases" nounSingular="clase" />
               </div>
             </>
           )}
