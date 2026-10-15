@@ -91,20 +91,20 @@ export default defineConfig({
       // compilación on-demand ni la staleness del unstable_cache de `next dev`
       // que desincronizaban las listas sembradas en la corrida completa.
       //
-      // Usamos `cross-env` para inyectar RESEND_API_KEY en AMBOS subcomandos
-      // (build y start) de forma portable entre shells (Linux, macOS, Windows).
-      // El prefijo inline `VAR=val cmd` no se propaga al child process en todos
-      // los entornos CI; `cross-env` resuelve eso de forma determinista.
+      // RESEND_API_KEY se inyecta vía `env` (abajo), que Playwright aplica al
+      // proceso shell completo — abarca tanto `pnpm build` como `pnpm start`
+      // dentro del mismo comando. NO usamos cross-env en el command string para
+      // evitar el doble-spawn que impedía que la variable llegara al build.
       command: process.env.E2E_PROD
-        ? "cross-env RESEND_API_KEY=disabled-for-e2e pnpm build && cross-env RESEND_API_KEY=disabled-for-e2e pnpm start"
+        ? "pnpm build && pnpm start"
         : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // En producción NODE_ENV=production hace que se envíen emails reales; los
-      // neutralizamos para la suite (las actions atrapan el fallo de envío).
-      // `env` aquí solo aplica al proceso final (pnpm start), por eso también
-      // lo incluimos explícitamente en el comando de build mediante cross-env.
+      // `env` se fusiona con el entorno del child process que ejecuta `command`.
+      // Al ser el mismo proceso shell, la variable está disponible tanto durante
+      // `pnpm build` (collect/static-gen de /api/cron/class-reminder) como
+      // durante `pnpm start`, neutralizando el cliente Resend en ambas fases.
       env: { RESEND_API_KEY: "disabled-for-e2e" },
     },
   }),
