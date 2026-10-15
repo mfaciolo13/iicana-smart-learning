@@ -11,6 +11,7 @@ import { removalMode } from "./lib/removal";
 import { sendInvitationEmail } from "@/lib/email";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 export async function createStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const role = await requireRole(["director", "administrativo"]);
@@ -90,6 +91,7 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
   }).catch(() => {});
 
   updateTag("students");
+  refreshAnalytics();
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
   return { success: "Alumno registrado correctamente", redirectTo: portalPath(role, "/students") };
@@ -136,6 +138,7 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
   }
 
   updateTag("students");
+  refreshAnalytics();
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
   return { success: "Alumno actualizado", redirectTo: portalPath(role, `/students/${parsed.data.id}`) };
@@ -151,6 +154,7 @@ export async function toggleAccessRestrictedAction(_prev: ActionResult, formData
   await setStudentAccessRestricted(id, restrict);
 
   updateTag("students");
+  refreshAnalytics();
   revalidatePath(`/director/students/${id}`);
   revalidatePath(`/administrativo/students/${id}`);
   return { success: restrict ? "Acceso restringido" : "Restricción levantada" };
@@ -181,6 +185,7 @@ export async function deleteStudentAction(_prev: ActionResult, formData: FormDat
   }
 
   updateTag("students");
+  refreshAnalytics();
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
   return {

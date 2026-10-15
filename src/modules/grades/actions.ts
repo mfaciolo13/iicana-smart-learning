@@ -10,6 +10,7 @@ import { getGradeAlertInfo } from "./services/grades.service";
 import { sendAlert } from "@/lib/notifications/send-alert";
 import { sendGradePublishedEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 const EVALUATION_TYPE_LABELS: Record<string, string> = {
   parcial: "Parcial",
@@ -83,6 +84,7 @@ export async function createGradeAction(_prev: ActionResult, formData: FormData)
 
   await notifyGradePublished(data.id);
 
+  refreshAnalytics();
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
   const requested = formData.get("redirectTo") as string | null;
@@ -133,6 +135,7 @@ export async function updateGradeAction(_prev: ActionResult, formData: FormData)
     await notifyGradePublished(parsed.data.id);
   }
 
+  refreshAnalytics();
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
   return { success: "Nota actualizada", redirectTo: role === "director" ? `/director/grades/${parsed.data.id}` : portalPath(role, "/grades") };
@@ -150,6 +153,7 @@ export async function deleteGradeAction(_prev: ActionResult, formData: FormData)
 
   if (error) return { error: error.message };
 
+  refreshAnalytics();
   revalidatePath("/director/grades");
   revalidatePath("/profesor/grades");
   return { success: "Nota eliminada", redirectTo: portalPath(role, "/grades") };

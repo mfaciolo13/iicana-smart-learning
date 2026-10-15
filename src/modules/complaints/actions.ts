@@ -5,6 +5,7 @@ import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { createComplaintSchema, updateComplaintStatusSchema } from "./schemas";
 import { createComplaint, updateComplaintStatus } from "./services/complaints.service";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 export async function createComplaintAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["alumno", "profesor", "administrativo", "director"]);
@@ -31,6 +32,7 @@ export async function createComplaintAction(_prev: ActionResult, formData: FormD
 
   await createComplaint(user.id, parsed.data);
 
+  refreshAnalytics();
   revalidatePath("/alumno/complaints");
   revalidatePath("/director/complaints");
   revalidatePath("/administrativo/complaints");
@@ -64,6 +66,7 @@ export async function createComplaintAsProfesorAction(_prev: ActionResult, formD
 
   await createComplaint(user.id, parsed.data);
 
+  refreshAnalytics();
   revalidatePath("/profesor/complaints");
   revalidatePath("/director/complaints");
   revalidatePath("/administrativo/complaints");
@@ -95,11 +98,13 @@ export async function updateComplaintStatusAction(_prev: ActionResult, formData:
 
   await updateComplaintStatus(parsed.data.id, parsed.data.status);
 
+  refreshAnalytics();
   revalidatePath("/director/complaints");
   revalidatePath("/administrativo/complaints");
   revalidatePath(`/director/complaints/${parsed.data.id}`);
   revalidatePath(`/administrativo/complaints/${parsed.data.id}`);
   // El contador de reclamos abiertos de los dashboards depende del estado.
+  refreshAnalytics();
   revalidatePath("/director");
   revalidatePath("/administrativo");
   return { success: "Estado actualizado" };

@@ -20,6 +20,7 @@ import { portalPath } from "@/lib/portal";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const role = await requireRole(["director", "administrativo"]);
@@ -60,6 +61,7 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
     throw e;
   }
 
+  refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   return { success: "Pago registrado correctamente", redirectTo: portalPath(role, `/payments/${payment.id}`) };
@@ -99,6 +101,7 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
     return { error: "No se pudo registrar el pago. Intentá de nuevo." };
   }
 
+  refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   return { success: "Pago registrado como abonado" };
@@ -133,6 +136,7 @@ export async function updatePaymentAction(_prev: ActionResult, formData: FormDat
     return { error: "Solo se puede editar un pago pendiente o vencido. Anulá el pago y registrá uno nuevo." };
   }
 
+  refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   return { success: "Pago actualizado correctamente" };
@@ -157,6 +161,7 @@ export async function cancelPaymentAction(_prev: ActionResult, formData: FormDat
     return { error: "El pago ya estaba anulado" };
   }
 
+  refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   revalidatePath("/alumno/payments");
@@ -186,6 +191,7 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
 
   await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
 
+  refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   return { success: "Estado actualizado" };
@@ -194,6 +200,7 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
 export async function markOverduePaymentsAction(_prev: ActionResult): Promise<ActionResult> {
   await requireRole(["director", "administrativo"]);
   await markOverduePayments();
+  refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   return { success: "Pagos vencidos actualizados" };
@@ -237,6 +244,7 @@ export async function runOverdueChecksAction(_prev: ActionResult, _formData?: Fo
     suspended++;
   }
 
+  refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   const parts: string[] = [];

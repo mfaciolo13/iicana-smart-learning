@@ -9,6 +9,7 @@ import { createTeacher, updateTeacher, deleteTeacher, dniExists } from "./servic
 import { sendInvitationEmail } from "@/lib/email";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 export async function createTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director"]);
@@ -86,6 +87,7 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
   }).catch(() => {});
 
   updateTag("teachers");
+  refreshAnalytics();
   revalidatePath("/director/teachers");
   return { success: "Docente registrado correctamente", redirectTo: "/director/teachers" };
 }
@@ -129,6 +131,7 @@ export async function updateTeacherAction(_prev: ActionResult, formData: FormDat
   }
 
   updateTag("teachers");
+  refreshAnalytics();
   revalidatePath("/director/teachers");
   return { success: "Docente actualizado", redirectTo: `/director/teachers/${parsed.data.id}` };
 }
@@ -142,6 +145,7 @@ export async function deleteTeacherAction(_prev: ActionResult, formData: FormDat
   await deleteTeacher(id);
 
   updateTag("teachers");
+  refreshAnalytics();
   revalidatePath("/director/teachers");
   return { success: "Docente eliminado", redirectTo: "/director/teachers" };
 }

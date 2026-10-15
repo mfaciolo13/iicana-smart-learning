@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth/helpers";
 import { personNameField, phoneField } from "@/lib/validation";
 import { createCampaign, createInquiry, updateInquiryStatus } from "./services/marketing.service";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 const campaignSchema = z.object({
   name: z.string().min(2, "Nombre requerido"),
@@ -67,6 +68,7 @@ export async function createCampaignAction(_prev: ActionResult, formData: FormDa
 
   await createCampaign(parsed.data);
 
+  refreshAnalytics();
   revalidatePath("/director/marketing");
   return { success: "Campaña creada correctamente", redirectTo: "/director/marketing" };
 }
@@ -98,6 +100,7 @@ export async function createInquiryAction(_prev: ActionResult, formData: FormDat
 
   await createInquiry({ ...parsed.data, email: parsed.data.email || undefined });
 
+  refreshAnalytics();
   revalidatePath(`/director/marketing/${raw.campaignId}`);
   return { success: "Consulta registrada" };
 }
@@ -115,6 +118,7 @@ export async function updateInquiryStatusAction(_prev: ActionResult, formData: F
 
   await updateInquiryStatus(id, status);
 
+  refreshAnalytics();
   revalidatePath(`/director/marketing/${campaignId}`);
   return { success: "Estado actualizado" };
 }
