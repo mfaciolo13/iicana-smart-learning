@@ -25,6 +25,8 @@ export interface PaymentListItem {
   paidAt: Date | null;
   status: PaymentStatus;
   receiptNumber: string | null;
+  /** Sólo lo trae el listado general (filtro por método de pago). */
+  method?: "cash" | "transfer" | "card" | null;
   studentName: string;
   studentDni: string;
   isOverdue: boolean;

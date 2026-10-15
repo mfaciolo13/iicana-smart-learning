@@ -1,4 +1,8 @@
+import { Suspense } from "react";
 import { getReportsSummary } from "@/modules/reports/services/dashboard.service";
+import { ChartSkeleton } from "@/components/charts/ChartCard";
+import { FinancePanel } from "@/components/analytics/FinancePanel";
+import { DelinquencySection } from "@/components/analytics/DelinquencySection";
 import { FileSpreadsheet, CalendarCheck, Star, CreditCard } from "lucide-react";
 
 export default async function ReportsPage() {
@@ -102,6 +106,15 @@ export default async function ReportsPage() {
             </div>
           );
         })}
+      </div>
+
+      <div className="mt-8 space-y-5">
+        <Suspense fallback={<ChartSkeleton />}>
+          <FinancePanel paymentsHref="/administrativo/payments" />
+        </Suspense>
+        <Suspense fallback={<ChartSkeleton height={160} />}>
+          <DelinquencySection studentsHref="/administrativo/students" />
+        </Suspense>
       </div>
 
       <div className="mt-8 bg-slate-50 rounded-xl border border-slate-200 p-5">
