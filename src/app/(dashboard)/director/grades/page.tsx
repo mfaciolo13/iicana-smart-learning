@@ -18,6 +18,7 @@ export default async function GradesPage({
       grades={grades}
       courseNames={(coursesData ?? []).map((c) => c.name)}
       newHref="/director/grades/new"
+      exportHref="/api/reports/grades"
     />
   );
 }
