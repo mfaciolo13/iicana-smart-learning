@@ -5,6 +5,11 @@ import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { markOverduePaymentsAction, runOverdueChecksAction } from "@/modules/payments/actions";
 import { effectiveStatus, summarizePayments } from "@/modules/payments/lib/buckets";
+import { paginate, parseTableQuery, sortRows } from "@/lib/table";
+import { Pagination } from "@/components/ui/TableControls";
+
+const BASE_PATH = "/administrativo/payments";
+const STATUS_ORDER = ["overdue", "pending", "suspended", "paid", "cancelled"];
 
 const STATUS_TABS = [
   { value: "all", label: "Todos" },
@@ -18,9 +23,15 @@ const STATUS_TABS = [
 export default async function PaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; sort?: string; dir?: string; page?: string }>;
 }) {
-  const { status } = await searchParams;
+  const sp = await searchParams;
+  const { status } = sp;
+  const query = parseTableQuery(sp, {
+    sortable: ["student", "amount", "due", "receipt", "status"],
+    defaultSort: "due",
+    defaultDir: "desc",
+  });
   const activeTab = status ?? "all";
 
   const allPayments = await getPayments();
@@ -29,6 +40,14 @@ export default async function PaymentsPage({
     activeTab === "all" ? allPayments : allPayments.filter((p) => effectiveStatus(p) === activeTab);
 
   const summary = summarizePayments(allPayments);
+  const sorted = sortRows(paymentsList, query, {
+    student: (p) => p.studentName,
+    amount: (p) => parseFloat(p.amount),
+    due: (p) => p.dueDate,
+    receipt: (p) => p.receiptNumber,
+    status: (p) => STATUS_ORDER.indexOf(effectiveStatus(p)),
+  });
+  const page = paginate(sorted, query);
 
   return (
     <div>
@@ -90,7 +109,8 @@ export default async function PaymentsPage({
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-4">
-        <PaymentList payments={paymentsList} showNewLink basePath="/administrativo/payments" />
+        <PaymentList payments={page.rows} showNewLink basePath={BASE_PATH} sort={{ basePath: BASE_PATH, searchParams: sp, query }} />
+        <Pagination basePath={BASE_PATH} searchParams={sp} page={page} noun="pagos" />
       </div>
     </div>
   );
