@@ -2,6 +2,7 @@
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { AssessmentListItem, AssessmentStatus } from "../types";
+import { Th, type SortContext } from "@/components/ui/TableControls";
 
 const STATUS_CONFIG: Record<AssessmentStatus, { label: string; variant: "info" | "success" | "neutral" | "warning" }> = {
   draft: { label: "Borrador", variant: "warning" },
@@ -12,9 +13,11 @@ const STATUS_CONFIG: Record<AssessmentStatus, { label: string; variant: "info" |
 interface AssessmentListProps {
   assessments: AssessmentListItem[];
   basePath?: string;
+  /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
+  sort?: SortContext;
 }
 
-export function AssessmentList({ assessments, basePath = "/director/assessments" }: AssessmentListProps) {
+export function AssessmentList({ assessments, basePath = "/director/assessments", sort }: AssessmentListProps) {
   if (assessments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -60,11 +63,11 @@ export function AssessmentList({ assessments, basePath = "/director/assessments"
       <table className="w-full text-sm" role="table">
         <thead>
           <tr className="border-b-2 border-slate-200">
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Evaluación</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden sm:table-cell">Curso</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Preguntas</th>
-            <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Intentos</th>
+            <Th label="Evaluación" field="title" sort={sort} />
+            <Th label="Curso" field="course" sort={sort} className="hidden sm:table-cell" />
+            <Th label="Estado" field="status" sort={sort} />
+            <Th label="Preguntas" field="questions" sort={sort} className="hidden md:table-cell" />
+            <Th label="Intentos" field="attempts" sort={sort} className="hidden md:table-cell" />
             <th className="py-3" />
           </tr>
         </thead>

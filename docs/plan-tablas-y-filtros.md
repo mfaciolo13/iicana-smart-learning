@@ -173,3 +173,12 @@ Total de las fases 1 a 5: unos **9 a 13 días de trabajo**.
   - Notas: curso, tipo de evaluación, aprobadas/desaprobadas, fechas y búsqueda por alumno o DNI (director, administrativo y profesor comparten un solo componente).
   - Reclamos: tipo, quién reclama, fechas y búsqueda por usuario o texto (director y administrativo comparten un solo componente).
   - Falta la parte 2: autoevaluaciones, material, marketing, promociones, cierre de ciclo, evaluación docente y las vistas del alumno.
+- **Fase 2, parte 2**: marketing (campañas), promociones, cierre de ciclo, evaluación docente, autoevaluaciones y material con orden y filtros; marketing, promociones, cierre de ciclo y material además paginan.
+  - Marketing: canal, vigencia, nivel de conversión.
+  - Promociones y cierre de ciclo: curso, nivel, estado o resultado, y búsqueda por alumno o DNI.
+  - Evaluación docente: rango de calificación, con/sin observaciones.
+  - Autoevaluaciones (director y profesor, un solo componente): curso, estado, fechas, búsqueda por tema.
+  - Material (director, profesor y alumno, un solo componente): tipo de archivo, quién lo subió, fechas, búsqueda.
+  - Quedan sin orden ni filtros las consultas de una campaña y las vistas personales del alumno (asistencia, notas y pagos), que tienen pocas filas por persona.
+- **Verificación en producción de la parte 1 de la fase 2** (director): cursos (nivel y cupo), notas (aprobadas ordenadas por nota), reclamos (estado y tipo), usuarios (rol y orden por alta, 28 usuarios paginados de a 25) y docentes responden bien.
+- **Hallazgo de datos**: hay 16 perfiles con rol alumno pero sólo 11 alumnos con legajo. Los 5 restantes son perfiles de prueba sin alumno asociado ("!!!!", "dadasdsa dasdasd", dos "amiel ferreyra" repetidos...). Conviene limpiarlos antes del lanzamiento.
