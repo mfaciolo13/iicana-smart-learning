@@ -17,6 +17,7 @@ export async function getPayments(status?: string): Promise<PaymentListItem[]> {
       paidAt: payments.paidAt,
       status: payments.status,
       receiptNumber: payments.receiptNumber,
+      method: payments.method,
       studentName: profiles.fullName,
       studentDni: students.dni,
     })

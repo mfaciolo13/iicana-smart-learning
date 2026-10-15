@@ -3,6 +3,7 @@ import { Eye, ChevronRight } from "lucide-react";
 import type { PaymentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 import { formatDateAR } from "@/lib/format";
+import { SortableTh, type SortContext } from "@/components/ui/TableControls";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   pending: { label: "Pendiente", variant: "warning" },
@@ -16,9 +17,18 @@ interface PaymentListProps {
   payments: PaymentListItem[];
   showNewLink?: boolean;
   basePath?: string;
+  /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
+  sort?: SortContext;
 }
 
-export function PaymentList({ payments, showNewLink = false, basePath = "/director/payments" }: PaymentListProps) {
+const TH = "text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4";
+
+function Th({ label, field, sort, className }: { label: string; field: string; sort?: SortContext; className?: string }) {
+  if (sort) return <SortableTh label={label} field={field} ctx={sort} className={className} />;
+  return <th className={`${TH} ${className ?? ""}`}>{label}</th>;
+}
+
+export function PaymentList({ payments, showNewLink = false, basePath = "/director/payments", sort }: PaymentListProps) {
   if (payments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -80,11 +90,11 @@ export function PaymentList({ payments, showNewLink = false, basePath = "/direct
         <table className="w-full text-sm" role="table">
           <thead>
             <tr className="border-b-2 border-brand-700">
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alumno</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Monto</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Vencimiento</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Recibo</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
+              <Th label="Alumno" field="student" sort={sort} />
+              <Th label="Monto" field="amount" sort={sort} />
+              <Th label="Vencimiento" field="due" sort={sort} />
+              <Th label="Recibo" field="receipt" sort={sort} className="hidden md:table-cell" />
+              <Th label="Estado" field="status" sort={sort} />
               <th className="py-3" />
             </tr>
           </thead>

@@ -8,7 +8,8 @@ import {
   payments,
   courses,
 } from "@/lib/drizzle/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { todayInstitute } from "@/lib/validation";
 
 export async function getAttendanceReport() {
   return db
@@ -93,4 +94,57 @@ export async function getReportsSummary() {
     .from(payments);
 
   return { attendanceSummary, gradesSummary, paymentsSummary };
+}
+
+export interface DelinquentStudent {
+  studentId: string;
+  studentName: string;
+  studentDni: string;
+  email: string;
+  phone: string | null;
+  /** Cuotas vencidas o suspendidas sin cobrar. */
+  overdueCount: number;
+  amountOwed: number;
+  oldestDueDate: string;
+  /** Días de atraso de la cuota más vieja (hoy - vencimiento). */
+  daysLate: number;
+  accessRestricted: boolean;
+}
+
+/**
+ * Alumnos con deuda vencida (SCRUM-285: sin cobrar y con vencimiento anterior a hoy, más las
+ * cuotas suspendidas), de mayor a menor monto adeudado.
+ */
+export async function getDelinquencyReport(): Promise<DelinquentStudent[]> {
+  const today = todayInstitute();
+  const rows = await db
+    .select({
+      studentId: students.id,
+      studentName: profiles.fullName,
+      studentDni: students.dni,
+      email: profiles.email,
+      phone: profiles.phone,
+      accessRestricted: students.accessRestricted,
+      overdueCount: sql<number>`cast(count(*) as int)`,
+      amountOwed: sql<string>`coalesce(sum(${payments.amount}), 0)::text`,
+      oldestDueDate: sql<string>`min(${payments.dueDate})::text`,
+    })
+    .from(payments)
+    .innerJoin(students, eq(payments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .where(
+      and(
+        inArray(payments.status, ["pending", "overdue", "suspended"]),
+        or(lt(payments.dueDate, today), eq(payments.status, "suspended"))
+      )
+    )
+    .groupBy(students.id, profiles.fullName, students.dni, profiles.email, profiles.phone, students.accessRestricted)
+    .orderBy(desc(sql`sum(${payments.amount})`), profiles.fullName);
+
+  const todayMs = Date.parse(`${today}T12:00:00Z`);
+  return rows.map((r) => ({
+    ...r,
+    amountOwed: Number(r.amountOwed),
+    daysLate: Math.max(0, Math.round((todayMs - Date.parse(`${r.oldestDueDate}T12:00:00Z`)) / 86_400_000)),
+  }));
 }

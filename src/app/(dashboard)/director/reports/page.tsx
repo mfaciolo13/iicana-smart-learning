@@ -1,4 +1,9 @@
+import { Suspense } from "react";
 import { getReportsSummary } from "@/modules/reports/services/dashboard.service";
+import { ChartSkeleton } from "@/components/charts/ChartCard";
+import { FinancePanel } from "@/components/analytics/FinancePanel";
+import { AcademicPanel } from "@/components/analytics/AcademicPanel";
+import { DelinquencySection } from "@/components/analytics/DelinquencySection";
 import { FileSpreadsheet, CalendarCheck, Star, CreditCard, Stethoscope, TrendingUp } from "lucide-react";
 import {
   getRiskBreakdown,
@@ -142,6 +147,19 @@ export default async function ReportsPage() {
             </div>
           );
         })}
+      </div>
+
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3 mt-10">Tendencias — últimos 6 meses</h3>
+      <div className="space-y-5">
+        <Suspense fallback={<ChartSkeleton />}>
+          <FinancePanel paymentsHref="/director/payments" />
+        </Suspense>
+        <Suspense fallback={<ChartSkeleton />}>
+          <AcademicPanel parts={["attendance", "grades"]} />
+        </Suspense>
+        <Suspense fallback={<ChartSkeleton height={160} />}>
+          <DelinquencySection studentsHref="/director/students" />
+        </Suspense>
       </div>
 
       {/* ─── Diagnóstico: por qué pasa ────────────────────────────────── */}
