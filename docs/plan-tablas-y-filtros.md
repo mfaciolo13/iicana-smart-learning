@@ -165,3 +165,4 @@ Total de las fases 1 a 5: unos **9 a 13 días de trabajo**.
 - **Fase 5 (páginas compartidas)**, parcial: esos tres listados ya se escriben una sola vez (`StudentsListPage`, `PaymentsListPage`, `EnrollmentsListPage`) y las páginas de director y administrativo son de 3 líneas. Faltan reclamos, notas y asistencia.
 - Pendiente: Fase 2 (orden y paginación en los otros 17 listados), Fase 3 (asistencia sin tope de 1500), Fase 4 (Excel con filtros) y Fase 6.
 - Decisiones aplicadas por defecto: 25 filas por página; pagos abre en "Todos".
+- **Fase 3 (asistencia sin tope)**: hecha. El listado ya no trae 1500 registros de alumno y muestra sólo las 30 clases más nuevas (las anteriores eran inalcanzables): las clases se agregan en SQL, se pueden filtrar por curso, fechas y porcentaje de asistencia, ordenar por cualquier columna y paginar. Un solo componente (`AttendanceListPage`) para director, administrativo y profesor; el docente ve sólo sus cursos.
