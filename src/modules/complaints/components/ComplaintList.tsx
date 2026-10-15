@@ -2,6 +2,7 @@
 import { Eye, ChevronRight } from "lucide-react";
 import type { ComplaintItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
+import { Th, type SortContext } from "@/components/ui/TableControls";
 
 const TYPE_CONFIG: Record<string, { label: string }> = {
   academic: { label: "Académico" },
@@ -30,9 +31,11 @@ interface ComplaintListProps {
   newLink?: string;
   /** Prefijo del detalle según el portal (por defecto, director). */
   detailBase?: string;
+  /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
+  sort?: SortContext;
 }
 
-export function ComplaintList({ complaints, adminView = false, newLink, detailBase = "/director/complaints" }: ComplaintListProps) {
+export function ComplaintList({ complaints, adminView = false, newLink, detailBase = "/director/complaints", sort }: ComplaintListProps) {
   if (complaints.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -99,12 +102,12 @@ export function ComplaintList({ complaints, adminView = false, newLink, detailBa
           <thead>
             <tr className="border-b-2 border-brand-700">
               {adminView && (
-                <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Usuario</th>
+                <Th label="Usuario" field="user" sort={sort} />
               )}
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Tipo</th>
+              <Th label="Tipo" field="type" sort={sort} />
               <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Descripción</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Estado</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Fecha</th>
+              <Th label="Estado" field="status" sort={sort} />
+              <Th label="Fecha" field="date" sort={sort} />
               <th className="py-3" />
             </tr>
           </thead>

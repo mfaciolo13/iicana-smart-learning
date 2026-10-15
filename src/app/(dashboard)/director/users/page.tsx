@@ -6,8 +6,15 @@ import { asc } from "drizzle-orm";
 import { UserList } from "@/modules/users/components/UserList";
 import type { UserListItem } from "@/modules/users/types";
 import { SearchInput } from "@/components/ui/SearchInput";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FilteredEmpty } from "@/components/ui/FilteredEmpty";
+import { Pagination } from "@/components/ui/TableControls";
 import { matchesSearch } from "@/lib/search";
+import { paginate, parseTableQuery, sortRows, tableHref } from "@/lib/table";
+import { inDateRange, parseFilters, type FilterField } from "@/lib/filters";
 
+const BASE_PATH = "/director/users";
+const ROLE_ORDER = ["director", "administrativo", "profesor", "alumno"];
 const ROLE_TABS = [
   { value: "all", label: "Todos" },
   { value: "director", label: "Directores" },
@@ -16,13 +23,26 @@ const ROLE_TABS = [
   { value: "alumno", label: "Alumnos" },
 ];
 
+const FIELDS: FilterField[] = [
+  { key: "desde", label: "Alta desde", type: "date" },
+  { key: "hasta", label: "Alta hasta", type: "date" },
+];
+
+/** Día (YYYY-MM-DD) en hora del instituto, para filtrar por rango sin corrimientos. */
+function instituteDay(d: Date): string {
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Argentina/Cordoba" });
+}
+
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const { q, role } = await searchParams;
-  const activeRole = role ?? "all";
+  const sp = await searchParams;
+  const { q } = sp;
+  const activeRole = ROLE_TABS.some((t) => t.value === sp.role) ? (sp.role as string) : "all";
+  const query = parseTableQuery(sp, { sortable: ["name", "email", "role", "created"], defaultSort: "name" });
+  const filters = parseFilters(sp, FIELDS);
 
   const rows = await db
     .select({
@@ -45,14 +65,18 @@ export default async function UsersPage({
     createdAt: new Date(r.createdAt),
   }));
 
-  const searched = q
-    ? allUsers.filter(
-        (u) => matchesSearch(u.fullName, q) || matchesSearch(u.email, q)
-      )
-    : allUsers;
+  let filtered = q ? allUsers.filter((u) => matchesSearch(u.fullName, q) || matchesSearch(u.email, q)) : allUsers;
+  if (activeRole !== "all") filtered = filtered.filter((u) => u.role === activeRole);
+  if (filters.desde || filters.hasta) filtered = filtered.filter((u) => inDateRange(instituteDay(u.createdAt), filters.desde, filters.hasta));
 
-  const filtered =
-    activeRole === "all" ? searched : searched.filter((u) => u.role === activeRole);
+  const sorted = sortRows(filtered, query, {
+    name: (u) => u.fullName,
+    email: (u) => u.email,
+    role: (u) => ROLE_ORDER.indexOf(u.role),
+    created: (u) => u.createdAt.getTime(),
+  });
+  const page = paginate(sorted, query);
+  const hasFilters = Boolean(q) || Object.keys(filters).length > 0 || activeRole !== "all";
 
   const counts = {
     director: allUsers.filter((u) => u.role === "director").length,
@@ -95,33 +119,34 @@ export default async function UsersPage({
       </div>
 
       {/* Search + role filter */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row gap-3 mb-3">
         <SearchInput placeholder="Buscar por nombre o email..." resultCount={filtered.length} />
 
         <div className="flex flex-wrap gap-1 bg-slate-100 rounded-lg p-1 w-fit">
-          {ROLE_TABS.map((tab) => {
-            const params = new URLSearchParams();
-            if (q) params.set("q", q);
-            if (tab.value !== "all") params.set("role", tab.value);
-            return (
-              <a
-                key={tab.value}
-                href={`/director/users${params.toString() ? `?${params}` : ""}`}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  activeRole === tab.value
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                {tab.label}
-              </a>
-            );
-          })}
+          {ROLE_TABS.map((tab) => (
+            <Link
+              key={tab.value}
+              href={tableHref(BASE_PATH, sp, { role: tab.value === "all" ? undefined : tab.value, page: undefined })}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                activeRole === tab.value ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          ))}
         </div>
       </div>
+      <FilterBar fields={FIELDS} className="mb-4" />
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-4 sm:px-6">
-        <UserList users={filtered} />
+        {hasFilters && filtered.length === 0 ? (
+          <FilteredEmpty clearHref={BASE_PATH} noun="usuario" />
+        ) : (
+          <>
+            <UserList users={page.rows} sort={{ basePath: BASE_PATH, searchParams: sp, query }} />
+            <Pagination basePath={BASE_PATH} searchParams={sp} page={page} noun="usuarios" nounSingular="usuario" />
+          </>
+        )}
       </div>
     </div>
   );
