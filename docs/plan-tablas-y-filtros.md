@@ -152,3 +152,16 @@ Total de las fases 1 a 5: unos **9 a 13 días de trabajo**.
 2. **Filtro por defecto en pagos:** ¿abrir mostrando todos o sólo los vencidos y pendientes?
 3. **Alcance de la Fase 5:** unificar las páginas de director y administrativo es la mejora más grande de mantenimiento, pero toca muchos archivos. ¿La hacemos ahora o después de cerrar los bugs?
 4. **Vistas guardadas y acciones en lote (Fase 7):** ¿las querés para la defensa de la tesis o quedan como trabajo futuro?
+
+---
+
+## 8. Avance
+
+- **Fase 0 (orden y paginación)** y **Fase 1 (filtros)**: hechas para **alumnos, pagos e inscripciones**.
+  - Alumnos: nivel, estado, curso, con/sin deuda vencida, más la búsqueda.
+  - Pagos: pestañas por estado, método de pago, con/sin recibo, vencimiento desde/hasta, y búsqueda por alumno, DNI o recibo (antes no existía).
+  - Inscripciones: estado, curso, nivel, fecha desde/hasta, más la búsqueda (ahora sin distinguir acentos).
+  - Todos los filtros quedan en la URL, se muestran como chips con una "x", tienen "Limpiar filtros" y un estado vacío propio ("ningún resultado con estos filtros").
+- **Fase 5 (páginas compartidas)**, parcial: esos tres listados ya se escriben una sola vez (`StudentsListPage`, `PaymentsListPage`, `EnrollmentsListPage`) y las páginas de director y administrativo son de 3 líneas. Faltan reclamos, notas y asistencia.
+- Pendiente: Fase 2 (orden y paginación en los otros 17 listados), Fase 3 (asistencia sin tope de 1500), Fase 4 (Excel con filtros) y Fase 6.
+- Decisiones aplicadas por defecto: 25 filas por página; pagos abre en "Todos".

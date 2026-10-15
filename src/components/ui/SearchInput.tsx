@@ -32,6 +32,8 @@ export function SearchInput({ placeholder, resultCount, className }: SearchInput
     const trimmed = next.trim();
     if (trimmed) nextParams.set("q", trimmed);
     else nextParams.delete("q");
+    // Una búsqueda nueva vuelve a la primera página.
+    nextParams.delete("page");
     const qs = nextParams.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
@@ -43,6 +45,14 @@ export function SearchInput({ placeholder, resultCount, className }: SearchInput
   }
 
   useEffect(() => () => clearTimeout(timer.current), []);
+
+  // Si la búsqueda cambia desde afuera (por ejemplo, al quitar su chip de filtro), el campo la sigue.
+  // Se ajusta durante el render, que es el patrón recomendado en lugar de un efecto.
+  const [lastApplied, setLastApplied] = useState(applied);
+  if (applied !== lastApplied) {
+    setLastApplied(applied);
+    setValue(applied);
+  }
 
   return (
     <div className={className}>
