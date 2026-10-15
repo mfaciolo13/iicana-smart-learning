@@ -1,17 +1,39 @@
 ﻿import Link from "next/link";
 import { getEnrollments } from "@/modules/enrollments/services/enrollments.service";
 import { EnrollmentList } from "@/modules/enrollments/components/EnrollmentList";
+import { paginate, parseTableQuery, sortRows } from "@/lib/table";
+import { Pagination } from "@/components/ui/TableControls";
+import { LEVEL_ORDER } from "@/lib/level-labels";
+
 import { buttonVariants } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
+
+const BASE_PATH = "/director/enrollments";
+const STATUS_ORDER = ["active", "completed", "withdrawn"];
 
 export default async function EnrollmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string; dir?: string; page?: string }>;
 }) {
-  const { q } = await searchParams;
+  const sp = await searchParams;
+  const { q } = sp;
+  const query = parseTableQuery(sp, {
+    sortable: ["student", "dni", "course", "level", "date", "status"],
+    defaultSort: "date",
+    defaultDir: "desc",
+  });
 
   const enrollments = await getEnrollments(q);
+  const sorted = sortRows(enrollments, query, {
+    student: (e) => e.studentName,
+    dni: (e) => e.studentDni,
+    course: (e) => e.courseName,
+    level: (e) => LEVEL_ORDER.indexOf(e.courseLevel),
+    date: (e) => new Date(e.enrolledAt).getTime(),
+    status: (e) => STATUS_ORDER.indexOf(e.status),
+  });
+  const page = paginate(sorted, query);
   const active = enrollments.filter((e) => e.status === "active").length;
 
   return (
@@ -31,7 +53,8 @@ export default async function EnrollmentsPage({
       <SearchInput placeholder="Buscar por alumno, DNI o curso..." resultCount={enrollments.length} className="mb-4" />
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-4 sm:px-6">
-        <EnrollmentList enrollments={enrollments} showNewLink />
+        <EnrollmentList enrollments={page.rows} showNewLink basePath={BASE_PATH} sort={{ basePath: BASE_PATH, searchParams: sp, query }} />
+        <Pagination basePath={BASE_PATH} searchParams={sp} page={page} noun="inscripciones" />
       </div>
     </div>
   );
