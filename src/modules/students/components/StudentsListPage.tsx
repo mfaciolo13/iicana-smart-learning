@@ -100,7 +100,7 @@ export async function StudentsListPage({ sp, basePath }: { sp: SearchParams; bas
         ) : (
           <>
             <StudentList students={page.rows} basePath={basePath} sort={{ basePath, searchParams: sp, query }} />
-            <Pagination basePath={basePath} searchParams={sp} page={page} noun="alumnos" />
+            <Pagination basePath={basePath} searchParams={sp} page={page} noun="alumnos" nounSingular="alumno" />
           </>
         )}
       </div>
