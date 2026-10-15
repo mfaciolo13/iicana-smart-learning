@@ -13,6 +13,7 @@ import { sendAbsenceAlertEmail, sendTeacherAttendanceAlertEmail } from "@/lib/em
 import { checkAndTriggerDiagnosticAssessment } from "@/modules/assessments/services/auto-assessment.service";
 import type { ActionResult } from "@/lib/action-result";
 import { formatDateAR } from "@/lib/format";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 const STATUSES = ["present", "absent", "late"] as const;
 type AttendanceStatus = (typeof STATUSES)[number];
@@ -125,6 +126,7 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
     }
   });
 
+  refreshAnalytics();
   revalidatePath("/director/attendance");
   revalidatePath("/profesor/attendance");
   revalidatePath("/administrativo/attendance");
@@ -169,6 +171,7 @@ export async function updateAttendanceAction(_prev: ActionResult, formData: Form
     return { error: "No se encontraron registros de asistencia para esa fecha" };
   }
 
+  refreshAnalytics();
   revalidatePath("/director/attendance");
   revalidatePath("/profesor/attendance");
   revalidatePath("/administrativo/attendance");
@@ -191,6 +194,7 @@ export async function deleteAttendanceSessionAction(_prev: ActionResult, formDat
     return { error: "No se encontraron registros de asistencia para esa fecha" };
   }
 
+  refreshAnalytics();
   revalidatePath("/director/attendance");
   revalidatePath("/profesor/attendance");
   revalidatePath("/administrativo/attendance");

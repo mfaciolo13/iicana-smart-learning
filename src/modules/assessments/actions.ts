@@ -28,6 +28,7 @@ import {
 import { parseQuestions, isTimeoutError, AI_TIMEOUT_MS, AI_MAX_TOKENS, MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY } from "./lib/questions";
 import type { QuizQuestion, AnswerFeedback } from "./types";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 // MIME types supported by Claude's API
 const CLAUDE_PDF_MIME = "application/pdf";
@@ -177,6 +178,7 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
 
+  refreshAnalytics();
   revalidatePath("/director/assessments");
   redirect(`/director/assessments/${assessment.id}`);
 }
@@ -209,6 +211,7 @@ export async function publishAssessmentAction(_prev: ActionResult, formData: For
     }
   }
 
+  refreshAnalytics();
   revalidatePath("/director/assessments");
   revalidatePath(`/director/assessments/${parsed.data.id}`);
   redirect(`/director/assessments/${parsed.data.id}`);
@@ -222,6 +225,7 @@ export async function archiveAssessmentAction(_prev: ActionResult, formData: For
 
   await archiveAssessment(id);
 
+  refreshAnalytics();
   revalidatePath("/director/assessments");
   revalidatePath(`/director/assessments/${id}`);
   redirect(`/director/assessments/${id}`);
@@ -318,6 +322,7 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional, con este f
 
   const assessment = await createAssessmentDraft(parsed.data, user.id, questions);
 
+  refreshAnalytics();
   revalidatePath("/profesor/assessments");
   redirect(`/profesor/assessments/${assessment.id}`);
 }
@@ -354,6 +359,7 @@ export async function publishAssessmentProfesorAction(_prev: ActionResult, formD
     }
   }
 
+  refreshAnalytics();
   revalidatePath("/profesor/assessments");
   revalidatePath(`/profesor/assessments/${parsed.data.id}`);
   redirect(`/profesor/assessments/${parsed.data.id}`);
@@ -371,6 +377,7 @@ export async function archiveAssessmentProfesorAction(_prev: ActionResult, formD
 
   await archiveAssessment(id);
 
+  refreshAnalytics();
   revalidatePath("/profesor/assessments");
   revalidatePath(`/profesor/assessments/${id}`);
   redirect(`/profesor/assessments/${id}`);
@@ -450,6 +457,7 @@ export async function submitAttemptAction(_prev: ActionResult, formData: FormDat
 
   await submitAttempt(parsed.data, user.id, detail.questions);
 
+  refreshAnalytics();
   revalidatePath("/alumno/assessments");
   redirect(`/alumno/assessments/${parsed.data.assessmentId}/resultado`);
 }

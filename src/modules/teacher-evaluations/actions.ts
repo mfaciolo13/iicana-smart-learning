@@ -7,6 +7,7 @@ import { surveySchema, observationSchema } from "./schemas";
 import { submitSurvey, createObservation, hasSurveySubmitted, getActiveEnrollmentForSurvey } from "./services/teacher-evaluations.service";
 import { isStudentAccessRestricted } from "@/modules/students/services/students.service";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 export async function submitSurveyAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["alumno"]);
@@ -53,6 +54,7 @@ export async function submitSurveyAction(_prev: ActionResult, formData: FormData
   const saved = await submitSurvey({ ...parsed.data, enrollmentId: active.enrollmentId });
   if (!saved) return { error: "Ya enviaste tu evaluación para este curso" };
 
+  refreshAnalytics();
   revalidatePath("/alumno/evaluations");
   redirect("/alumno/evaluations");
 }
@@ -88,6 +90,7 @@ export async function createObservationAction(_prev: ActionResult, formData: For
 
   await createObservation(parsed.data, user.id);
 
+  refreshAnalytics();
   revalidatePath("/director/teacher-evaluations");
   redirect("/director/teacher-evaluations");
 }

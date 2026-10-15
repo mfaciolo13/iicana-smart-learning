@@ -9,6 +9,7 @@ import { sendTeacherAssignmentEmail } from "@/lib/email";
 import { createCourseSchema, updateCourseSchema } from "./schemas";
 import { createCourse, updateCourse, deleteCourse, getCourseById } from "./services/courses.service";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 export async function createCourseAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director"]);
@@ -41,6 +42,7 @@ export async function createCourseAction(_prev: ActionResult, formData: FormData
   await createCourse(parsed.data);
 
   updateTag("courses");
+  refreshAnalytics();
   revalidatePath("/director/courses");
   return { success: "Curso creado correctamente", redirectTo: "/director/courses" };
 }
@@ -118,6 +120,7 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
   }
 
   updateTag("courses");
+  refreshAnalytics();
   revalidatePath("/director/courses");
   return { success: "Curso actualizado", redirectTo: `/director/courses/${parsed.data.id}` };
 }
@@ -131,6 +134,7 @@ export async function deleteCourseAction(_prev: ActionResult, formData: FormData
   await deleteCourse(id);
 
   updateTag("courses");
+  refreshAnalytics();
   revalidatePath("/director/courses");
   return { success: "Curso eliminado", redirectTo: "/director/courses" };
 }
