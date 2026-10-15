@@ -20,3 +20,13 @@ const options: PostgresOptions = {
 const client = postgres(process.env.DATABASE_URL!, options);
 
 export const db = drizzle(client, { schema });
+
+// Las transacciones (sql.begin) fallan con max_pipeline: 0 ("Cannot set properties of
+// undefined (setting 'onclose')") y con el pipeline por defecto se cuelgan. Van por un
+// cliente aparte con max_pipeline: 1; dentro de una transacción las consultas son siempre
+// secuenciales, así que no hay encadenamiento. Probado contra el pooler: transacciones y
+// consultas simultáneas conviven. Usar `dbTx.transaction(...)`, nunca `db.transaction(...)`.
+const txOptions: PostgresOptions = { ...options, max_pipeline: 1 };
+const txClient = postgres(process.env.DATABASE_URL!, txOptions);
+
+export const dbTx = drizzle(txClient, { schema });
