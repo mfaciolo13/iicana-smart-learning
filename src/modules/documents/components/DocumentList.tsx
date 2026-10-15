@@ -5,6 +5,7 @@ import { Download, Trash2, FileText, FileImage, File } from "lucide-react";
 import { FormButton } from "@/components/ui/FormButton";
 import { deleteDocumentAction } from "../actions";
 import type { DocumentItem } from "../types";
+import { Th, type SortContext } from "@/components/ui/TableControls";
 
 function FileIcon({ mimeType }: { mimeType: string }) {
   if (mimeType === "application/pdf" || mimeType.includes("word")) {
@@ -26,9 +27,11 @@ function formatSize(bytes: number | null): string {
 interface DocumentListProps {
   documents: DocumentItem[];
   canDelete?: boolean;
+  /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
+  sort?: SortContext;
 }
 
-export function DocumentList({ documents, canDelete = false }: DocumentListProps) {
+export function DocumentList({ documents, canDelete = false, sort }: DocumentListProps) {
   if (documents.length === 0) {
     return (
       <p className="text-sm text-slate-400 text-center py-8">No hay documentos disponibles</p>
@@ -40,11 +43,11 @@ export function DocumentList({ documents, canDelete = false }: DocumentListProps
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-100">
-            <th className="text-left py-3 pr-4 font-medium text-slate-500 text-xs uppercase tracking-wide">Nombre</th>
+            <Th label="Nombre" field="name" sort={sort} />
             <th className="text-left py-3 pr-4 font-medium text-slate-500 text-xs uppercase tracking-wide hidden md:table-cell">Descripción</th>
-            <th className="text-left py-3 pr-4 font-medium text-slate-500 text-xs uppercase tracking-wide hidden sm:table-cell">Tamaño</th>
-            <th className="text-left py-3 pr-4 font-medium text-slate-500 text-xs uppercase tracking-wide hidden lg:table-cell">Subido por</th>
-            <th className="text-left py-3 pr-4 font-medium text-slate-500 text-xs uppercase tracking-wide hidden lg:table-cell">Fecha</th>
+            <Th label="Tamaño" field="size" sort={sort} className="hidden sm:table-cell" />
+            <Th label="Subido por" field="uploader" sort={sort} className="hidden lg:table-cell" />
+            <Th label="Fecha" field="date" sort={sort} className="hidden lg:table-cell" />
             <th className="py-3 text-right font-medium text-slate-500 text-xs uppercase tracking-wide">Acciones</th>
           </tr>
         </thead>

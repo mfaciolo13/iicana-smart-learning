@@ -2,7 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { consolidateYearEndAction } from "@/modules/year-end/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { LEVEL_LABELS } from "@/lib/level-labels";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FilteredEmpty } from "@/components/ui/FilteredEmpty";
+import { Pagination, Th, type SortContext } from "@/components/ui/TableControls";
+import { matchesSearch } from "@/lib/search";
+import { paginate, parseTableQuery, sortRows } from "@/lib/table";
+import { parseFilters, type FilterField } from "@/lib/filters";
+import { LEVEL_ORDER } from "@/lib/level-labels";
 
+const BASE_PATH = "/director/year-end";
 const ATTENDANCE_THRESHOLD = 80;
 const GRADE_THRESHOLD = 7.0;
 
@@ -26,7 +35,12 @@ const OUTCOME_LABEL: Record<string, string> = {
   no_data: "Sin datos",
 };
 
-export default async function YearEndPage() {
+export default async function YearEndPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const sp = await searchParams;
   const supabase = await createClient();
 
   const { data: enrollmentRows } = await supabase
@@ -105,6 +119,32 @@ export default async function YearEndPage() {
 
   const hasPending = summary.eligible > 0;
 
+  const OUTCOME_ORDER = ["eligible", "insufficient", "promoted", "withdrawn", "no_data"];
+  const query = parseTableQuery(sp, { sortable: ["student", "course", "attendance", "average", "outcome"], defaultSort: "student" });
+  const courseNames = [...new Set(rows.map((r) => r.courseName))].sort((a, b) => a.localeCompare(b, "es"));
+  const fields: FilterField[] = [
+    { key: "curso", label: "Curso", type: "select", options: courseNames.map((n) => ({ value: n, label: n })) },
+    { key: "nivel", label: "Nivel", type: "select", options: LEVEL_ORDER.map((l) => ({ value: l, label: LEVEL_LABELS[l] ?? l })) },
+    { key: "resultado", label: "Resultado", type: "select", options: OUTCOME_ORDER.map((o) => ({ value: o, label: OUTCOME_LABEL[o] })) },
+  ];
+  const filters = parseFilters(sp, fields);
+  const { q } = sp;
+  let list = rows;
+  if (q) list = list.filter((r) => matchesSearch(r.studentName, q) || matchesSearch(r.studentDni, q));
+  if (filters.curso) list = list.filter((r) => r.courseName === filters.curso);
+  if (filters.nivel) list = list.filter((r) => r.courseLevel === filters.nivel);
+  if (filters.resultado) list = list.filter((r) => r.outcome === filters.resultado);
+  const sorted = sortRows(list, query, {
+    student: (r) => r.studentName,
+    course: (r) => r.courseName,
+    attendance: (r) => r.attendancePct,
+    average: (r) => r.gradeAvg,
+    outcome: (r) => OUTCOME_ORDER.indexOf(r.outcome),
+  });
+  const page = paginate(sorted, query);
+  const hasFilters = Boolean(q) || Object.keys(filters).length > 0;
+  const sort: SortContext = { basePath: BASE_PATH, searchParams: sp, query };
+
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
@@ -145,24 +185,35 @@ export default async function YearEndPage() {
         </div>
       )}
 
+      {rows.length > 0 && (
+        <>
+          <SearchInput placeholder="Buscar por alumno o DNI..." resultCount={list.length} className="mb-3" />
+          <FilterBar fields={fields} className="mb-4" />
+        </>
+      )}
+
       {rows.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
           <p className="text-sm text-slate-400">No hay inscripciones registradas.</p>
+        </div>
+      ) : hasFilters && list.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+          <FilteredEmpty clearHref={BASE_PATH} noun="alumno" />
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-slate-400 border-b border-slate-100">
-                <th className="text-left px-5 py-3 font-medium">Alumno</th>
-                <th className="text-left px-5 py-3 font-medium">Curso</th>
-                <th className="text-left px-5 py-3 font-medium">Asistencia</th>
-                <th className="text-left px-5 py-3 font-medium">Promedio</th>
-                <th className="text-left px-5 py-3 font-medium">Resultado</th>
+                <Th plain label="Alumno" field="student" sort={sort} />
+                <Th plain label="Curso" field="course" sort={sort} />
+                <Th plain label="Asistencia" field="attendance" sort={sort} />
+                <Th plain label="Promedio" field="average" sort={sort} />
+                <Th plain label="Resultado" field="outcome" sort={sort} />
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {page.rows.map((r) => (
                 <tr key={r.enrollmentId} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                   <td className="px-5 py-3">
                     <p className="font-medium text-slate-800">{r.studentName}</p>
@@ -215,6 +266,9 @@ export default async function YearEndPage() {
               ))}
             </tbody>
           </table>
+          <div className="px-5 pb-4">
+            <Pagination basePath={BASE_PATH} searchParams={sp} page={page} noun="inscripciones" nounSingular="inscripción" />
+          </div>
         </div>
       )}
     </div>
