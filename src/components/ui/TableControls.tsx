@@ -15,18 +15,21 @@ interface SortableThProps {
   field: string;
   ctx: SortContext;
   className?: string;
+  /** Estilo de las tablas sin mayúsculas (marketing, promociones...): texto gris más chico y con más aire. */
+  plain?: boolean;
 }
 
 const TH_BASE = "text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4";
+const TH_PLAIN = "text-left text-xs font-medium text-slate-400 px-5 py-3";
 
 /** Encabezado de columna que ordena el listado al hacer clic (alterna asc/desc). */
-export function SortableTh({ label, field, ctx, className }: SortableThProps) {
+export function SortableTh({ label, field, ctx, className, plain }: SortableThProps) {
   const active = ctx.query.sort === field;
   const nextDir = active && ctx.query.dir === "asc" ? "desc" : "asc";
   const Icon = !active ? ArrowUpDown : ctx.query.dir === "asc" ? ArrowUp : ArrowDown;
   return (
     <th
-      className={cn(TH_BASE, className)}
+      className={cn(plain ? TH_PLAIN : TH_BASE, className)}
       aria-sort={active ? (ctx.query.dir === "asc" ? "ascending" : "descending") : "none"}
     >
       <Link
@@ -41,9 +44,9 @@ export function SortableTh({ label, field, ctx, className }: SortableThProps) {
 }
 
 /** Encabezado de columna: ordenable si el listado recibe su contexto de orden, texto plano si no. */
-export function Th({ label, field, sort, className }: { label: string; field: string; sort?: SortContext; className?: string }) {
-  if (sort) return <SortableTh label={label} field={field} ctx={sort} className={className} />;
-  return <th className={cn(TH_BASE, className)}>{label}</th>;
+export function Th({ label, field, sort, className, plain }: { label: string; field: string; sort?: SortContext; className?: string; plain?: boolean }) {
+  if (sort) return <SortableTh label={label} field={field} ctx={sort} className={className} plain={plain} />;
+  return <th className={cn(plain ? TH_PLAIN : TH_BASE, className)}>{label}</th>;
 }
 
 interface PaginationProps {
