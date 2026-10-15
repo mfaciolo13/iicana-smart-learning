@@ -2,6 +2,7 @@
 import { Eye, ChevronRight } from "lucide-react";
 import type { GradeWithDetails } from "../types";
 import { Badge } from "@/components/ui/Badge";
+import { Th, type SortContext } from "@/components/ui/TableControls";
 
 const TYPE_LABELS: Record<string, string> = {
   parcial: "Parcial",
@@ -29,9 +30,11 @@ function scoreVariant(score: number): "success" | "warning" | "danger" {
 interface GradeListProps {
   grades: GradeWithDetails[];
   showNewLink?: boolean;
+  /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
+  sort?: SortContext;
 }
 
-export function GradeList({ grades, showNewLink = false }: GradeListProps) {
+export function GradeList({ grades, showNewLink = false, sort }: GradeListProps) {
   if (grades.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -85,11 +88,11 @@ export function GradeList({ grades, showNewLink = false }: GradeListProps) {
         <table className="w-full text-sm" role="table">
           <thead>
             <tr className="border-b-2 border-brand-700">
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Alumno</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden md:table-cell">Curso</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Tipo</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4">Nota (1-10)</th>
-              <th className="text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4 hidden lg:table-cell">Fecha</th>
+              <Th label="Alumno" field="student" sort={sort} />
+              <Th label="Curso" field="course" sort={sort} className="hidden md:table-cell" />
+              <Th label="Tipo" field="type" sort={sort} />
+              <Th label="Nota (1-10)" field="score" sort={sort} />
+              <Th label="Fecha" field="date" sort={sort} className="hidden lg:table-cell" />
               <th className="py-3" />
             </tr>
           </thead>
