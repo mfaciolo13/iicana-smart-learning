@@ -14,6 +14,7 @@ import {
   deleteEnrollment,
 } from "./services/enrollments.service";
 import type { ActionResult } from "@/lib/action-result";
+import { refreshAnalytics } from "@/lib/analytics-cache";
 
 export async function createEnrollmentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const role = await requireRole(["director", "administrativo"]);
@@ -68,6 +69,7 @@ export async function createEnrollmentAction(_prev: ActionResult, formData: Form
 
   updateTag("enrollments");
   updateTag("students");
+  refreshAnalytics();
   revalidatePath("/director/enrollments");
   revalidatePath("/director/students");
   revalidatePath("/director/courses");
@@ -102,6 +104,7 @@ export async function updateEnrollmentAction(_prev: ActionResult, formData: Form
 
   updateTag("enrollments");
   updateTag("students");
+  refreshAnalytics();
   revalidatePath("/director/enrollments");
   revalidatePath("/director/students");
   revalidatePath("/director/courses");
@@ -120,6 +123,7 @@ export async function deleteEnrollmentAction(_prev: ActionResult, formData: Form
 
   updateTag("enrollments");
   updateTag("students");
+  refreshAnalytics();
   revalidatePath("/director/enrollments");
   revalidatePath("/director/students");
   revalidatePath("/director/courses");

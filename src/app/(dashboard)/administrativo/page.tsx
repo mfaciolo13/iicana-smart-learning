@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getServerProfile } from "@/lib/auth/helpers";
@@ -19,6 +20,11 @@ import {
 } from "@/modules/reports/services/dashboard.service";
 import { getPaymentSummary } from "@/modules/payments/services/payments.service";
 import { countOpenComplaints } from "@/modules/complaints/services/complaints.service";
+import { ChartSkeleton } from "@/components/charts/ChartCard";
+import { FinancePanel } from "@/components/analytics/FinancePanel";
+import { AcademicPanel } from "@/components/analytics/AcademicPanel";
+import { PeoplePanel } from "@/components/analytics/PeoplePanel";
+import { QualityPanel } from "@/components/analytics/QualityPanel";
 
 function formatARS(amount: number): string {
   return new Intl.NumberFormat("es-AR", {
@@ -256,6 +262,32 @@ export default async function AdministrativoDashboardPage() {
         </div>
       </div>
 
+      <div className="pt-2">
+        <h2 className="text-base font-semibold text-slate-900">Cobranza</h2>
+        <p className="text-xs text-slate-400">Facturado y cobrado de los últimos 6 meses, y deuda por antigüedad</p>
+      </div>
+      <Suspense fallback={<ChartSkeleton />}>
+        <FinancePanel paymentsHref="/administrativo/payments" />
+      </Suspense>
+
+      <div className="pt-2">
+        <h2 className="text-base font-semibold text-slate-900">Alumnos y cursos</h2>
+        <p className="text-xs text-slate-400">Inscripciones, asistencia y ocupación de cursos</p>
+      </div>
+      <Suspense fallback={<ChartSkeleton />}>
+        <PeoplePanel parts={["enrollments", "status"]} studentsHref="/administrativo/students" />
+      </Suspense>
+      <Suspense fallback={<ChartSkeleton />}>
+        <AcademicPanel parts={["attendance", "occupancy"]} coursesHref={null} />
+      </Suspense>
+
+      <div className="pt-2">
+        <h2 className="text-base font-semibold text-slate-900">Atención</h2>
+        <p className="text-xs text-slate-400">Estado de los reclamos de alumnos</p>
+      </div>
+      <Suspense fallback={<ChartSkeleton />}>
+        <QualityPanel parts={["complaints"]} complaintsHref="/administrativo/complaints" />
+      </Suspense>
     </div>
   );
 }
