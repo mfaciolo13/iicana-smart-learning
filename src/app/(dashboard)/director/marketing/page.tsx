@@ -123,7 +123,7 @@ export default async function MarketingPage({
 
           {hasFilters && list.length === 0 ? (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-              <FilteredEmpty clearHref={BASE_PATH} noun="campaña" />
+              <FilteredEmpty clearHref={BASE_PATH} noun="campaña" feminine />
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
