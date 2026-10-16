@@ -91,22 +91,22 @@ export default defineConfig({
       // compilación on-demand ni la staleness del unstable_cache de `next dev`
       // que desincronizaban las listas sembradas en la corrida completa.
       //
-      // RESEND_API_KEY se inyecta inline en el command string (sintaxis POSIX)
-      // para garantizar que la variable esté disponible en el mismo shell tanto
-      // durante `pnpm build` (collect/static-gen de /api/cron/daily-report y
-      // /api/cron/class-reminder) como durante `pnpm start`.
-      // No confiamos únicamente en `env` de webServer porque en algunas
-      // versiones de Playwright ese campo no se fusiona con el entorno heredado
-      // antes de que el build empiece, lo que origina el error:
+      // Se usa `cross-env` para inyectar RESEND_API_KEY de forma cross-platform
+      // (funciona en Windows, Linux y macOS, y garantiza que la variable esté
+      // disponible tanto en el proceso de build de Next.js como en el de start).
+      // La sintaxis inline POSIX (`VAR=value cmd`) falla en algunos entornos CI
+      // porque el shell spawneado por Playwright no hereda correctamente las
+      // variables antes de que el build empiece, originando:
       //   "Missing API key. Pass it to the constructor new Resend("re_123")"
       command: process.env.E2E_PROD
-        ? "RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start"
-        : "RESEND_API_KEY=disabled-for-e2e pnpm dev",
+        ? "cross-env RESEND_API_KEY=disabled-for-e2e pnpm build && cross-env RESEND_API_KEY=disabled-for-e2e pnpm start"
+        : "cross-env RESEND_API_KEY=disabled-for-e2e pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // `env` se mantiene como capa adicional de seguridad para plataformas
-      // donde la asignación inline no sea soportada.
+      // `env` se mantiene como capa adicional de seguridad: Playwright
+      // fusiona este objeto con process.env antes de spawnear el comando,
+      // por lo que cubre también cualquier subproceso que `pnpm` pueda lanzar.
       env: { RESEND_API_KEY: "disabled-for-e2e" },
     },
   }),
