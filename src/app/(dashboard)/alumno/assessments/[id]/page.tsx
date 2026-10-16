@@ -4,6 +4,7 @@ import { db } from "@/lib/drizzle";
 import { assessments, assessmentAttempts, courses } from "@/lib/drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { QuizPlayer } from "@/modules/assessments/components/QuizPlayer";
+import { isStudentEnrolledInCourse } from "@/modules/assessments/services/assessments.service";
 import type { QuizQuestion, PublicQuizQuestion } from "@/modules/assessments/types";
 
 export default async function AlumnoAssessmentPage({
@@ -23,6 +24,7 @@ export default async function AlumnoAssessmentPage({
         topic: assessments.topic,
         status: assessments.status,
         questions: assessments.questions,
+        courseId: assessments.courseId,
         courseName: courses.name,
       })
       .from(assessments)
@@ -43,6 +45,12 @@ export default async function AlumnoAssessmentPage({
 
   const assessmentRow = assessmentRows[0];
   if (!assessmentRow || assessmentRow.status !== "published") notFound();
+
+  // SCRUM-360: la pantalla sólo miraba que estuviera publicada, así que cambiando el id
+  // en la URL se podía leer el enunciado de un curso ajeno. Las actions ya exigían la
+  // inscripción al responder; acá se valida antes de mostrar nada.
+  if (!(await isStudentEnrolledInCourse(user.id, assessmentRow.courseId))) notFound();
+
   if (attemptRows.length > 0) redirect(`/alumno/assessments/${id}/resultado`);
 
   // Al navegador sólo viaja el enunciado y las opciones: la corrección se hace en el servidor (SCRUM-301).
