@@ -15,7 +15,8 @@ import {
   sendClassReminderEmail,
 } from "@/lib/email";
 import { db } from "@/lib/drizzle";
-import { payments, students } from "@/lib/drizzle/schema";
+import { payments } from "@/lib/drizzle/schema";
+import { syncAccessRestriction } from "@/modules/payments/services/payments.service";
 import { eq, inArray } from "drizzle-orm";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -57,6 +58,7 @@ export async function runOverdueAlertAction(_prev: ActionResult, _fd: FormData):
   let sent = 0;
   let failed = 0;
   let restricted = 0;
+  let lifted = 0;
 
   for (const r of recipients) {
     try {
@@ -74,35 +76,27 @@ export async function runOverdueAlertAction(_prev: ActionResult, _fd: FormData):
     }
   }
 
-  // restrict students with 2+ overdue
+  // SCRUM-352: se recalcula sobre TODO alumno con alguna cuota impaga, no sólo sobre
+  // los que llegan a 2, para que la misma pasada tambien levante la restriccion del
+  // que ya regularizo.
   const studentRows = await db
-    .select({ studentId: payments.studentId })
+    .selectDistinct({ studentId: payments.studentId })
     .from(payments)
-    // Una cuota suspendida cuenta como impaga junto con las vencidas (SCRUM-305).
-    .where(inArray(payments.status, ["overdue", "suspended"]));
+    .where(inArray(payments.status, ["pending", "overdue", "suspended"]));
 
-  const counts = new Map<string, number>();
   for (const r of studentRows) {
-    counts.set(r.studentId, (counts.get(r.studentId) ?? 0) + 1);
+    const sync = await syncAccessRestriction(r.studentId);
+    if (sync?.restricted) restricted++;
+    if (sync?.lifted) lifted++;
   }
 
-  for (const [studentId, count] of counts) {
-    if (count >= 2) {
-      const [current] = await db
-        .select({ accessRestricted: students.accessRestricted })
-        .from(students)
-        .where(eq(students.id, studentId))
-        .limit(1);
-      if (current && !current.accessRestricted) {
-        await db.update(students).set({ accessRestricted: true, updatedAt: new Date() }).where(eq(students.id, studentId));
-        restricted++;
-      }
-    }
-  }
+  const accesos = `${restricted ? ` · Accesos restringidos: ${restricted}` : ""}${lifted ? ` · Accesos habilitados: ${lifted}` : ""}`;
 
-  if (sent === 0 && recipients.length === 0) return { success: "Sin pagos vencidos pendientes de alerta" };
+  if (sent === 0 && recipients.length === 0) {
+    return { success: `Sin pagos vencidos pendientes de alerta${accesos}` };
+  }
   return {
-    success: `Alertas enviadas: ${sent}${failed ? ` · Fallidos: ${failed}` : ""}${restricted ? ` · Accesos restringidos: ${restricted}` : ""}`,
+    success: `Alertas enviadas: ${sent}${failed ? ` · Fallidos: ${failed}` : ""}${accesos}`,
   };
 }
 

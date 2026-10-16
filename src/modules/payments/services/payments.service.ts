@@ -256,6 +256,70 @@ export async function getSuspensionTargets(): Promise<SuspensionTarget[]> {
     );
 }
 
+/** Cuotas impagas del alumno que cuentan para la restricción de acceso. */
+export async function countUnpaidForRestriction(studentId: string): Promise<number> {
+  const t = today();
+  const [row] = await db
+    .select({ n: sql<number>`cast(count(*) as int)` })
+    .from(payments)
+    .where(
+      and(
+        eq(payments.studentId, studentId),
+        // Una suspendida cuenta como impaga junto con las vencidas (SCRUM-305). Las
+        // pendientes con vencimiento ya pasado también, aunque el cron todavía no las
+        // haya marcado: si no, el resultado dependería de cuándo corrió el proceso.
+        sql`(${payments.status} = 'suspended' or ${payments.status} = 'overdue'
+             or (${payments.status} = 'pending' and ${payments.dueDate} < ${t}))`,
+      ),
+    );
+  return row?.n ?? 0;
+}
+
+/**
+ * Recalcula la restricción de acceso del alumno a partir de sus cuotas impagas.
+ *
+ * SCRUM-352: la restricción sólo se ponía (cron de mora y acción manual) y nada la
+ * levantaba cuando el alumno regularizaba; el único camino de salida era el botón
+ * "Levantar restricción" del detalle. Un alumno al día quedaba sin portal —sin ver
+ * notas, asistencia ni sus propios pagos— hasta que alguien se acordara.
+ *
+ * Con 2 o más cuotas impagas queda restringido; con menos, habilitado. Si estaba
+ * suspendido por mora y ya no tiene deuda, vuelve a activo.
+ *
+ * Devuelve el estado resultante y si cambió respecto del anterior, o null si el
+ * alumno no existe.
+ */
+export async function syncAccessRestriction(
+  studentId: string,
+): Promise<{ restricted: boolean; lifted: boolean } | null> {
+  const [current] = await db
+    .select({ accessRestricted: students.accessRestricted, status: students.status })
+    .from(students)
+    .where(eq(students.id, studentId))
+    .limit(1);
+  if (!current) return null;
+
+  const unpaid = await countUnpaidForRestriction(studentId);
+  const restricted = unpaid >= 2;
+
+  // Sólo se reactiva al alumno que fue suspendido por mora: una baja o una suspensión
+  // por otro motivo no se revierte sola al cobrar una cuota.
+  const reactivate = current.status === "suspended" && unpaid === 0;
+
+  if (current.accessRestricted !== restricted || reactivate) {
+    await db
+      .update(students)
+      .set({
+        accessRestricted: restricted,
+        ...(reactivate && { status: "active" as const }),
+        updatedAt: new Date(),
+      })
+      .where(eq(students.id, studentId));
+  }
+
+  return { restricted, lifted: current.accessRestricted && !restricted };
+}
+
 export async function suspendStudentAndPayments(studentId: string, paymentIds: string[]) {
   await db.update(payments).set({ status: "suspended" }).where(inArray(payments.id, paymentIds));
   await db
