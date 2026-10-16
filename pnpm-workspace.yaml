@@ -1,3 +1,11 @@
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
+# pnpm 11 exige una decisión explícita para CADA dependencia con script de build:
+# si alguna no está declarada, `pnpm install` corta con ERR_PNPM_IGNORED_BUILDS.
+# `ignoredBuiltDependencies` (pnpm 10) ya no alcanza para silenciarlo.
+#
+# Se mantiene la decisión que ya tenía el proyecto: sharp y unrs-resolver no
+# compilan sus binarios. Sólo se agrega esbuild, que no estaba declarado y era
+# el que hacía fallar el install.
+allowBuilds:
+  esbuild: true
+  sharp: false
+  unrs-resolver: false
