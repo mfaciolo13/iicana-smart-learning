@@ -10,6 +10,7 @@ import { getAttendanceByCourse, isAttendanceRecorded } from "@/modules/attendanc
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import type { AttendanceRecord } from "@/modules/attendance/types";
 import { formatDateAR } from "@/lib/format";
+import { todayInstitute } from "@/lib/validation";
 
 export default async function ProfesorTakeAttendancePage({
   searchParams,
@@ -20,7 +21,9 @@ export default async function ProfesorTakeAttendancePage({
   if (!user) redirect("/login");
 
   const { courseId, date } = await searchParams;
-  const today = new Date().toISOString().split("T")[0];
+  // Hora del instituto, no UTC: pasadas las 21:00 de Córdoba el "hoy" en UTC ya es
+  // mañana, y el servidor rechaza esa fecha por futura (SCRUM-355).
+  const today = todayInstitute();
   const classDate = date ?? today;
 
   const supabase = await createClient();
