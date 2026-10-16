@@ -1,4 +1,4 @@
-﻿import { notFound } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -45,7 +45,10 @@ export default async function CourseDetailPage({
       .eq("course_id", id),
   ]);
 
-  if (!courseRow) notFound();
+  // SCRUM-357: tras eliminar desde este detalle, la revalidación ya no encuentra el curso;
+  // se vuelve al listado en lugar de mostrar un 404 antes de que navegue el cliente
+  // (mismo criterio que alumnos, docentes, inscripciones y notas — SCRUM-234).
+  if (!courseRow) redirect("/director/courses");
 
   type TeacherRaw = { profiles: { full_name: string; email: string } | null } | null;
   const teacherRaw = courseRow.teachers as unknown as TeacherRaw;
