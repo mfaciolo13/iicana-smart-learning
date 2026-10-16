@@ -24,9 +24,12 @@ export const markAsPaidSchema = z.object({
   receiptNumber: z.string().optional(),
 });
 
+// SCRUM-353: "paid" no es un estado que esta acción pueda asignar. Cobrar exige
+// método y recibo, y eso lo hace markAsPaidAction con su propio schema; aceptarlo
+// acá permitía dejar un pago "cobrado" sin fecha, sin método y sin comprobante.
 export const updatePaymentStatusSchema = z.object({
   id: z.uuid(),
-  status: z.enum(["pending", "paid", "overdue", "suspended"]),
+  status: z.enum(["pending", "overdue", "suspended"], { error: "Estado inválido" }),
 });
 
 export const updatePaymentSchema = createPaymentSchema

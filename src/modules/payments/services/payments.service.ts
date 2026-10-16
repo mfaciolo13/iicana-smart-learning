@@ -173,13 +173,25 @@ export async function cancelPayment(id: string, reason: string, cancelledBy: str
   return cancelled ?? null;
 }
 
+/**
+ * Cambia el estado de cobranza de un pago que todavía no se cobró.
+ *
+ * SCRUM-353: sólo se permite sobre pagos no cobrados y no anulados. Un pago
+ * cobrado conserva `paidAt`, el método y el número de recibo entregado al
+ * alumno; devolverlo a "pendiente" dejaría esos datos huérfanos y permitiría
+ * que `markAsPaid` pise el comprobante original. Revertir un cobro se hace
+ * anulándolo con motivo (`cancelPayment`), que sí deja rastro.
+ *
+ * Devuelve `null` si el pago no estaba en un estado modificable, igual que
+ * `markAsPaid` y `updatePayment`.
+ */
 export async function updatePaymentStatus(id: string, status: "pending" | "overdue" | "suspended") {
   const [updated] = await db
     .update(payments)
     .set({ status })
-    .where(eq(payments.id, id))
+    .where(and(eq(payments.id, id), inArray(payments.status, ["pending", "overdue", "suspended"])))
     .returning();
-  return updated;
+  return updated ?? null;
 }
 
 export async function markOverduePayments() {

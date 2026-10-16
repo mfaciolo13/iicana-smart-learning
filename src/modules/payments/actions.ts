@@ -189,7 +189,12 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
     };
   }
 
-  await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
+  // El schema ya acota los estados posibles, así que no hace falta castear: el
+  // cast anterior silenciaba a TypeScript y dejaba pasar "paid" (SCRUM-353).
+  const updated = await updatePaymentStatus(parsed.data.id, parsed.data.status);
+  if (!updated) {
+    return { error: "Solo se puede cambiar el estado de un pago no cobrado. Para revertir un cobro, anulalo." };
+  }
 
   refreshAnalytics();
   revalidatePath("/director/payments");
