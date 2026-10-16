@@ -8,6 +8,7 @@ import { PaymentEditForm, PaymentCancelForm } from "@/modules/payments/component
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { formatDateAR } from "@/lib/format";
+import { todayInstitute } from "@/lib/validation";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   pending: { label: "Pendiente", variant: "warning" },
@@ -33,7 +34,10 @@ export default async function PaymentDetailPage({
   const payment = await getPaymentById(id);
   if (!payment) notFound();
 
-  const today = new Date().toISOString().split("T")[0];
+  // Hora del instituto, igual que el resto de los cálculos de mora del servicio:
+  // en UTC, una cuota que vence hoy aparecía "Vencido" acá y "Pendiente" en el
+  // listado y en el portal del alumno después de las 21:00 (SCRUM-361).
+  const today = todayInstitute();
   const isOverdue =
     (payment.status === "pending" || payment.status === "overdue") &&
     payment.dueDate < today;

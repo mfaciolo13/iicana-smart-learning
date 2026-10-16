@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { createPaymentSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
 import { useFormAction } from "@/lib/use-form-action";
+import { todayInstitute } from "@/lib/validation";
 import type { Resolver } from "react-hook-form";
 
 type FormValues = z.infer<typeof createPaymentSchema>;
@@ -23,11 +24,22 @@ interface PaymentFormProps {
   action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
 }
 
+/**
+ * Día 10 del mes corriente en hora del instituto; si ya pasó, el 10 del mes
+ * siguiente (RN: las cuotas vencen el 10).
+ *
+ * SCRUM-361: se armaba con `setDate(10)` en hora local y se serializaba con
+ * `toISOString()`, que es UTC. Después de las 21:00 ART eso corría la fecha al
+ * día 11, y además el servidor (en UTC) y el navegador (en Córdoba) calculaban
+ * valores distintos, provocando un mismatch de hidratación. Operando sobre el
+ * string de `todayInstitute()` no hay conversión de zona en el medio.
+ */
 function defaultDueDate() {
-  const d = new Date();
-  d.setDate(10);
-  if (d < new Date()) d.setMonth(d.getMonth() + 1);
-  return d.toISOString().split("T")[0];
+  const [year, month, day] = todayInstitute().split("-").map(Number);
+  if (day <= 10) return `${year}-${String(month).padStart(2, "0")}-10`;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  return `${nextYear}-${String(nextMonth).padStart(2, "0")}-10`;
 }
 
 export function PaymentForm({ students, defaultStudentId, action, cancelHref = "/director/payments" }: PaymentFormProps) {
