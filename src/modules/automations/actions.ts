@@ -16,6 +16,7 @@ import {
 } from "@/lib/email";
 import { db } from "@/lib/drizzle";
 import { payments, students } from "@/lib/drizzle/schema";
+import { markOverduePayments } from "@/modules/payments/services/payments.service";
 import { eq, inArray } from "drizzle-orm";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -52,6 +53,13 @@ export async function runDailyReportAction(_prev: ActionResult, _fd: FormData): 
 
 export async function runOverdueAlertAction(_prev: ActionResult, _fd: FormData): Promise<ActionResult> {
   await requireRole(["director"]);
+
+  // SCRUM-358: igual que el cron (SCRUM-284), antes de avisar hay que pasar a "Vencida"
+  // toda cuota pendiente con vencimiento anterior a hoy. Sin este paso la acción manual
+  // no veía la mora nueva: tanto los destinatarios como el conteo de restricción se
+  // calculan sobre el estado almacenado, no sobre la fecha.
+  const markedOverdue = await markOverduePayments();
+
   const recipients = await getOverdueAlertRecipients();
 
   let sent = 0;
@@ -100,9 +108,17 @@ export async function runOverdueAlertAction(_prev: ActionResult, _fd: FormData):
     }
   }
 
-  if (sent === 0 && recipients.length === 0) return { success: "Sin pagos vencidos pendientes de alerta" };
+  const marcadas = markedOverdue ? `Cuotas marcadas vencidas: ${markedOverdue}` : "";
+
+  if (sent === 0 && recipients.length === 0) {
+    return {
+      success: marcadas
+        ? `${marcadas} · Sin alertas pendientes de envío`
+        : "Sin pagos vencidos pendientes de alerta",
+    };
+  }
   return {
-    success: `Alertas enviadas: ${sent}${failed ? ` · Fallidos: ${failed}` : ""}${restricted ? ` · Accesos restringidos: ${restricted}` : ""}`,
+    success: `${marcadas ? `${marcadas} · ` : ""}Alertas enviadas: ${sent}${failed ? ` · Fallidos: ${failed}` : ""}${restricted ? ` · Accesos restringidos: ${restricted}` : ""}`,
   };
 }
 
