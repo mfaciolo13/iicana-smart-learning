@@ -25,6 +25,20 @@ const isRemote = baseURL !== "http://localhost:3000";
 
 const chrome = devices["Desktop Chrome"];
 
+// Entorno completo para el proceso hijo del webServer:
+// heredamos process.env (incluye variables cargadas por dotenv más arriba)
+// y forzamos el stub de RESEND_API_KEY para que next build / next start no
+// fallen durante la recolección estática de /api/cron/*.
+// Al pasar el objeto completo de process.env evitamos que Playwright reemplace
+// el entorno en lugar de fusionarlo (comportamiento observado en algunas
+// versiones donde `env` no hereda automáticamente el entorno del padre).
+const webServerEnv: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined)
+  ),
+  RESEND_API_KEY: "disabled-for-e2e",
+};
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -87,27 +101,23 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // E2E_PROD=1 → build de producción (next start). Producción no tiene la
-      // compilación on-demand ni la staleness del unstable_cache de `next dev`
-      // que desincronizaban las listas sembradas en la corrida completa.
-      //
-      // RESEND_API_KEY se inyecta inline en el command string (sintaxis POSIX)
-      // para garantizar que la variable esté disponible en el mismo shell tanto
-      // durante `pnpm build` (collect/static-gen de /api/cron/daily-report y
-      // /api/cron/class-reminder) como durante `pnpm start`.
-      // No confiamos únicamente en `env` de webServer porque en algunas
-      // versiones de Playwright ese campo no se fusiona con el entorno heredado
-      // antes de que el build empiece, lo que origina el error:
-      //   "Missing API key. Pass it to the constructor new Resend("re_123")"
+      // Usamos comandos simples sin asignación de variables inline (sintaxis POSIX
+      // `VAR=value cmd` es frágil en algunos runners CI y no garantiza que la
+      // variable llegue a los subprocesos que next invoca internamente).
+      // La variable RESEND_API_KEY se inyecta de forma confiable a través del
+      // campo `env`, que Playwright pasa como entorno explícito al proceso hijo.
       command: process.env.E2E_PROD
-        ? "RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start"
-        : "RESEND_API_KEY=disabled-for-e2e pnpm dev",
+        ? "pnpm build && pnpm start"
+        : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // `env` se mantiene como capa adicional de seguridad para plataformas
-      // donde la asignación inline no sea soportada.
-      env: { RESEND_API_KEY: "disabled-for-e2e" },
+      // webServerEnv hereda TODO process.env (variables de CI, Supabase, etc.)
+      // más el stub de RESEND_API_KEY. Esto garantiza que tanto `pnpm build`
+      // (static-generation de /api/cron/class-reminder y /api/cron/daily-report)
+      // como `pnpm start` reciban la clave y no lancen:
+      //   "Missing API key. Pass it to the constructor new Resend("re_123")"
+      env: webServerEnv,
     },
   }),
 });
