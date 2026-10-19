@@ -87,27 +87,33 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // E2E_PROD=1 → build de producción (next start). Producción no tiene la
-      // compilación on-demand ni la staleness del unstable_cache de `next dev`
-      // que desincronizaban las listas sembradas en la corrida completa.
+      // E2E_PROD=1 → build de producción (next start).
       //
-      // RESEND_API_KEY se inyecta inline en el command string (sintaxis POSIX)
-      // para garantizar que la variable esté disponible en el mismo shell tanto
-      // durante `pnpm build` (collect/static-gen de /api/cron/daily-report y
-      // /api/cron/class-reminder) como durante `pnpm start`.
-      // No confiamos únicamente en `env` de webServer porque en algunas
-      // versiones de Playwright ese campo no se fusiona con el entorno heredado
-      // antes de que el build empiece, lo que origina el error:
-      //   "Missing API key. Pass it to the constructor new Resend("re_123")"
+      // `env` se construye extendiendo process.env completo para que el child
+      // process herede todas las variables de entorno del runner (DATABASE_URL,
+      // NEXT_PUBLIC_*, etc.) y además reciba RESEND_API_KEY con el valor stub.
+      // Esto es necesario porque en ciertas versiones de Playwright el campo
+      // `env` de webServer REEMPLAZA el entorno heredado en lugar de fusionarlo,
+      // con lo que una definición parcial deja al build sin las variables que
+      // necesita Next.js para compilar correctamente.
+      //
+      // La sintaxis de asignación inline (RESEND_API_KEY=... pnpm build) se
+      // eliminó del `command` porque no es portable fuera de shells POSIX y
+      // resulta redundante dado que `env` ya propaga la variable al child.
       command: process.env.E2E_PROD
-        ? "RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start"
-        : "RESEND_API_KEY=disabled-for-e2e pnpm dev",
+        ? "pnpm build && pnpm start"
+        : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // `env` se mantiene como capa adicional de seguridad para plataformas
-      // donde la asignación inline no sea soportada.
-      env: { RESEND_API_KEY: "disabled-for-e2e" },
+      // Fusionamos process.env completo con el stub de RESEND_API_KEY para
+      // garantizar disponibilidad durante `pnpm build` (static-gen de rutas
+      // como /api/cron/class-reminder que instancian `new Resend(key)` en
+      // tiempo de collect/prerender) sin perder ninguna otra variable necesaria.
+      env: {
+        ...process.env,
+        RESEND_API_KEY: "disabled-for-e2e",
+      } as Record<string, string>,
     },
   }),
 });
