@@ -9,7 +9,7 @@ import { Input, Field } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
 import { useFormAction } from "@/lib/use-form-action";
 import type { Resolver } from "react-hook-form";
-import { personNameField, phoneField, NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
+import { personNameField, phoneField, NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS, todayInstitute } from "@/lib/validation";
 
 function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
   const el = e.currentTarget;
@@ -41,7 +41,8 @@ interface Props {
 }
 
 export function InquiryForm({ campaignId, action }: Props) {
-  const today = new Date().toISOString().split("T")[0];
+  // Hora del instituto, no UTC (SCRUM-355).
+  const today = todayInstitute();
   const [formKey, setFormKey] = useState(0);
 
   const form = useForm<FormValues>({

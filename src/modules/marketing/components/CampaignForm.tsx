@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Field, Select, Textarea } from "@/components/ui/Input";
 import type { ActionResult } from "@/lib/action-result";
 import { useFormAction } from "@/lib/use-form-action";
+import { todayInstitute } from "@/lib/validation";
 
 const campaignClientSchema = z.object({
   name: z.string().min(2, "Nombre requerido"),
@@ -27,7 +28,8 @@ interface Props {
 }
 
 export function CampaignForm({ channels, action }: Props) {
-  const today = new Date().toISOString().split("T")[0];
+  // Hora del instituto, no UTC (SCRUM-355).
+  const today = todayInstitute();
   const form = useForm<FormValues>({
     resolver: zodResolver(campaignClientSchema),
     defaultValues: { name: "", channel: undefined, startDate: today, endDate: "", budget: "", description: "" },
