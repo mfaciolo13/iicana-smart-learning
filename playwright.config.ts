@@ -6,11 +6,12 @@ dotenv.config({ path: ".env.test" });
 
 // Garantizamos que RESEND_API_KEY tenga un valor stub en el proceso de Playwright
 // (y por herencia en cualquier child process que no lo sobreescriba).
-// Esto evita que `new Resend(undefined)` explote en tiempo de build/collect.
+// El valor debe comenzar con "re_" porque la librería `resend` valida el prefijo
+// en el constructor y lanza si no lo encuentra, incluso en build time.
 // IMPORTANTE: esta mutación debe ocurrir ANTES de que se construya el objeto
 // `webServer`, ya que el campo `env` lo lee en el mismo tick de evaluación.
 if (!process.env.RESEND_API_KEY) {
-  process.env.RESEND_API_KEY = "disabled-for-e2e";
+  process.env.RESEND_API_KEY = "re_disabled_for_e2e_00000000000000000000";
 }
 
 // Rutas de storageState por rol (inline para no importar .ts desde el config —
@@ -39,7 +40,9 @@ const webServerEnv: Record<string, string> = {
       (entry): entry is [string, string] => entry[1] !== undefined
     )
   ),
-  RESEND_API_KEY: "disabled-for-e2e",
+  // El stub debe tener prefijo "re_" para pasar la validación del constructor
+  // de la librería `resend` durante la fase de build (static page collection).
+  RESEND_API_KEY: "re_disabled_for_e2e_00000000000000000000",
 };
 
 export default defineConfig({
