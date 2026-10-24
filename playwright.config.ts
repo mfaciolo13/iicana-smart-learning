@@ -42,6 +42,21 @@ const webServerEnv: Record<string, string> = {
   RESEND_API_KEY: "disabled-for-e2e",
 };
 
+// Comando de build separado del start: corremos el build como un paso previo
+// independiente vía `webServer.command` usando un script shell que exporta
+// explícitamente RESEND_API_KEY antes de invocar cada subcomando.  Así
+// garantizamos que la variable esté disponible tanto en `pnpm build`
+// (fase de collect/static generation) como en `pnpm start` (runtime),
+// independientemente de cómo el runner de CI hereda el entorno de Playwright.
+//
+// Usamos `sh -c '...'` con export explícito porque es la forma más portable
+// entre bash, sh y los distintos runners de GitHub Actions (ubuntu, windows, etc.).
+const buildAndStartCommand = [
+  "sh",
+  "-c",
+  "export RESEND_API_KEY=disabled-for-e2e && pnpm build && pnpm start",
+].join(" ");
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -104,12 +119,13 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // Usamos comandos simples sin asignación inline POSIX (`VAR=val cmd`)
-      // porque esa sintaxis no es portable en todos los shells de CI.
-      // La variable RESEND_API_KEY (y el resto del entorno) se inyectan a
-      // través del campo `env` que fusiona process.env completo con el stub.
+      // Usamos sh -c con export explícito de RESEND_API_KEY para garantizar
+      // que la variable esté disponible en AMBOS subcomandos (build y start)
+      // dentro del mismo shell, sin depender de la herencia del campo `env`
+      // de Playwright hacia subprocesos anidados.
+      // El campo `env` se mantiene como segunda capa de seguridad (runtime).
       command: process.env.E2E_PROD
-        ? "pnpm build && pnpm start"
+        ? buildAndStartCommand
         : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
