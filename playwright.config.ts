@@ -10,7 +10,7 @@ dotenv.config({ path: ".env.test" });
 // IMPORTANTE: esta mutación debe ocurrir ANTES de que se construya el objeto
 // `webServer`, ya que el campo `env` lo lee en el mismo tick de evaluación.
 if (!process.env.RESEND_API_KEY) {
-  process.env.RESEND_API_KEY = "disabled-for-e2e";
+  process.env.RESEND_API_KEY = "re_disabled_for_e2e";
 }
 
 // Rutas de storageState por rol (inline para no importar .ts desde el config —
@@ -33,13 +33,21 @@ const chrome = devices["Desktop Chrome"];
 // Supabase, NEXTAUTH, etc. que ya están en el entorno del runner de CI, más
 // RESEND_API_KEY, sin depender de la sintaxis POSIX `VAR=val cmd` (que no
 // funciona en todos los runners de GitHub Actions según el shell configurado).
+//
+// NOTA: Playwright reemplaza (no fusiona) el entorno del proceso hijo con el
+// objeto `env`.  Por eso incluimos process.env completo aquí — de lo contrario
+// el child process perdería PATH, HOME y otras variables del sistema.
 const webServerEnv: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(process.env).filter(
-      (entry): entry is [string, string] => entry[1] !== undefined
+      (entry): entry is [string, string] => entry[1] !== undefined && entry[1] !== ""
     )
   ),
-  RESEND_API_KEY: "disabled-for-e2e",
+  // Sobreescribimos siempre con el stub para garantizar un valor no-vacío
+  // independientemente de lo que haya en el entorno de CI.
+  // El valor empieza con "re_" para satisfacer la validación del constructor
+  // de Resend, que rechaza valores que no tengan ese prefijo.
+  RESEND_API_KEY: "re_disabled_for_e2e",
 };
 
 export default defineConfig({
