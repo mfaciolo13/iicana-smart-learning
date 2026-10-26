@@ -30,7 +30,7 @@
     "drizzle-orm": "^0.45.4",
     "libphonenumber-js": "^1.13.15",
     "lucide-react": "^1.58.0",
-    "next": "16.4.0",
+    "next": "16.4.2",
     "next-safe-action": "^8.7.3",
     "postgres": "^3.4.9",
     "react": "19.3.1",
