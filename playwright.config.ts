@@ -104,20 +104,21 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // Usamos comandos simples sin asignación inline POSIX (`VAR=val cmd`)
-      // porque esa sintaxis no es portable en todos los shells de CI.
-      // La variable RESEND_API_KEY (y el resto del entorno) se inyectan a
-      // través del campo `env` que fusiona process.env completo con el stub.
+      // Usamos `sh -c 'export ...'` para garantizar que RESEND_API_KEY esté
+      // disponible en AMBOS subcomandos de la cadena (pnpm build y pnpm start).
+      // El campo `env` de Playwright es pasado al shell padre pero no siempre
+      // se hereda transitivamente a través de `&&` en todos los runners de CI.
+      // Con `sh -c 'export VAR=val && cmd1 && cmd2'` la variable queda en el
+      // environment del subshell completo, de forma portable en cualquier runner
+      // Linux/macOS de GitHub Actions.
       command: process.env.E2E_PROD
-        ? "pnpm build && pnpm start"
+        ? "sh -c 'export RESEND_API_KEY=disabled-for-e2e && pnpm build && pnpm start'"
         : "pnpm dev",
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // `env` recibe el entorno completo del proceso padre más el stub de
-      // RESEND_API_KEY.  Playwright pasa este objeto como entorno del shell
-      // que ejecuta `command`, garantizando que tanto `pnpm build` como
-      // `pnpm start` en la cadena `&&` lo hereden.
+      // `env` sigue presente como capa de defensa adicional para el caso `pnpm dev`
+      // y como fallback por si el sh -c no propaga correctamente en algún edge case.
       env: webServerEnv,
     },
   }),
