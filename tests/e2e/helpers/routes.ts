@@ -33,6 +33,7 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
   administrativo: [
     "/administrativo",
     "/administrativo/students",
+    "/administrativo/courses",
     "/administrativo/enrollments",
     "/administrativo/attendance",
     "/administrativo/grades",
@@ -53,6 +54,7 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
   ],
   alumno: [
     "/alumno",
+    "/alumno/courses",
     "/alumno/attendance",
     "/alumno/grades",
     "/alumno/payments",

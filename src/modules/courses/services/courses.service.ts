@@ -1,8 +1,9 @@
 import { db } from "@/lib/drizzle";
-import { courses, teachers, profiles, enrollments } from "@/lib/drizzle/schema";
+import { courses, teachers, profiles, enrollments, students } from "@/lib/drizzle/schema";
+import { alias } from "drizzle-orm/pg-core";
 import { eq, ilike, sql, and } from "drizzle-orm";
 import type { CreateCourseInput, UpdateCourseInput } from "../schemas";
-import type { CourseListItem, CourseWithTeacher } from "../types";
+import type { CourseListItem, CourseWithTeacher, StudentCourse } from "../types";
 import { formatSchedule } from "../lib/schedule";
 
 export async function getCourses(search?: string): Promise<CourseListItem[]> {
@@ -55,6 +56,32 @@ export async function getCoursesByTeacherProfile(profileId: string): Promise<Cou
     .orderBy(courses.name);
 
   return rows as CourseListItem[];
+}
+
+/** Cursos en los que el alumno (por profile) tiene una inscripción activa. */
+export async function getCoursesByStudentProfile(profileId: string): Promise<StudentCourse[]> {
+  const teacherProfiles = alias(profiles, "teacher_profiles");
+  const rows = await db
+    .select({
+      id: courses.id,
+      name: courses.name,
+      level: courses.level,
+      schedule: courses.schedule,
+      classroom: courses.classroom,
+      status: courses.status,
+      teacherName: teacherProfiles.fullName,
+      teacherEmail: teacherProfiles.email,
+      enrolledAt: enrollments.enrolledAt,
+    })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .leftJoin(teachers, eq(courses.teacherId, teachers.id))
+    .leftJoin(teacherProfiles, eq(teachers.profileId, teacherProfiles.id))
+    .where(and(eq(students.profileId, profileId), eq(enrollments.status, "active")))
+    .orderBy(courses.name);
+
+  return rows as StudentCourse[];
 }
 
 export async function getCourseById(id: string): Promise<CourseWithTeacher | null> {
