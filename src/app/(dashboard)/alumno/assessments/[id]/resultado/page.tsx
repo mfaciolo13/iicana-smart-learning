@@ -2,8 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getServerUser } from "@/lib/auth/helpers";
-import { createClient } from "@/lib/supabase/server";
-import type { QuizQuestion } from "@/modules/assessments/types";
+import { getAttemptResult } from "@/modules/assessments/services/assessments.service";
 
 const OPTION_LETTERS = ["A", "B", "C", "D"];
 
@@ -44,37 +43,17 @@ export default async function AttemptResultPage({
   const user = await getServerUser();
   if (!user) redirect("/login");
 
-  const supabase = await createClient();
+  // SCRUM-356: antes esta página leía con el cliente Supabase y embebía `assessments`,
+  // tabla sobre la que el alumno NO tiene policy de SELECT — es deliberado, porque las
+  // preguntas guardan cuál es la respuesta correcta. El recurso embebido volvía null y
+  // el `?? []` lo tapaba: el alumno veía su puntaje pero "0 de 0 respuestas correctas",
+  // sin curso, sin tema y sin revisión. Este service usa Drizzle (no pasa por RLS) y ya
+  // hace el mismo join; la autorización la da el filtro por studentId.
+  const result = await getAttemptResult(id, user.id);
+  if (!result) notFound();
 
-  const { data: attemptRow } = await supabase
-    .from("assessment_attempts")
-    .select("id, assessment_id, answers, score, completed_at, assessments(id, week_label, topic, questions, courses(name))")
-    .eq("assessment_id", id)
-    .eq("student_id", user.id)
-    .single();
-
-  if (!attemptRow) notFound();
-
-  type AssessmentRaw = {
-    id: string;
-    week_label: string;
-    topic: string;
-    questions: QuizQuestion[];
-    courses: { name: string } | null;
-  } | null;
-
-  const assessment = attemptRow.assessments as unknown as AssessmentRaw;
-  const questions = (assessment?.questions ?? []) as QuizQuestion[];
-  const answers = attemptRow.answers as unknown as number[];
+  const { questions, answers } = result;
   const correctCount = answers.filter((ans, i) => questions[i] && ans === questions[i].correct).length;
-
-  const result = {
-    weekLabel: assessment?.week_label ?? "",
-    topic: assessment?.topic ?? "",
-    courseName: assessment?.courses?.name ?? "",
-    score: attemptRow.score,
-    completedAt: new Date(attemptRow.completed_at),
-  };
 
   return (
     <div>
@@ -82,7 +61,7 @@ export default async function AttemptResultPage({
         <Link href="/alumno/assessments" className="text-sm text-slate-400 hover:text-slate-600 mb-1 inline-flex items-center gap-1">
           <ArrowLeft className="w-3.5 h-3.5" /> Mis evaluaciones
         </Link>
-        <h2 className="text-2xl font-bold text-slate-900">Resultado</h2>
+        <h2 className="text-2xl font-bold text-slate-900">{result.topic}</h2>
         <p className="text-sm text-slate-500 mt-0.5">
           {result.courseName} · {result.weekLabel}
         </p>
