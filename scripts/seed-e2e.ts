@@ -19,7 +19,7 @@ import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { like, inArray } from "drizzle-orm";
+import { like, inArray, eq } from "drizzle-orm";
 import * as schema from "../src/lib/drizzle/schema";
 
 // Cargar el entorno de TEST (no .env.local de producción)
@@ -85,8 +85,23 @@ async function teardown() {
     ),
   );
 
+  // Las cuotas de los alumnos E2E también van antes: la migración 0014
+  // (SCRUM-231/266) pasó payments.student_id a ON DELETE RESTRICT para que un
+  // alumno con pagos no se borre por error, así que ya no cascadea desde profiles
+  // y el teardown fallaba con violación de FK en cuanto un alumno E2E tenía cuotas.
+  await db.delete(schema.payments).where(
+    inArray(
+      schema.payments.studentId,
+      db
+        .select({ id: schema.students.id })
+        .from(schema.students)
+        .innerJoin(schema.profiles, eq(schema.students.profileId, schema.profiles.id))
+        .where(like(schema.profiles.email, `%${TEST_EMAIL_DOMAIN}`)),
+    ),
+  );
+
   // Borrar los profiles de test cascadea students, teachers, notifications,
-  // complaints, payments, etc.
+  // complaints, etc.
   await db.delete(schema.profiles).where(like(schema.profiles.email, `%${TEST_EMAIL_DOMAIN}`));
 
   // Borrar los usuarios de auth correspondientes (paginado defensivo).
