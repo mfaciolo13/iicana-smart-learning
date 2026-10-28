@@ -15,6 +15,7 @@ import {
   getSuspensionTargets,
   suspendStudentAndPayments,
   paymentExistsForDueDate,
+  syncAccessRestriction,
 } from "./services/payments.service";
 import { portalPath } from "@/lib/portal";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
@@ -89,11 +90,16 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
     };
   }
 
+  let habilitado = false;
   try {
     const paid = await markAsPaid(parsed.data);
     if (!paid) {
       return { error: "Solo se pueden cobrar pagos pendientes, vencidos o suspendidos. Este pago ya fue cobrado o anulado." };
     }
+    // SCRUM-352: cobrar es lo que saca al alumno de la mora, así que es acá donde
+    // hay que recalcular la restricción. Antes solo se ponía y nunca se levantaba.
+    const sync = await syncAccessRestriction(paid.studentId);
+    habilitado = sync?.lifted ?? false;
   } catch (err) {
     if (isUniqueViolation(err)) {
       return { error: "Ya existe un pago con ese número de recibo" };
@@ -104,7 +110,12 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
   refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
-  return { success: "Pago registrado como abonado" };
+  revalidatePath("/alumno/payments");
+  return {
+    success: habilitado
+      ? "Pago registrado como abonado · Se habilitó el acceso del alumno al portal"
+      : "Pago registrado como abonado",
+  };
 }
 
 export async function updatePaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -161,6 +172,10 @@ export async function cancelPaymentAction(_prev: ActionResult, formData: FormDat
     return { error: "El pago ya estaba anulado" };
   }
 
+  // Anular una cuota la saca de la deuda, así que puede bajar al alumno de 2 impagas
+  // a 1 y corresponde levantarle la restricción (SCRUM-352).
+  await syncAccessRestriction(cancelled.studentId);
+
   refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
@@ -189,7 +204,11 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
     };
   }
 
-  await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
+  const updated = await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
+
+  // Cambiar el estado de cobranza mueve la cuenta de impagas en los dos sentidos:
+  // puede restringir al alumno o habilitarlo (SCRUM-352).
+  if (updated) await syncAccessRestriction(updated.studentId);
 
   refreshAnalytics();
   revalidatePath("/director/payments");

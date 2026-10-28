@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedCron } from "@/lib/cron-auth";
 import { db } from "@/lib/drizzle";
-import { payments, students } from "@/lib/drizzle/schema";
-import { eq, count, inArray } from "drizzle-orm";
+import { payments } from "@/lib/drizzle/schema";
+import { eq, inArray } from "drizzle-orm";
 import { getOverdueAlertRecipients } from "@/modules/notifications/services/cron.service";
 import { sendPaymentOverdueAlertEmail } from "@/lib/email";
-import { markOverduePayments } from "@/modules/payments/services/payments.service";
+import { markOverduePayments, syncAccessRestriction } from "@/modules/payments/services/payments.service";
 
 // SCRUM-319: hasta 60 s por corrida (envíos de email en tanda).
 export const maxDuration = 60;
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
   let sent = 0;
   let failed = 0;
   let restricted = 0;
+  let lifted = 0;
 
   for (const r of recipients) {
     try {
@@ -45,32 +46,20 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Restrict students with 2+ overdue payments
+  // SCRUM-352: se recalcula sobre TODO alumno con alguna cuota impaga, no sólo sobre
+  // los que llegan a 2. Así la misma pasada que restringe al que entró en mora levanta
+  // la restricción del que ya regularizó, en vez de dejarlo bloqueado para siempre.
   const studentRows = await db
-    .select({ studentId: payments.studentId, overdueCount: count() })
+    .selectDistinct({ studentId: payments.studentId })
     .from(payments)
-    // Una cuota suspendida cuenta como impaga junto con las vencidas (SCRUM-305).
-    .where(inArray(payments.status, ["overdue", "suspended"]))
-    .groupBy(payments.studentId);
+    .where(inArray(payments.status, ["pending", "overdue", "suspended"]));
 
   for (const row of studentRows) {
-    if (row.overdueCount >= 2) {
-      const [current] = await db
-        .select({ accessRestricted: students.accessRestricted })
-        .from(students)
-        .where(eq(students.id, row.studentId))
-        .limit(1);
-
-      if (current && !current.accessRestricted) {
-        await db
-          .update(students)
-          .set({ accessRestricted: true, updatedAt: new Date() })
-          .where(eq(students.id, row.studentId));
-        restricted++;
-      }
-    }
+    const sync = await syncAccessRestriction(row.studentId);
+    if (sync?.restricted) restricted++;
+    if (sync?.lifted) lifted++;
   }
 
-  console.log(`[cron/overdue-alert] markedOverdue=${markedOverdue} sent=${sent} failed=${failed} restricted=${restricted} total=${recipients.length}`);
-  return NextResponse.json({ markedOverdue, sent, failed, restricted, total: recipients.length });
+  console.log(`[cron/overdue-alert] markedOverdue=${markedOverdue} sent=${sent} failed=${failed} restricted=${restricted} lifted=${lifted} total=${recipients.length}`);
+  return NextResponse.json({ markedOverdue, sent, failed, restricted, lifted, total: recipients.length });
 }
