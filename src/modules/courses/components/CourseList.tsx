@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { Eye, ChevronRight } from "lucide-react";
 import type { CourseListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
@@ -23,9 +23,13 @@ interface CourseListProps {
   courses: CourseListItem[];
   /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
   sort?: SortContext;
+  /** Ruta del listado; el detalle de cada curso cuelga de acá. */
+  basePath?: string;
+  /** false para el administrativo: ve los cursos pero no los crea. */
+  canManage?: boolean;
 }
 
-export function CourseList({ courses, sort }: CourseListProps) {
+export function CourseList({ courses, sort, basePath = "/director/courses", canManage = true }: CourseListProps) {
   if (courses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -35,13 +39,17 @@ export function CourseList({ courses, sort }: CourseListProps) {
           </svg>
         </div>
         <p className="text-base font-semibold text-slate-700">Aún no hay cursos cargados</p>
-        <p className="text-sm text-slate-400 mt-1">Empezá creando el primero.</p>
-        <Link
-          href="/director/courses/new"
-          className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
-        >
-          + Nuevo curso
-        </Link>
+        {canManage && (
+          <>
+            <p className="text-sm text-slate-400 mt-1">Empezá creando el primero.</p>
+            <Link
+              href={`${basePath}/new`}
+              className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
+            >
+              + Nuevo curso
+            </Link>
+          </>
+        )}
       </div>
     );
   }
@@ -56,7 +64,7 @@ export function CourseList({ courses, sort }: CourseListProps) {
           return (
             <Link
               key={course.id}
-              href={`/director/courses/${course.id}`}
+              href={`${basePath}/${course.id}`}
               className="block p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
@@ -118,7 +126,7 @@ export function CourseList({ courses, sort }: CourseListProps) {
                     <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                   </td>
                   <td className="py-3.5 pr-4 text-right">
-                    <Link href={`/director/courses/${course.id}`} className="after:absolute after:inset-0 after:content-['']">
+                    <Link href={`${basePath}/${course.id}`} className="after:absolute after:inset-0 after:content-['']">
                       <Eye className="w-4 h-4 text-slate-300 group-hover:text-brand-700 transition-colors" />
                     </Link>
                   </td>

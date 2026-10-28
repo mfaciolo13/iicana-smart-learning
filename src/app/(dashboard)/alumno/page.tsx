@@ -8,6 +8,7 @@ import { ChartSkeleton } from "@/components/charts/ChartCard";
 import { StudentPanel } from "./components/StudentPanel";
 
 const links = [
+  { label: "Mis cursos", href: "/alumno/courses", desc: "Horario, aula y docente" },
   { label: "Ver asistencia", href: "/alumno/attendance", desc: "Tu % de asistencia" },
   { label: "Ver notas", href: "/alumno/grades", desc: "Tus calificaciones" },
   { label: "Evaluar docentes", href: "/alumno/evaluations", desc: "Encuesta anónima" },
@@ -50,7 +51,7 @@ export default async function AlumnoDashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {links.map((item) => (
           <Link
             key={item.href}

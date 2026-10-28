@@ -278,7 +278,7 @@ export default async function AdministrativoDashboardPage() {
         <PeoplePanel parts={["enrollments", "status"]} studentsHref="/administrativo/students" />
       </Suspense>
       <Suspense fallback={<ChartSkeleton />}>
-        <AcademicPanel parts={["attendance", "occupancy"]} coursesHref={null} />
+        <AcademicPanel parts={["attendance", "occupancy"]} coursesHref="/administrativo/courses" />
       </Suspense>
 
       <div className="pt-2">

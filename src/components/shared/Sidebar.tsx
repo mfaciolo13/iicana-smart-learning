@@ -71,6 +71,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   administrativo: [
     { label: "Dashboard", href: "/administrativo", icon: LayoutDashboard },
     { label: "Alumnos", href: "/administrativo/students", icon: GraduationCap },
+    { label: "Cursos", href: "/administrativo/courses", icon: BookOpen },
     { label: "Inscripciones", href: "/administrativo/enrollments", icon: ClipboardList },
     { label: "Asistencia", href: "/administrativo/attendance", icon: CalendarCheck },
     { label: "Notas", href: "/administrativo/grades", icon: Star },
@@ -91,6 +92,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   alumno: [
     { label: "Inicio", href: "/alumno", icon: Home },
+    { label: "Mis Cursos", href: "/alumno/courses", icon: GraduationCap },
     { label: "Mis Notas", href: "/alumno/grades", icon: Award },
     { label: "Asistencia", href: "/alumno/attendance", icon: CalendarCheck },
     { label: "Evaluar Docente", href: "/alumno/evaluations", icon: Star },
