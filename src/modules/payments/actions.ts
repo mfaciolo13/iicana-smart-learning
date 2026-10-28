@@ -204,11 +204,16 @@ export async function updatePaymentStatusAction(_prev: ActionResult, formData: F
     };
   }
 
-  const updated = await updatePaymentStatus(parsed.data.id, parsed.data.status as "pending" | "overdue" | "suspended");
+  // El schema ya acota los estados posibles, así que no hace falta castear: el
+  // cast anterior silenciaba a TypeScript y dejaba pasar "paid" (SCRUM-353).
+  const updated = await updatePaymentStatus(parsed.data.id, parsed.data.status);
+  if (!updated) {
+    return { error: "Solo se puede cambiar el estado de un pago no cobrado. Para revertir un cobro, anulalo." };
+  }
 
   // Cambiar el estado de cobranza mueve la cuenta de impagas en los dos sentidos:
   // puede restringir al alumno o habilitarlo (SCRUM-352).
-  if (updated) await syncAccessRestriction(updated.studentId);
+  await syncAccessRestriction(updated.studentId);
 
   refreshAnalytics();
   revalidatePath("/director/payments");
