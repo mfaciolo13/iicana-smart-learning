@@ -48,3 +48,15 @@ export interface CourseListItem {
   teacherName: string | null;
   enrollmentCount: number;
 }
+
+export interface StudentCourse {
+  id: string;
+  name: string;
+  level: Level;
+  schedule: string;
+  classroom: string | null;
+  status: CourseStatus;
+  teacherName: string | null;
+  teacherEmail: string | null;
+  enrolledAt: Date;
+}
