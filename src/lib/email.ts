@@ -494,6 +494,60 @@ export async function sendDailyReportEmail({
   });
 }
 
+const RISK_LEVEL_LABELS: Record<string, { label: string; color: string }> = {
+  high: { label: "Alto", color: "#dc2626" },
+  medium: { label: "Medio", color: "#d97706" },
+  low: { label: "Bajo", color: "#2563eb" },
+};
+
+export async function sendRiskDetectionReportEmail({
+  to,
+  date,
+  assessed,
+  atRiskStudents,
+  panelUrl,
+}: {
+  to: string;
+  date: string;
+  assessed: number;
+  atRiskStudents: { studentName: string; riskLevel: string; signals: string[] }[];
+  panelUrl: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Risk detection report for ${to} — evaluados=${assessed} enRiesgo=${atRiskStudents.length}\n`);
+    return;
+  }
+
+  const rows = atRiskStudents.length > 0
+    ? atRiskStudents.map((s) => {
+        const level = RISK_LEVEL_LABELS[s.riskLevel] ?? { label: s.riskLevel, color: "#475569" };
+        return `<tr><td style="padding:6px 12px;color:#1e293b;font-size:13px;">${esc(s.studentName)}</td><td style="padding:6px 12px;color:${level.color};font-size:13px;font-weight:600;">${esc(level.label)}</td><td style="padding:6px 12px;color:#475569;font-size:13px;">${s.signals.map(esc).join("<br />")}</td></tr>`;
+      }).join("")
+    : `<tr><td colspan="3" style="padding:12px;color:#94a3b8;font-size:13px;text-align:center;">Ningún alumno en riesgo</td></tr>`;
+
+  const thStyle = `padding:6px 12px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;text-align:left;border-bottom:1px solid #e2e8f0;`;
+
+  await sendOrThrow({
+    from: FROM,
+    to,
+    subject: `Detección de riesgo — ${atRiskStudents.length} alumno${atRiskStudents.length !== 1 ? "s" : ""} en riesgo`,
+    html: emailShell(`
+      <p style="margin:0 0 4px;color:#1e293b;font-size:16px;font-weight:700;">Detección de riesgo de abandono</p>
+      <p style="margin:0 0 24px;color:#94a3b8;font-size:13px;">${formatDateAR(date)}</p>
+      <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">
+        Se evaluaron <strong>${assessed}</strong> alumnos activos. <strong>${atRiskStudents.length}</strong> presentan al menos una señal de riesgo.
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+        <thead><tr><th style="${thStyle}">Alumno</th><th style="${thStyle}">Riesgo</th><th style="${thStyle}">Señales</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <a href="${esc(panelUrl)}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 24px;border-radius:8px;">
+        Ver panel de riesgo
+      </a>
+    `),
+  });
+}
+
 export async function sendTeacherAttendanceAlertEmail({
   to,
   teacherName,

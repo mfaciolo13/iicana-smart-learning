@@ -1,7 +1,7 @@
 "use server";
 
 import { requireRole } from "@/lib/auth/helpers";
-import { runRiskDetection } from "@/modules/notifications/services/risk-detection.service";
+import { runRiskDetection, sendRiskReportToDirectors } from "@/modules/notifications/services/risk-detection.service";
 import { getDailyReportData } from "@/modules/notifications/services/daily-report.service";
 import {
   getOverdueAlertRecipients,
@@ -22,8 +22,11 @@ import type { ActionResult } from "@/lib/action-result";
 
 export async function runRiskDetectionAction(_prev: ActionResult, _fd: FormData): Promise<ActionResult> {
   await requireRole(["director"]);
-  const { assessed, atRisk } = await runRiskDetection();
-  return { success: `Evaluados: ${assessed} alumnos · En riesgo: ${atRisk}` };
+  const result = await runRiskDetection();
+  const { sent, failed } = await sendRiskReportToDirectors(result);
+  return {
+    success: `Evaluados: ${result.assessed} alumnos · En riesgo: ${result.atRisk} · Reporte enviado a ${sent} director${sent !== 1 ? "es" : ""}${failed ? ` · ${failed} fallido${failed !== 1 ? "s" : ""}` : ""}`,
+  };
 }
 
 export async function runDailyReportAction(_prev: ActionResult, _fd: FormData): Promise<ActionResult> {

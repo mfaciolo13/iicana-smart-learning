@@ -11,6 +11,8 @@ import {
 } from "@/lib/drizzle/schema";
 import { eq, and, sql, inArray, desc, ne } from "drizzle-orm";
 import { todayInstitute } from "@/lib/validation";
+import { sendRiskDetectionReportEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/site-url";
 
 interface RiskSignal {
   type: "overdue" | "low_attendance" | "low_assessment";
@@ -26,14 +28,23 @@ function computeRiskLevel(signals: RiskSignal[]): RiskLevel {
   return "high";
 }
 
-export async function runRiskDetection(): Promise<{ assessed: number; atRisk: number }> {
+const RISK_ORDER: Record<RiskLevel, number> = { high: 0, medium: 1, low: 2, none: 3 };
+
+export interface RiskDetectionResult {
+  assessed: number;
+  atRisk: number;
+  atRiskStudents: { studentName: string; riskLevel: RiskLevel; signals: string[] }[];
+}
+
+export async function runRiskDetection(): Promise<RiskDetectionResult> {
   // Get all active students
   const activeStudents = await db
-    .select({ id: students.id, profileId: students.profileId })
+    .select({ id: students.id, profileId: students.profileId, fullName: profiles.fullName })
     .from(students)
+    .innerJoin(profiles, eq(profiles.id, students.profileId))
     .where(eq(students.status, "active"));
 
-  if (activeStudents.length === 0) return { assessed: 0, atRisk: 0 };
+  if (activeStudents.length === 0) return { assessed: 0, atRisk: 0, atRiskStudents: [] };
 
   const studentIds = activeStudents.map((s) => s.id);
 
@@ -108,7 +119,7 @@ export async function runRiskDetection(): Promise<{ assessed: number; atRisk: nu
   for (const row of previousRows) if (!latestByStudent.has(row.studentId)) latestByStudent.set(row.studentId, row);
 
   const now = new Date();
-  let atRisk = 0;
+  const atRiskStudents: RiskDetectionResult["atRiskStudents"] = [];
 
   for (const student of activeStudents) {
     const signals: RiskSignal[] = [];
@@ -141,10 +152,44 @@ export async function runRiskDetection(): Promise<{ assessed: number; atRisk: nu
       });
     }
 
-    if (riskLevel !== "none") atRisk++;
+    if (riskLevel !== "none") {
+      atRiskStudents.push({ studentName: student.fullName, riskLevel, signals: signals.map((s) => s.detail) });
+    }
   }
 
-  return { assessed: activeStudents.length, atRisk };
+  atRiskStudents.sort((a, b) => RISK_ORDER[a.riskLevel] - RISK_ORDER[b.riskLevel] || a.studentName.localeCompare(b.studentName));
+  return { assessed: activeStudents.length, atRisk: atRiskStudents.length, atRiskStudents };
+}
+
+/** Envía el resultado de la detección a cada director. Se usa tanto en la ejecución manual como en el cron. */
+export async function sendRiskReportToDirectors(result: RiskDetectionResult): Promise<{ sent: number; failed: number }> {
+  const directorRows = await db
+    .select({ email: profiles.email })
+    .from(profiles)
+    .where(eq(profiles.role, "director"));
+
+  const panelUrl = `${await getSiteUrl()}/director/risk`;
+  const date = todayInstitute();
+  let sent = 0;
+  let failed = 0;
+
+  for (const { email } of directorRows) {
+    try {
+      await sendRiskDetectionReportEmail({
+        to: email,
+        date,
+        assessed: result.assessed,
+        atRiskStudents: result.atRiskStudents,
+        panelUrl,
+      });
+      sent++;
+    } catch (err) {
+      console.error(`[risk-detection] email failed for ${email}:`, err);
+      failed++;
+    }
+  }
+
+  return { sent, failed };
 }
 
 export interface StudentRiskRow {
