@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
+import { z } from "zod";
 import type { Resolver } from "react-hook-form";
 import { Upload } from "lucide-react";
 import { uploadDocumentAction } from "../actions";
@@ -11,8 +11,16 @@ import { Field, Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useFormAction } from "@/lib/use-form-action";
 
-// name es opcional acá: si se deja vacío, el server lo completa con el nombre del archivo
-const clientSchema = uploadDocumentSchema.partial();
+// `name` es opcional acá: si se deja vacío, el server lo completa con el nombre del
+// archivo. `.partial()` solo no alcanza: "" es un string y choca contra el .min(2),
+// así que el submit quedaba bloqueado con un error de requerido en un campo que no
+// lo es, y el comportamiento documentado era inalcanzable desde la UI (SCRUM-359).
+const clientSchema = uploadDocumentSchema.partial().extend({
+  name: z.preprocess(
+    (v) => (v === "" || v === null ? undefined : v),
+    uploadDocumentSchema.shape.name.optional(),
+  ),
+});
 type FormValues = z.infer<typeof clientSchema>;
 
 export function DocumentUploadForm() {
@@ -25,7 +33,12 @@ export function DocumentUploadForm() {
 
   return (
     <form ref={formRef} onSubmit={onSubmit} encType="multipart/form-data" className="space-y-4">
-      <Field label="Nombre del documento" id="name" error={errors.name?.message}>
+      <Field
+        label="Nombre del documento"
+        id="name"
+        helper="Si lo dejás vacío se usa el nombre del archivo."
+        error={errors.name?.message}
+      >
         <Input id="name" placeholder="ej. Guía de gramática — Nivel Intermedio" {...register("name")} />
       </Field>
 
