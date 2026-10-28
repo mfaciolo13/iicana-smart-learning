@@ -52,8 +52,8 @@ export async function runRiskDetection(): Promise<{ assessed: number; atRisk: nu
       db
         .select({
           enrollmentId: attendance.enrollmentId,
-          total: sql<number>`cast(count(*) as int)`,
-          present: sql<number>`cast(sum(case when ${attendance.status} in ('present','late') then 1 else 0 end) as int)`,
+          total: sql<number>`cast(count(*) as int)`.as("total"),
+          present: sql<number>`cast(sum(case when ${attendance.status} in ('present','late') then 1 else 0 end) as int)`.as("present"),
         })
         .from(attendance)
         .groupBy(attendance.enrollmentId)
