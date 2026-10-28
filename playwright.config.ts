@@ -33,12 +33,19 @@ const chrome = devices["Desktop Chrome"];
 // Supabase, NEXTAUTH, etc. que ya están en el entorno del runner de CI, más
 // RESEND_API_KEY, sin depender de la sintaxis POSIX `VAR=val cmd` (que no
 // funciona en todos los runners de GitHub Actions según el shell configurado).
+//
+// NOTA: el stub de RESEND_API_KEY se lista ÚLTIMO para que siempre sobreescriba
+// cualquier valor que pudiera venir de process.env (ej: una key real de prod
+// que no debe usarse en tests).
 const webServerEnv: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(process.env).filter(
       (entry): entry is [string, string] => entry[1] !== undefined
     )
   ),
+  // Stub explícito siempre al final: garantiza que el build de Next.js no
+  // falle por `new Resend(undefined)` en /api/cron/class-reminder durante
+  // la fase de page-data collection (static generation).
   RESEND_API_KEY: "disabled-for-e2e",
 };
 
@@ -108,6 +115,11 @@ export default defineConfig({
       // porque esa sintaxis no es portable en todos los shells de CI.
       // La variable RESEND_API_KEY (y el resto del entorno) se inyectan a
       // través del campo `env` que fusiona process.env completo con el stub.
+      //
+      // El doble comando `pnpm build && pnpm start` corre en el mismo subshell
+      // que hereda el `env` completo definido abajo; ambas etapas reciben
+      // RESEND_API_KEY=disabled-for-e2e, por lo que Next.js no falla durante
+      // la fase de static generation / page-data collection.
       command: process.env.E2E_PROD
         ? "pnpm build && pnpm start"
         : "pnpm dev",
@@ -118,6 +130,12 @@ export default defineConfig({
       // RESEND_API_KEY.  Playwright pasa este objeto como entorno del shell
       // que ejecuta `command`, garantizando que tanto `pnpm build` como
       // `pnpm start` en la cadena `&&` lo hereden.
+      //
+      // ADVERTENCIA sobre el comportamiento de Playwright: a diferencia de
+      // `child_process.spawn` con `env: undefined` (que hereda process.env),
+      // cuando se especifica `env` en webServer Playwright lo usa como entorno
+      // COMPLETO del proceso hijo (no hace merge automático).  Por eso
+      // construimos webServerEnv con el spread de process.env completo.
       env: webServerEnv,
     },
   }),
