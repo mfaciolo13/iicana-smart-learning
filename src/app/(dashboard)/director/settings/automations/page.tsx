@@ -37,7 +37,7 @@ const AUTOMATIONS: AutomationDef[] = [
     iconBg: "bg-red-50",
     title: "Detección de riesgo de abandono",
     description:
-      "Evalúa cada alumno activo cruzando 3 señales: pagos vencidos, asistencia < 70% y promedio de autoevaluaciones < 60%. Actualiza el panel de riesgo.",
+      "Evalúa cada alumno activo cruzando 3 señales: pagos vencidos, asistencia < 70% y promedio de autoevaluaciones < 60%. Actualiza el panel de riesgo y envía el resumen por email a Dirección.",
     schedule: "Automático: todos los días a las 06:00",
     action: runRiskDetectionAction,
     confirmMessage: "¿Ejecutar detección de riesgo ahora? Esto actualizará el estado de riesgo de todos los alumnos activos.",
