@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
+import { Select } from "@/components/ui/Input";
 import { describeActiveFilters, filterKeys, parseFilters, type FilterField } from "@/lib/filters";
 
 interface FilterBarProps {
@@ -50,14 +51,14 @@ export function FilterBar({ fields, className }: FilterBarProps) {
           <label key={f.key} className="flex flex-col gap-1 text-xs font-medium text-slate-500">
             {f.label}
             {f.type === "select" ? (
-              <select className={CONTROL} value={values[f.key] ?? ""} onChange={(e) => update({ [f.key]: e.target.value || undefined })}>
+              <Select className={CONTROL} value={values[f.key] ?? ""} onChange={(e) => update({ [f.key]: e.target.value || undefined })}>
                 <option value="">{f.placeholder ?? "Todos"}</option>
                 {f.options.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             ) : (
               <input type="date" className={CONTROL} value={values[f.key] ?? ""} onChange={(e) => update({ [f.key]: e.target.value || undefined })} />
             )}
