@@ -1,26 +1,11 @@
 "use client";
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  LabelList,
-} from "recharts";
+import { BarsChart } from "@/components/charts/BarsChart";
+import { attendanceColor, withColor } from "@/components/charts/palette";
 import type { AttendanceByCourse } from "@/modules/reports/services/dashboard.service";
 
 interface Props {
   data: AttendanceByCourse[];
-}
-
-function barColor(pct: number) {
-  if (pct >= 80) return "#10b981";
-  if (pct >= 60) return "#f59e0b";
-  return "#ef4444";
 }
 
 export function AttendanceChart({ data }: Props) {
@@ -33,37 +18,17 @@ export function AttendanceChart({ data }: Props) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 44, top: 4, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-        <XAxis
-          type="number"
-          domain={[0, 100]}
-          tickFormatter={(v) => `${v}%`}
-          tick={{ fontSize: 11, fill: "#94a3b8" }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          dataKey="courseName"
-          type="category"
-          width={90}
-          tick={{ fontSize: 11, fill: "#475569" }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <Tooltip
-          formatter={(value) => [`${value ?? 0}%`, "Asistencia"]}
-          contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
-          cursor={{ fill: "#f8fafc" }}
-        />
-        <Bar dataKey="pct" radius={[0, 4, 4, 0]} maxBarSize={18}>
-          {data.map((entry, i) => (
-            <Cell key={i} fill={barColor(entry.pct)} />
-          ))}
-          <LabelList dataKey="pct" position="right" formatter={(v) => v != null ? `${v}%` : ""} style={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <BarsChart
+      data={withColor(data, (d) => attendanceColor(d.pct))}
+      xKey="courseName"
+      layout="vertical"
+      format="percent"
+      domain={[0, 100]}
+      categoryWidth={110}
+      height={Math.max(220, data.length * 36 + 40)}
+      showLabels
+      series={[{ key: "pct", label: "Asistencia" }]}
+      colorKey="color"
+    />
   );
 }
