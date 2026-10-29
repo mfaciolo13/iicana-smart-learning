@@ -1,13 +1,14 @@
+import { StatTile, type StatTileProps } from "@/components/ui/StatTile";
 import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getServerProfile } from "@/lib/auth/helpers";
+import { hourInstitute } from "@/lib/format";
 import {
   GraduationCap,
   ClipboardList,
   CreditCard,
   AlertCircle,
-  ArrowRight,
   Plus,
   CalendarCheck,
   MessageSquare,
@@ -74,7 +75,7 @@ export default async function AdministrativoDashboardPage() {
   ).length;
 
   const now = new Date();
-  const hour = now.getHours();
+  const hour = hourInstitute(now);
   const greeting = hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
   const firstName = profile?.full_name?.split(" ")[0] ?? "Administrativo";
   const dateStr = now.toLocaleDateString("es-AR", {
@@ -102,41 +103,23 @@ export default async function AdministrativoDashboardPage() {
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
     .slice(0, 8);
 
-  const kpis = [
-    {
-      label: "Alumnos activos",
-      value: String(activeStudents),
-      sub: `${totalStudents} registrados`,
-      icon: GraduationCap,
-      bg: "bg-blue-50",
-      text: "text-blue-700",
-      href: "/administrativo/students",
-    },
-    {
-      label: "Inscripciones recientes",
-      value: String(recentEnrollmentCount),
-      sub: "Últimas 5 inscripciones activas",
-      icon: ClipboardList,
-      bg: "bg-violet-50",
-      text: "text-violet-700",
-      href: "/administrativo/enrollments",
-    },
+  const kpis: StatTileProps[] = [
+    { label: "Alumnos activos", value: activeStudents, sub: `${totalStudents} registrados`, icon: GraduationCap, href: "/administrativo/students" },
+    { label: "Inscripciones recientes", value: recentEnrollmentCount, sub: "Últimas 5 inscripciones activas", icon: ClipboardList, href: "/administrativo/enrollments" },
     {
       label: "Pagos pendientes",
-      value: String(pendingPayments + overduePayments),
+      value: pendingPayments + overduePayments,
       sub: `${overduePayments} vencidos · ${pendingPayments} a vencer`,
       icon: overduePayments > 0 ? AlertCircle : CreditCard,
-      bg: overduePayments > 0 ? "bg-red-50" : "bg-amber-50",
-      text: overduePayments > 0 ? "text-red-700" : "text-amber-700",
+      tone: overduePayments > 0 ? "danger" : "warning",
       href: "/administrativo/payments",
     },
     {
       label: "Reclamos abiertos",
-      value: String(openComplaints),
+      value: openComplaints,
       sub: openComplaints > 0 ? "Requieren atención" : "Sin pendientes",
       icon: MessageSquare,
-      bg: openComplaints > 0 ? "bg-orange-50" : "bg-slate-50",
-      text: openComplaints > 0 ? "text-orange-700" : "text-slate-400",
+      tone: openComplaints > 0 ? "warning" : "muted",
       href: "/administrativo/complaints",
     },
   ];
@@ -159,7 +142,7 @@ export default async function AdministrativoDashboardPage() {
 
       {/* Alert band */}
       {(overduePayments > 0 || openComplaints > 0) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
           <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
           <span className="text-sm font-medium text-amber-800">Requiere atención:</span>
           {overduePayments > 0 && (
@@ -183,28 +166,9 @@ export default async function AdministrativoDashboardPage() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <Link
-              key={kpi.label}
-              href={kpi.href}
-              className="group bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
-            >
-              <div className="flex items-start justify-between mb-2.5">
-                <div className={`w-8 h-8 rounded-xl ${kpi.bg} flex items-center justify-center`}>
-                  <Icon className={`w-4 h-4 ${kpi.text}`} strokeWidth={2} />
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all mt-0.5" />
-              </div>
-              <div>
-                <p className="font-bold text-slate-900 text-2xl leading-tight">{kpi.value}</p>
-                <p className="text-xs font-medium text-slate-700 mt-0.5 leading-tight">{kpi.label}</p>
-                <p className="text-[10px] text-slate-400 mt-1 leading-tight">{kpi.sub}</p>
-              </div>
-            </Link>
-          );
-        })}
+        {kpis.map((kpi) => (
+          <StatTile key={kpi.label} {...kpi} />
+        ))}
       </div>
 
       {/* Quick actions */}
@@ -215,10 +179,10 @@ export default async function AdministrativoDashboardPage() {
             <Link
               key={action.href}
               href={action.href}
-              className="group flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-blue-200 hover:bg-blue-50/50 transition-all"
+              className="group flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-brand-200 hover:bg-brand-50/50 transition-all"
             >
-              <div className="w-9 h-9 rounded-xl bg-slate-50 group-hover:bg-blue-100 flex items-center justify-center shrink-0 transition-colors">
-                <Icon className="w-4.5 h-4.5 text-slate-500 group-hover:text-blue-600 transition-colors" strokeWidth={1.75} />
+              <div className="w-9 h-9 rounded-xl bg-slate-50 group-hover:bg-brand-100 flex items-center justify-center shrink-0 transition-colors">
+                <Icon className="w-4.5 h-4.5 text-slate-500 group-hover:text-brand-600 transition-colors" strokeWidth={1.75} />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-slate-700 group-hover:text-slate-900 truncate">{action.label}</p>
@@ -240,11 +204,11 @@ export default async function AdministrativoDashboardPage() {
               <div key={item.id} className="flex items-start gap-3">
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                    item.type === "enrollment" ? "bg-blue-50" : "bg-emerald-50"
+                    item.type === "enrollment" ? "bg-brand-50" : "bg-emerald-50"
                   }`}
                 >
                   {item.type === "enrollment" ? (
-                    <UserPlus className="w-3.5 h-3.5 text-blue-600" />
+                    <UserPlus className="w-3.5 h-3.5 text-brand-600" />
                   ) : (
                     <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
                   )}

@@ -12,7 +12,7 @@ function FileIcon({ mimeType }: { mimeType: string }) {
     return <FileText className="w-4 h-4 text-red-500" />;
   }
   if (mimeType.startsWith("image/")) {
-    return <FileImage className="w-4 h-4 text-blue-500" />;
+    return <FileImage className="w-4 h-4 text-brand-500" />;
   }
   return <File className="w-4 h-4 text-slate-400" />;
 }

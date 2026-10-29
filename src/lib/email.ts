@@ -53,7 +53,7 @@ function emailShell(body: string) {
     <tr><td align="center">
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
         <tr>
-          <td style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:32px 40px;">
+          <td style="background:linear-gradient(135deg,#1b3356,#2d5383);padding:32px 40px;">
             <p style="margin:0;color:#bfdbfe;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Smart Learning</p>
           </td>
         </tr>
@@ -101,7 +101,7 @@ export async function sendInvitationEmail({
       <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.6;">El link no expira hasta que lo uses.</p>
       <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
         <tr>
-          <td style="background:#1d4ed8;border-radius:8px;">
+          <td style="background:#2d5383;border-radius:8px;">
             <a href="${esc(inviteLink)}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
               Establecer mi contraseña →
             </a>
@@ -110,7 +110,7 @@ export async function sendInvitationEmail({
       </table>
       <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
         Si no esperabas este email, podés ignorarlo.<br />
-        Si el botón no funciona, copiá este link: <a href="${esc(inviteLink)}" style="color:#3b82f6;word-break:break-all;">${esc(inviteLink)}</a>
+        Si el botón no funciona, copiá este link: <a href="${esc(inviteLink)}" style="color:#2d5383;word-break:break-all;">${esc(inviteLink)}</a>
       </p>
     `),
   });
@@ -270,7 +270,7 @@ export async function sendPasswordResetEmail({
       </p>
       <table cellpadding="0" cellspacing="0" style="margin:0 0 32px;">
         <tr>
-          <td style="background:#1d4ed8;border-radius:8px;">
+          <td style="background:#2d5383;border-radius:8px;">
             <a href="${esc(resetLink)}" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;">
               Restablecer mi contraseña →
             </a>
@@ -278,7 +278,7 @@ export async function sendPasswordResetEmail({
         </tr>
       </table>
       <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;">
-        Si el botón no funciona, copiá este link: <a href="${esc(resetLink)}" style="color:#3b82f6;word-break:break-all;">${esc(resetLink)}</a>
+        Si el botón no funciona, copiá este link: <a href="${esc(resetLink)}" style="color:#2d5383;word-break:break-all;">${esc(resetLink)}</a>
       </p>
     `),
   });
@@ -379,7 +379,7 @@ export async function sendClassReminderEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  const formattedDate = new Date(classDate).toLocaleDateString("es-AR", {
+  const formattedDate = new Date(classDate).toLocaleDateString("es-AR", { timeZone: "UTC",
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -423,7 +423,7 @@ export async function sendPaymentReminderEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", {
+  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", { timeZone: "UTC",
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -474,7 +474,7 @@ export async function sendDailyReportEmail({
     return;
   }
 
-  const formattedDate = new Date(date).toLocaleDateString("es-AR", {
+  const formattedDate = new Date(date).toLocaleDateString("es-AR", { timeZone: "UTC",
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -538,7 +538,7 @@ export async function sendDailyReportEmail({
 const RISK_LEVEL_LABELS: Record<string, { label: string; color: string }> = {
   high: { label: "Alto", color: "#dc2626" },
   medium: { label: "Medio", color: "#d97706" },
-  low: { label: "Bajo", color: "#2563eb" },
+  low: { label: "Bajo", color: "#0284d6" },
 };
 
 export async function sendRiskDetectionReportEmail({
@@ -582,7 +582,7 @@ export async function sendRiskDetectionReportEmail({
         <thead><tr><th style="${thStyle}">Alumno</th><th style="${thStyle}">Riesgo</th><th style="${thStyle}">Señales</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <a href="${esc(panelUrl)}" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 24px;border-radius:8px;">
+      <a href="${esc(panelUrl)}" style="display:inline-block;background:#2d5383;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 24px;border-radius:8px;">
         Ver panel de riesgo
       </a>
     `),
@@ -684,7 +684,7 @@ export async function sendPaymentOverdueAlertEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", {
+  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", { timeZone: "UTC",
     day: "numeric",
     month: "long",
     year: "numeric",

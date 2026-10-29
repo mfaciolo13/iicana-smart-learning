@@ -1,17 +1,17 @@
-/** Paleta y formato compartidos por todos los gráficos. */
+/** Paleta y formato compartidos por todos los gráficos (ver docs/IDENTIDAD_VISUAL.md). */
 
 export const COLORS = {
-  brand: "#2563eb",
-  brandSoft: "#93c5fd",
-  green: "#10b981",
-  amber: "#f59e0b",
-  red: "#ef4444",
-  violet: "#8b5cf6",
-  sky: "#0ea5e9",
-  slate: "#94a3b8",
-  grid: "#f1f5f9",
-  axis: "#94a3b8",
-  label: "#475569",
+  brand: "#2d5383",
+  brandSoft: "#86a6cc",
+  green: "#3aa348",
+  amber: "#e27c00",
+  red: "#bb4141",
+  violet: "#74578f",
+  sky: "#0284d6",
+  slate: "#94a0ad",
+  grid: "#eef0f3",
+  axis: "#94a0ad",
+  label: "#515c6a",
 } as const;
 
 /** Colores para series cuando el llamador no indica uno. */
@@ -53,9 +53,10 @@ export function formatAxis(format: ValueFormat | undefined, v: number): string {
 
 export const TOOLTIP_STYLE = {
   fontSize: 12,
+  fontFamily: "var(--font-sans)",
   borderRadius: 8,
-  border: "1px solid #e2e8f0",
-  boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
+  border: "1px solid #e1e5ea",
+  boxShadow: "0 4px 12px rgba(22,27,34,0.08)",
 } as const;
 
 /** Color semáforo para porcentajes de asistencia. */

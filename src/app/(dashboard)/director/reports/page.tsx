@@ -48,8 +48,8 @@ export default async function ReportsPage() {
       title: "Asistencia",
       description: "Resumen de presencia por alumno y curso: total de clases, presentes, ausentes, tardanzas y porcentaje.",
       icon: CalendarCheck,
-      iconBg: "bg-blue-50",
-      iconColor: "text-blue-600",
+      iconBg: "bg-brand-50",
+      iconColor: "text-brand-600",
       href: "/api/reports/attendance",
       filename: "reporte-asistencia.xlsx",
       stats: [

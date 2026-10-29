@@ -108,7 +108,7 @@ export default async function UsersPage({
         {[
           { label: "Directores", value: counts.director, color: "text-amber-600" },
           { label: "Administrativos", value: counts.administrativo, color: "text-purple-600" },
-          { label: "Docentes", value: counts.profesor, color: "text-blue-600" },
+          { label: "Docentes", value: counts.profesor, color: "text-brand-600" },
           { label: "Alumnos", value: counts.alumno, color: "text-emerald-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">

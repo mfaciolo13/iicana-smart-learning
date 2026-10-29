@@ -45,9 +45,9 @@ export default async function NewAssessmentPage() {
           />
         </Card>
 
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-          <p className="text-xs text-blue-700 font-medium mb-1">¿Cómo funciona?</p>
-          <ol className="text-xs text-blue-600 space-y-1 list-decimal list-inside">
+        <div className="mt-4 p-4 bg-brand-50 border border-brand-200 rounded-xl">
+          <p className="text-xs text-brand-700 font-medium mb-1">¿Cómo funciona?</p>
+          <ol className="text-xs text-brand-600 space-y-1 list-decimal list-inside">
             <li>Completá el curso, la semana y el tema.</li>
             <li>Opcionalmente, adjuntá material de referencia (PDF o imágenes).</li>
             <li>Claude genera 10 preguntas con opciones y explicaciones.</li>

@@ -7,7 +7,7 @@ import { formatMoneyAR } from "@/lib/format";
 const AGING_COLORS: Record<string, string> = {
   "Al día": COLORS.green,
   "1–15 días": COLORS.amber,
-  "16–30 días": "#f97316",
+  "16–30 días": "#e27c00",
   "Más de 30 días": COLORS.red,
 };
 

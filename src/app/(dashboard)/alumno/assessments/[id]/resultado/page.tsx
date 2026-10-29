@@ -145,7 +145,7 @@ export default async function AttemptResultPage({
           <Link
             href="/alumno/assessments"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+            style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
           >
             Ver todas mis evaluaciones
           </Link>

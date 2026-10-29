@@ -12,7 +12,7 @@ const STATUS_COLORS: Record<string, string> = {
   Suspendidos: COLORS.amber,
   Egresados: COLORS.brand,
 };
-const RISK_COLORS: Record<string, string> = { Bajo: COLORS.amber, Medio: "#f97316", Alto: COLORS.red };
+const RISK_COLORS: Record<string, string> = { Bajo: COLORS.amber, Medio: "#e27c00", Alto: COLORS.red };
 
 /** Altas por mes, estado de los alumnos y riesgo de abandono. */
 export async function PeoplePanel({

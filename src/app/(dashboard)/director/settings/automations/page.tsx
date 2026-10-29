@@ -44,8 +44,8 @@ const AUTOMATIONS: AutomationDef[] = [
   },
   {
     icon: BarChart2,
-    iconColor: "text-blue-600",
-    iconBg: "bg-blue-50",
+    iconColor: "text-brand-600",
+    iconBg: "bg-brand-50",
     title: "Reporte diario a directores",
     description:
       "Envía un email con el resumen del día anterior: pagos cobrados por método, alumnos con asistencia baja y nuevas inscripciones.",
@@ -99,9 +99,9 @@ export default function AutomationsPage() {
       </div>
 
       {/* Info banner */}
-      <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-8">
-        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-        <p className="text-sm text-blue-700">
+      <div className="flex items-start gap-3 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 mb-8">
+        <Info className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
+        <p className="text-sm text-brand-700">
           Estos procesos se ejecutan automáticamente en Vercel según el horario indicado.
           Podés dispararlos manualmente en cualquier momento — útil para probar o forzar
           un envío fuera del horario programado.

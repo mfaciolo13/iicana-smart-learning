@@ -74,7 +74,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
             ) : (
               <div
                 className="w-full h-full flex items-center justify-center text-2xl font-bold text-white"
-                style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+                style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
               >
                 {getInitials(fullName)}
               </div>

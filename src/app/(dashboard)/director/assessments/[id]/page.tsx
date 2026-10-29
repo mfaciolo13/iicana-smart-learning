@@ -103,8 +103,8 @@ export default async function AdminAssessmentDetailPage({
                   </div>
                 ))}
               </div>
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                <p className="text-xs text-blue-700"><span className="font-semibold">Explicación:</span> {q.explanation}</p>
+              <div className="mt-3 p-3 bg-brand-50 border border-brand-100 rounded-lg">
+                <p className="text-xs text-brand-700"><span className="font-semibold">Explicación:</span> {q.explanation}</p>
               </div>
             </Card>
           ))}

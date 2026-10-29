@@ -88,7 +88,7 @@ export default async function ProfesorCourseDetailPage({
         </div>
         <Link
           href={`/profesor/attendance/new?courseId=${course.id}`}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors"
         >
           + Tomar asistencia
         </Link>
@@ -145,7 +145,7 @@ export default async function ProfesorCourseDetailPage({
           </h3>
           <Link
             href={`/profesor/grades/new?courseId=${course.id}`}
-            className="text-xs text-blue-700 hover:underline font-medium"
+            className="text-xs text-brand-700 hover:underline font-medium"
           >
             + Cargar nota
           </Link>

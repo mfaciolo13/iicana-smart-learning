@@ -221,24 +221,22 @@ type ActionResult = { error?: string; success?: string; redirectTo?: string } | 
 </Link>
 ```
 
-### Branding y logo
+### Branding, tipografía y color
+
+La identidad visual está documentada en `docs/IDENTIDAD_VISUAL.md`. Resumen:
+
+- **Logo:** siempre desde `@/components/shared/Logo` (`Logo`, `LogoMark`, `Wordmark`). No dibujar el SVG a mano ni usar `<img>`. El favicon `app/icon.svg` es el mismo dibujo.
+- **Tipografía:** Manrope (`font-sans`) para la interfaz; Fraunces (`font-display`) para títulos. Los `h1` y `h2` ya salen en serif desde `globals.css`: no hace falta agregar `font-display` a los títulos de página. Sí usarlo para cifras grandes (`StatTile` ya lo hace).
+- **Color:** la paleta vive en `@theme` de `globals.css`. `brand-*` es el azul institucional de IICANA (#2d5383) y `accent-*` el naranja (#e27c00); `red-*` (#bb4141), `emerald-*` y `amber-*` también salen de iicana.org. Las escalas `slate`, `emerald`, `amber`, `red`, `orange` y `violet` de Tailwind están **sobreescritas** con versiones cálidas: seguir usándolas con esos nombres. No usar `blue-*` (se reemplazó por `brand-*` en todo el código).
+- **Indicadores numéricos:** usar `StatTile` de `@/components/ui/StatTile` en vez de tarjetas con cuadradito de color.
+- **Páginas públicas (login, invitación, recuperación):** envolver con `AuthShell` de `@/components/shared/AuthShell`.
+- **Gráficos:** colores desde `COLORS` en `src/components/charts/palette.ts`, nunca hex sueltos.
 
 ```tsx
-// Logo en sidebar (inline SVG — no usar img tag para evitar problemas de path)
-<div style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)" }} className="w-8 h-8 rounded-lg flex items-center justify-center">
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <polygon points="10,2 18,6.5 10,11 2,6.5" fill="white"/>
-    <path d="M4 8v3.5C4 14.5 7 16 10 16s6-1.5 6-4.5V8Z" fill="white" fillOpacity="0.3"/>
-  </svg>
-</div>
+import { Logo } from "@/components/shared/Logo";
 
-// Logo en páginas auth (inline + texto)
-<div className="inline-flex items-center gap-2.5">
-  {/* mismo SVG */}
-  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Smart Learning</h1>
-</div>
+<Logo size={36} textClassName="text-xl" />
 ```
-
 ### Niveles de inglés — siempre usar LEVEL_LABELS
 
 ```typescript

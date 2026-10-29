@@ -81,7 +81,7 @@ export async function ComplaintsListPage({ sp, basePath }: { sp: SearchParams; b
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           { label: "Abiertos", value: openCount, color: "text-amber-600" },
-          { label: "En proceso", value: inProgressCount, color: "text-blue-600" },
+          { label: "En proceso", value: inProgressCount, color: "text-brand-600" },
           { label: "Resueltos", value: count("resolved"), color: "text-emerald-600" },
           { label: "Cerrados", value: count("closed"), color: "text-slate-400" },
         ].map((s) => (

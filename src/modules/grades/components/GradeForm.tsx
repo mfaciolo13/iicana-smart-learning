@@ -19,14 +19,14 @@ const SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 function scoreColor(n: number) {
   if (n <= 4) return "border-red-300 text-red-700 bg-red-50 hover:bg-red-100";
   if (n <= 6) return "border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100";
-  if (n <= 8) return "border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100";
+  if (n <= 8) return "border-brand-300 text-brand-700 bg-brand-50 hover:bg-brand-100";
   return "border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100";
 }
 
 function scoreColorActive(n: number) {
   if (n <= 4) return "border-red-500 bg-red-500 text-white";
   if (n <= 6) return "border-amber-500 bg-amber-500 text-white";
-  if (n <= 8) return "border-blue-500 bg-blue-500 text-white";
+  if (n <= 8) return "border-brand-500 bg-brand-500 text-white";
   return "border-emerald-500 bg-emerald-500 text-white";
 }
 

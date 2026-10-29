@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Plus, BookOpen, CalendarCheck, PenLine, CreditCard, BarChart2 } from "lucide-react";
 import { getServerProfile } from "@/lib/auth/helpers";
+import { hourInstitute } from "@/lib/format";
 import { ChartSkeleton } from "@/components/charts/ChartCard";
 import { FinancePanel } from "@/components/analytics/FinancePanel";
 import { AcademicPanel } from "@/components/analytics/AcademicPanel";
@@ -51,7 +52,7 @@ export default async function DirectorDashboardPage() {
   const profile = await getServerProfile();
 
   const now = new Date();
-  const hour = now.getHours();
+  const hour = hourInstitute(now);
   const greeting = hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
   const firstName = profile?.full_name?.split(" ")[0] ?? "Administrador";
   const dateStr = now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -80,9 +81,9 @@ export default async function DirectorDashboardPage() {
                 <Link
                   key={action.href}
                   href={action.href}
-                  className="group flex flex-col gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all"
+                  className="group flex flex-col gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-brand-200 hover:bg-brand-50/50 transition-all"
                 >
-                  <Icon className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" strokeWidth={1.5} />
+                  <Icon className="w-5 h-5 text-slate-400 group-hover:text-brand-600 transition-colors" strokeWidth={1.5} />
                   <div>
                     <p className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">{action.label}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">{action.desc}</p>

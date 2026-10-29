@@ -16,10 +16,10 @@ const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" |
 };
 
 const AVATAR_GRADIENTS: Record<string, string> = {
-  director: "linear-gradient(135deg, #f59e0b, #d97706)",
-  administrativo: "linear-gradient(135deg, #f59e0b, #d97706)",
-  profesor: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-  alumno: "linear-gradient(135deg, #10b981, #059669)",
+  director: "linear-gradient(135deg, #e27c00, #bd6700)",
+  administrativo: "linear-gradient(135deg, #e27c00, #bd6700)",
+  profesor: "linear-gradient(135deg, #3a669a, #244470)",
+  alumno: "linear-gradient(135deg, #3aa348, #2f873b)",
 };
 
 function getInitials(name: string) {
@@ -80,7 +80,7 @@ export default async function UserDetailPage({
               ) : (
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-                  style={{ background: AVATAR_GRADIENTS[user.role] ?? "linear-gradient(135deg,#64748b,#475569)" }}
+                  style={{ background: AVATAR_GRADIENTS[user.role] ?? "linear-gradient(135deg,#94a0ad,#515c6a)" }}
                 >
                   {getInitials(user.fullName)}
                 </div>

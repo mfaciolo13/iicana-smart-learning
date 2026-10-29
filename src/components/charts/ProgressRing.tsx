@@ -20,7 +20,7 @@ export function ProgressRing({ value, label, centerText, color, size = 120 }: Pr
     <div className="flex flex-col items-center gap-2" role="img" aria-label={`${label}: ${Math.round(pct)}%`}>
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e2e8f0" strokeWidth={stroke} />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e1e5ea" strokeWidth={stroke} />
           <circle
             cx={size / 2}
             cy={size / 2}

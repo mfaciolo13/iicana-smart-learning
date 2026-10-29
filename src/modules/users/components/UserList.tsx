@@ -16,10 +16,10 @@ function getInitials(name: string) {
 }
 
 const AVATAR_GRADIENTS: Record<string, string> = {
-  director: "linear-gradient(135deg, #f59e0b, #d97706)",
-  administrativo: "linear-gradient(135deg, #f59e0b, #d97706)",
-  profesor: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-  alumno: "linear-gradient(135deg, #10b981, #059669)",
+  director: "linear-gradient(135deg, #e27c00, #bd6700)",
+  administrativo: "linear-gradient(135deg, #e27c00, #bd6700)",
+  profesor: "linear-gradient(135deg, #3a669a, #244470)",
+  alumno: "linear-gradient(135deg, #3aa348, #2f873b)",
 };
 
 interface UserListProps {
@@ -57,7 +57,7 @@ export function UserList({ users, sort }: UserListProps) {
             >
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                style={{ background: AVATAR_GRADIENTS[u.role] ?? "linear-gradient(135deg,#64748b,#475569)" }}
+                style={{ background: AVATAR_GRADIENTS[u.role] ?? "linear-gradient(135deg,#94a0ad,#515c6a)" }}
               >
                 {getInitials(u.fullName)}
               </div>
@@ -95,7 +95,7 @@ export function UserList({ users, sort }: UserListProps) {
                     <div className="flex items-center gap-3">
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                        style={{ background: AVATAR_GRADIENTS[u.role] ?? "linear-gradient(135deg,#64748b,#475569)" }}
+                        style={{ background: AVATAR_GRADIENTS[u.role] ?? "linear-gradient(135deg,#94a0ad,#515c6a)" }}
                       >
                         {getInitials(u.fullName)}
                       </div>

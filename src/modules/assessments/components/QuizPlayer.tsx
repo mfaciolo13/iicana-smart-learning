@@ -94,7 +94,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${progress}%`,
-              background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
+              background: "linear-gradient(90deg, #3a669a, #e27c00)",
             }}
           />
         </div>
@@ -116,7 +116,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
                       : "bg-red-100 text-red-600"
                     : "bg-slate-100 text-slate-400 hover:bg-slate-200",
               ].join(" ")}
-              style={i === current ? { background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" } : undefined}
+              style={i === current ? { background: "linear-gradient(135deg, #3a669a, #2d5383)" } : undefined}
             >
               {i + 1}
             </button>
@@ -143,10 +143,10 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
 
             if (!isConfirmed) {
               if (isChosen) {
-                optionClass += "border-blue-400 bg-blue-50";
-                letterClass += "bg-blue-400 text-white";
+                optionClass += "border-brand-400 bg-brand-50";
+                letterClass += "bg-brand-400 text-white";
               } else {
-                optionClass += "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50";
+                optionClass += "border-slate-200 hover:border-brand-300 hover:bg-brand-50/50";
                 letterClass += "bg-slate-100 text-slate-500";
               }
             } else {
@@ -219,7 +219,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
               onClick={confirm}
               disabled={checking}
               className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
-              style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+              style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
             >
               {checking ? "Verificando..." : "Confirmar"}
             </button>
@@ -230,7 +230,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
               type="button"
               onClick={next}
               className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95 inline-flex items-center gap-1"
-              style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+              style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
             >
               Siguiente <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -240,7 +240,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
 
       {/* Submit section */}
       {allAnswered && (
-        <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-200 rounded-2xl text-center">
+        <div className="mt-6 p-5 bg-gradient-to-r from-brand-50 to-violet-50 border border-brand-200 rounded-2xl text-center">
           <p className="text-base font-semibold text-slate-800 mb-1">¡Respondiste todas las preguntas!</p>
           <p className="text-sm text-slate-500 mb-4">Enviá tus respuestas para ver tu puntaje final.</p>
           {error && (
@@ -251,7 +251,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             onClick={handleSubmit}
             disabled={submitting}
             className="px-8 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+            style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
           >
             {submitting ? "Enviando..." : "Enviar evaluación 🚀"}
           </button>
