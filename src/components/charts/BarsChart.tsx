@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   Bar,
   BarChart,
@@ -13,7 +14,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { COLORS, SERIES_COLORS, TOOLTIP_STYLE, formatAxis, formatValue, type ValueFormat } from "./palette";
+import { COLORS, SERIES_COLORS, formatAxis, formatValue, type ValueFormat } from "./palette";
+import { BarGradient, ChartTooltip, gradId } from "./ChartTooltip";
 import type { ChartSeries } from "./TrendChart";
 
 interface BarsChartProps {
@@ -54,8 +56,17 @@ export function BarsChart({
   categoryWidth = 96,
   referenceLine,
 }: BarsChartProps) {
+  const uid = useId();
   const isVertical = layout === "vertical";
   const single = series.length === 1;
+  const seriesColor = (s: ChartSeries, i: number) => s.color ?? SERIES_COLORS[i % SERIES_COLORS.length];
+  // Un degradé por color distinto (series y colores por fila).
+  const colors = new Set<string>(series.map(seriesColor));
+  if (single && colorKey) data.forEach((row) => {
+    const c = (row as Record<string, unknown>)[colorKey];
+    if (typeof c === "string") colors.add(c);
+  });
+  const fillFor = (color: string) => `url(#${gradId(uid, color)})`;
 
   const valueAxis = isVertical ? (
     <XAxis
@@ -89,17 +100,27 @@ export function BarsChart({
       <BarChart
         data={data}
         layout={isVertical ? "vertical" : "horizontal"}
-        margin={{ left: 0, right: showLabels && isVertical ? 44 : 12, top: 8, bottom: 0 }}
+        margin={{
+          left: 0,
+          right: showLabels && isVertical ? (format === "money" ? 84 : 44) : 12,
+          top: showLabels && !isVertical ? 20 : 8,
+          bottom: 0,
+        }}
       >
-        <CartesianGrid strokeDasharray="3 3" horizontal={!isVertical} vertical={isVertical} stroke={COLORS.grid} />
+        <defs>
+          {[...colors].map((c) => (
+            <BarGradient key={c} id={gradId(uid, c)} color={c} horizontal={isVertical} />
+          ))}
+        </defs>
+        <CartesianGrid strokeDasharray="2 6" horizontal={!isVertical} vertical={isVertical} stroke="#e2e8f0" />
         {categoryAxis}
         {valueAxis}
         <Tooltip
-          formatter={(value, name) => [formatValue(format, Number(value ?? 0)), String(name)]}
-          contentStyle={TOOLTIP_STYLE}
-          cursor={{ fill: "#f8fafc" }}
+          content={<ChartTooltip format={format} colorKey={single ? colorKey : undefined} />}
+          cursor={{ fill: "#f1f5f9", fillOpacity: 0.7, radius: 6 }}
+          allowEscapeViewBox={{ x: false, y: true }}
         />
-        {series.length > 1 && <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />}
+        {series.length > 1 && <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />}
         {referenceLine && (
           <ReferenceLine
             {...(isVertical ? { x: referenceLine.value } : { y: referenceLine.value })}
@@ -109,26 +130,27 @@ export function BarsChart({
           />
         )}
         {series.map((s, i) => {
-          const color = s.color ?? SERIES_COLORS[i % SERIES_COLORS.length];
+          const color = seriesColor(s, i);
           return (
             <Bar
               key={s.key}
               dataKey={s.key}
               name={s.label}
-              fill={color}
+              fill={fillFor(color)}
               stackId={stacked ? "stack" : undefined}
-              radius={stacked ? 0 : isVertical ? [0, 4, 4, 0] : [4, 4, 0, 0]}
-              maxBarSize={isVertical ? 18 : 36}
+              radius={stacked ? 0 : isVertical ? [0, 8, 8, 0] : [8, 8, 0, 0]}
+              maxBarSize={isVertical ? 16 : 34}
+              background={isVertical && single ? { fill: "#f8fafc", radius: 8 } : undefined}
             >
               {single && colorKey
-                ? data.map((row, idx) => <Cell key={idx} fill={String((row as Record<string, unknown>)[colorKey] ?? color)} />)
+                ? data.map((row, idx) => <Cell key={idx} fill={fillFor(String((row as Record<string, unknown>)[colorKey] ?? color))} />)
                 : null}
               {showLabels && (
                 <LabelList
                   dataKey={s.key}
                   position={isVertical ? "right" : "top"}
                   formatter={(v) => (v == null ? "" : formatValue(format, Number(v)))}
-                  style={{ fontSize: 11, fill: COLORS.label, fontWeight: 500 }}
+                  style={{ fontSize: 11, fill: COLORS.label, fontWeight: 600 }}
                 />
               )}
             </Bar>

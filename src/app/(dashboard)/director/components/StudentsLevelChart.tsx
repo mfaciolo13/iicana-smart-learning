@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LabelList,
-} from "recharts";
+import { BarsChart } from "@/components/charts/BarsChart";
+import { COLORS } from "@/components/charts/palette";
 import type { StudentsByLevel } from "@/modules/reports/services/dashboard.service";
 
 interface Props {
@@ -44,31 +36,12 @@ export function StudentsLevelChart({ data }: Props) {
     .filter((d) => d.count > 0);
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={sorted} margin={{ left: 0, right: 16, top: 20, bottom: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-        <XAxis
-          dataKey="level"
-          tick={{ fontSize: 11, fill: "#475569" }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          allowDecimals={false}
-          tick={{ fontSize: 11, fill: "#94a3b8" }}
-          axisLine={false}
-          tickLine={false}
-          width={24}
-        />
-        <Tooltip
-          formatter={(value) => [value ?? 0, "Alumnos"]}
-          contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
-          cursor={{ fill: "#f8fafc" }}
-        />
-        <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40}>
-          <LabelList dataKey="count" position="top" style={{ fontSize: 11, fill: "#475569", fontWeight: 500 }} />
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+    <BarsChart
+      data={sorted}
+      xKey="level"
+      format="number"
+      showLabels
+      series={[{ key: "count", label: "Alumnos", color: COLORS.violet }]}
+    />
   );
 }
