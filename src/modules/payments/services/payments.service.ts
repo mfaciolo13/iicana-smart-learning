@@ -1,5 +1,6 @@
 import { db } from "@/lib/drizzle";
 import { todayInstitute } from "@/lib/validation";
+import { addDaysInstitute } from "@/lib/format";
 import { payments, students, profiles } from "@/lib/drizzle/schema";
 import { eq, ne, desc, and, lt, gte, sql, inArray, isNull } from "drizzle-orm";
 import type { CreatePaymentInput, MarkAsPaidInput } from "../schemas";
@@ -214,9 +215,7 @@ export interface OverdueAlertTarget {
 }
 
 export async function getOverdueAlertTargets(): Promise<OverdueAlertTarget[]> {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 15);
-  const cutoffStr = cutoff.toISOString().split("T")[0];
+  const cutoffStr = addDaysInstitute(-15);
 
   return db
     .select({
@@ -247,9 +246,7 @@ export interface SuspensionTarget {
 }
 
 export async function getSuspensionTargets(): Promise<SuspensionTarget[]> {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 30);
-  const cutoffStr = cutoff.toISOString().split("T")[0];
+  const cutoffStr = addDaysInstitute(-30);
 
   return db
     .select({

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Plus, BookOpen, CalendarCheck, PenLine, CreditCard, BarChart2 } from "lucide-react";
 import { getServerProfile } from "@/lib/auth/helpers";
+import { hourInstitute } from "@/lib/format";
 import { ChartSkeleton } from "@/components/charts/ChartCard";
 import { FinancePanel } from "@/components/analytics/FinancePanel";
 import { AcademicPanel } from "@/components/analytics/AcademicPanel";
@@ -51,10 +52,10 @@ export default async function DirectorDashboardPage() {
   const profile = await getServerProfile();
 
   const now = new Date();
-  const hour = now.getHours();
+  const hour = hourInstitute(now);
   const greeting = hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches";
   const firstName = profile?.full_name?.split(" ")[0] ?? "Administrador";
-  const dateStr = now.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const dateStr = now.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba", weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const dateFormatted = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
 
   return (

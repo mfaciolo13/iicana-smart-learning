@@ -9,6 +9,7 @@ import {
   userNotificationPreferences,
 } from "@/lib/drizzle/schema";
 import { eq, and, inArray, isNull } from "drizzle-orm";
+import { addDaysInstitute } from "@/lib/format";
 
 const DAY_MAP = [
   "sunday",
@@ -37,11 +38,9 @@ export async function getClassReminderRecipients(): Promise<ClassReminderRecipie
 
   if (!setting[0]?.enabled) return [];
 
-  // Cron runs at 23:00 UTC = 20:00 ART — "tomorrow" in ART is +1 day in UTC
-  const tomorrow = new Date();
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  const tomorrowDay = DAY_MAP[tomorrow.getUTCDay()];
-  const classDate = tomorrow.toISOString().slice(0, 10);
+  // "Mañana" según el calendario del instituto, no el de UTC.
+  const classDate = addDaysInstitute(1);
+  const tomorrowDay = DAY_MAP[new Date(`${classDate}T00:00:00Z`).getUTCDay()];
 
   const activeCourses = await db
     .select({ id: courses.id, name: courses.name, classTime: courses.classTime, classDays: courses.classDays })
@@ -117,10 +116,8 @@ export async function getPaymentReminderRecipients(): Promise<PaymentReminderRec
 
   if (!setting[0]?.enabled) return [];
 
-  // Cron runs at 12:00 UTC = 09:00 ART — warn about payments due in 3 days
-  const threeDaysLater = new Date();
-  threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
-  const dueDateStr = threeDaysLater.toISOString().slice(0, 10);
+  // Avisar de los pagos que vencen en 3 días (calendario del instituto)
+  const dueDateStr = addDaysInstitute(3);
 
   const rows = await db
     .select({
