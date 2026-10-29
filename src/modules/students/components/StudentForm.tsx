@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { createStudentSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
 import { useFormAction } from "@/lib/use-form-action";
-import { NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS } from "@/lib/validation";
+import { NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS, todayInstitute } from "@/lib/validation";
 
 function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
   const el = e.currentTarget;
@@ -32,9 +32,8 @@ function sanitizeScoreInput(e: React.FormEvent<HTMLInputElement>) {
 }
 
 function dateYearsAgo(years: number) {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - years);
-  return d.toISOString().split("T")[0];
+  const [y, m, d] = todayInstitute().split("-").map(Number);
+  return new Date(Date.UTC(y - years, m - 1, d)).toISOString().slice(0, 10);
 }
 
 // El calendario nativo no debe ofrecer fechas fuera del rango válido (RN: edad mínima 6, máxima 100)

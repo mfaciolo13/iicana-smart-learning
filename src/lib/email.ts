@@ -379,7 +379,7 @@ export async function sendClassReminderEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  const formattedDate = new Date(classDate).toLocaleDateString("es-AR", {
+  const formattedDate = new Date(classDate).toLocaleDateString("es-AR", { timeZone: "UTC",
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -423,7 +423,7 @@ export async function sendPaymentReminderEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", {
+  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", { timeZone: "UTC",
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -474,7 +474,7 @@ export async function sendDailyReportEmail({
     return;
   }
 
-  const formattedDate = new Date(date).toLocaleDateString("es-AR", {
+  const formattedDate = new Date(date).toLocaleDateString("es-AR", { timeZone: "UTC",
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -684,7 +684,7 @@ export async function sendPaymentOverdueAlertEmail({
     return;
   }
   const firstName = fullName.split(" ")[0];
-  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", {
+  const formattedDate = new Date(dueDate).toLocaleDateString("es-AR", { timeZone: "UTC",
     day: "numeric",
     month: "long",
     year: "numeric",

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { todayInstitute, isFutureDate } from "@/lib/validation";
+import { hourInstitute, addDaysInstitute } from "@/lib/format";
 
 /**
  * SCRUM-355 — la fecha por defecto de "Tomar asistencia" se calculaba en UTC.
@@ -61,5 +62,20 @@ describe("la fecha por defecto es aceptada por el servidor", () => {
   it("al mediodía la fecha propuesta tampoco es futura", () => {
     const now = new Date("2026-10-15T15:00:00.000Z");
     expect(isFutureDate(todayInstitute(now), now)).toBe(false);
+  });
+});
+
+describe("hourInstitute y addDaysInstitute", () => {
+  it("a las 00:30 UTC todavía es de noche del día anterior en Córdoba (21:30)", () => {
+    const now = new Date("2026-10-29T00:30:00.000Z"); // miércoles 28 21:30 ART
+    expect(hourInstitute(now)).toBe(21);
+    expect(todayInstitute(now)).toBe("2026-10-28");
+  });
+
+  it("suma y resta días sobre el calendario del instituto, no el de UTC", () => {
+    const now = new Date("2026-10-29T00:30:00.000Z"); // hoy en ART: 2026-10-28
+    expect(addDaysInstitute(1, now)).toBe("2026-10-29");
+    expect(addDaysInstitute(-15, now)).toBe("2026-10-13");
+    expect(addDaysInstitute(3, new Date("2026-10-30T12:00:00.000Z"))).toBe("2026-11-02");
   });
 });

@@ -1,6 +1,7 @@
 import { db } from "@/lib/drizzle";
 import { payments, students, profiles, attendance, enrollments, courses } from "@/lib/drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
+import { addDaysInstitute, INSTITUTE_TZ } from "@/lib/format";
 
 export interface DailyReportData {
   date: string;
@@ -12,16 +13,14 @@ export interface DailyReportData {
 }
 
 export async function getDailyReportData(): Promise<DailyReportData> {
-  // "Yesterday" in UTC (cron runs at 10:00 UTC = 07:00 ART)
-  const yesterday = new Date();
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  // "Ayer" según el calendario del instituto, no el de UTC
+  const yesterdayStr = addDaysInstitute(-1);
 
   // 1. Payments registered yesterday
   const paymentRows = await db
     .select({ method: payments.method, amount: payments.amount })
     .from(payments)
-    .where(and(eq(payments.status, "paid"), sql`${payments.paidAt}::date = ${yesterdayStr}`));
+    .where(and(eq(payments.status, "paid"), sql`(${payments.paidAt} at time zone ${INSTITUTE_TZ})::date = ${yesterdayStr}`));
 
   const methodMap = new Map<string, { count: number; total: number }>();
   for (const p of paymentRows) {
