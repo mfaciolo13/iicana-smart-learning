@@ -42,6 +42,19 @@ const webServerEnv: Record<string, string> = {
   RESEND_API_KEY: "disabled-for-e2e",
 };
 
+// Comando de build: Next.js lee variables de entorno directamente desde el
+// entorno del proceso Node que ejecuta el compilador. pnpm no siempre propaga
+// el `env` de webServer a sus procesos hijos (depende de la versión y del
+// packageManager hook). Para garantizar que RESEND_API_KEY llegue al paso de
+// `next build` (donde se hace la page-data collection de /api/cron/*), la
+// inyectamos explícitamente mediante `env VAR=val` — comando POSIX estándar
+// disponible en todos los runners Linux/macOS de GitHub Actions — en lugar de
+// la sintaxis de asignación de shell (`VAR=val cmd`), que algunos shells
+// restringen. `env` es un binario del sistema, no una feature del shell.
+const buildCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm build";
+const startCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm start";
+const devCommand = "pnpm dev"; // dev no hace page-data collection estática
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -104,13 +117,13 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // Usamos comandos simples sin asignación inline POSIX (`VAR=val cmd`)
-      // porque esa sintaxis no es portable en todos los shells de CI.
-      // La variable RESEND_API_KEY (y el resto del entorno) se inyectan a
-      // través del campo `env` que fusiona process.env completo con el stub.
+      // Usamos `env VAR=val cmd` (binario POSIX) en lugar de la sintaxis de
+      // asignación de shell (`VAR=val cmd`) para máxima portabilidad en CI.
+      // Esto garantiza que RESEND_API_KEY esté presente cuando `next build`
+      // hace la page-data collection de rutas API que instancian Resend.
       command: process.env.E2E_PROD
-        ? "pnpm build && pnpm start"
-        : "pnpm dev",
+        ? `${buildCommand} && ${startCommand}`
+        : devCommand,
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
