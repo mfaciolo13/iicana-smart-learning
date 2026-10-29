@@ -25,6 +25,20 @@ async function sendOrThrow(payload: Parameters<typeof resend.emails.send>[0]): P
   if (error) throw new Error(`Resend: ${error.message}`);
 }
 
+type EmailPayload = Parameters<typeof resend.emails.send>[0];
+type Recipient = { email: string; fullName: string };
+
+// Resend admite hasta 100 emails por request de batch y limita a 10 requests/s: mandar un
+// email por destinatario en paralelo hace que los envíos masivos se corten con 429.
+const BATCH_LIMIT = 100;
+
+async function sendBatchOrThrow(payloads: EmailPayload[]): Promise<void> {
+  for (let i = 0; i < payloads.length; i += BATCH_LIMIT) {
+    const { error } = await resend.batch.send(payloads.slice(i, i + BATCH_LIMIT));
+    if (error) throw new Error(`Resend: ${error.message}`);
+  }
+}
+
 const ROLE_LABELS: Record<string, string> = {
   alumno: "alumno/a",
   profesor: "docente",
@@ -174,7 +188,7 @@ export async function sendTeacherAssignmentEmail({
   });
 }
 
-export async function sendInstitutionalNotificationEmail({
+function institutionalNotificationPayload({
   to,
   fullName,
   title,
@@ -184,13 +198,9 @@ export async function sendInstitutionalNotificationEmail({
   fullName: string;
   title: string;
   body: string;
-}) {
-  if (IS_DEV) {
-    console.log(`\n📧 [DEV] Notification email for ${to} — "${title}"\n`);
-    return;
-  }
+}): EmailPayload {
   const firstName = fullName.split(" ")[0];
-  await sendOrThrow({
+  return {
     from: FROM,
     to,
     subject: `${title} — Smart Learning`,
@@ -200,7 +210,38 @@ export async function sendInstitutionalNotificationEmail({
       <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.6;">${esc(body)}</p>
       <p style="margin:0;color:#94a3b8;font-size:12px;">Podés ver esta notificación en Smart Learning.</p>
     `),
-  });
+  };
+}
+
+export async function sendInstitutionalNotificationEmail(params: {
+  to: string;
+  fullName: string;
+  title: string;
+  body: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Notification email for ${params.to} — "${params.title}"\n`);
+    return;
+  }
+  await sendOrThrow(institutionalNotificationPayload(params));
+}
+
+export async function sendInstitutionalNotificationEmails({
+  recipients,
+  title,
+  body,
+}: {
+  recipients: Recipient[];
+  title: string;
+  body: string;
+}) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Notification email for ${recipients.length} recipients — "${title}"\n`);
+    return;
+  }
+  await sendBatchOrThrow(
+    recipients.map((r) => institutionalNotificationPayload({ to: r.email, fullName: r.fullName, title, body }))
+  );
 }
 
 export async function sendPasswordResetEmail({
@@ -675,25 +716,17 @@ export async function sendPaymentOverdueAlertEmail({
   });
 }
 
-export async function sendAssessmentPublishedEmail({
+type AssessmentEmailDetail = { courseName: string; topic: string; weekLabel: string };
+
+function assessmentPublishedPayload({
   to,
   fullName,
   courseName,
   topic,
   weekLabel,
-}: {
-  to: string;
-  fullName: string;
-  courseName: string;
-  topic: string;
-  weekLabel: string;
-}) {
-  if (IS_DEV) {
-    console.log(`\n📧 [DEV] Assessment email for ${to} — ${topic}\n`);
-    return;
-  }
+}: { to: string; fullName: string } & AssessmentEmailDetail): EmailPayload {
   const firstName = fullName.split(" ")[0];
-  await sendOrThrow({
+  return {
     from: FROM,
     to,
     subject: `Nueva autoevaluación disponible — Smart Learning`,
@@ -710,5 +743,26 @@ export async function sendAssessmentPublishedEmail({
         Ingresá a Smart Learning para realizarla cuando quieras.
       </p>
     `),
-  });
+  };
+}
+
+export async function sendAssessmentPublishedEmail(params: { to: string; fullName: string } & AssessmentEmailDetail) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Assessment email for ${params.to} — ${params.topic}\n`);
+    return;
+  }
+  await sendOrThrow(assessmentPublishedPayload(params));
+}
+
+export async function sendAssessmentPublishedEmails({
+  recipients,
+  ...detail
+}: { recipients: Recipient[] } & AssessmentEmailDetail) {
+  if (IS_DEV) {
+    console.log(`\n📧 [DEV] Assessment email for ${recipients.length} recipients — ${detail.topic}\n`);
+    return;
+  }
+  await sendBatchOrThrow(
+    recipients.map((r) => assessmentPublishedPayload({ to: r.email, fullName: r.fullName, ...detail }))
+  );
 }

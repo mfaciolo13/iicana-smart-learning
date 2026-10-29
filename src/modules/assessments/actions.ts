@@ -6,7 +6,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { assertCourseAccess } from "@/lib/auth/course-access";
 import { isStudentAccessRestricted } from "@/modules/students/services/students.service";
-import { sendAssessmentPublishedEmail } from "@/lib/email";
+import { sendAssessmentPublishedEmails } from "@/lib/email";
 import { getEmailsForCourse } from "@/modules/notifications/services/notifications.service";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getDocumentById } from "@/modules/documents/services/documents.service";
@@ -195,17 +195,12 @@ export async function publishAssessmentAction(_prev: ActionResult, formData: For
   if (detail) {
     try {
       const recipients = await getEmailsForCourse(assessment.courseId);
-      await Promise.all(
-        recipients.map((r) =>
-          sendAssessmentPublishedEmail({
-            to: r.email,
-            fullName: r.fullName,
-            courseName: detail.courseName,
-            topic: detail.topic,
-            weekLabel: detail.weekLabel,
-          })
-        )
-      );
+      await sendAssessmentPublishedEmails({
+        recipients,
+        courseName: detail.courseName,
+        topic: detail.topic,
+        weekLabel: detail.weekLabel,
+      });
     } catch (e) {
       console.error("[assessment published email]", e);
     }
@@ -343,17 +338,12 @@ export async function publishAssessmentProfesorAction(_prev: ActionResult, formD
   if (detail) {
     try {
       const recipients = await getEmailsForCourse(assessment.courseId);
-      await Promise.all(
-        recipients.map((r) =>
-          sendAssessmentPublishedEmail({
-            to: r.email,
-            fullName: r.fullName,
-            courseName: detail.courseName,
-            topic: detail.topic,
-            weekLabel: detail.weekLabel,
-          })
-        )
-      );
+      await sendAssessmentPublishedEmails({
+        recipients,
+        courseName: detail.courseName,
+        topic: detail.topic,
+        weekLabel: detail.weekLabel,
+      });
     } catch (e) {
       console.error("[assessment published email]", e);
     }
