@@ -81,9 +81,9 @@ export default async function DirectorDashboardPage() {
                 <Link
                   key={action.href}
                   href={action.href}
-                  className="group flex flex-col gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all"
+                  className="group flex flex-col gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-brand-200 hover:bg-brand-50/50 transition-all"
                 >
-                  <Icon className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" strokeWidth={1.5} />
+                  <Icon className="w-5 h-5 text-slate-400 group-hover:text-brand-600 transition-colors" strokeWidth={1.5} />
                   <div>
                     <p className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">{action.label}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">{action.desc}</p>

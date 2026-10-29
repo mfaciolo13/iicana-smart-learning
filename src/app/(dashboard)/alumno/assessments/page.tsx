@@ -43,7 +43,7 @@ export default async function AlumnoAssessmentsPage() {
         {[
           { label: "Pendientes", value: pending, color: "text-amber-600" },
           { label: "Completadas", value: completed, color: "text-emerald-600" },
-          { label: "Promedio", value: avgScore !== null ? `${avgScore}%` : "—", color: "text-blue-600" },
+          { label: "Promedio", value: avgScore !== null ? `${avgScore}%` : "—", color: "text-brand-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">{s.label}</p>
@@ -54,7 +54,7 @@ export default async function AlumnoAssessmentsPage() {
 
       {items.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
-          <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">🎓</span>
           </div>
           <p className="text-base font-semibold text-slate-700">Sin evaluaciones disponibles</p>
@@ -94,7 +94,7 @@ export default async function AlumnoAssessmentsPage() {
                   <Link
                     href={`/alumno/assessments/${item.id}`}
                     className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 inline-flex items-center gap-1"
-                    style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+                    style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
                   >
                     Comenzar <ArrowRight className="w-3.5 h-3.5" />
                   </Link>

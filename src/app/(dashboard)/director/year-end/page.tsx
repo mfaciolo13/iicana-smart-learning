@@ -21,7 +21,7 @@ type Outcome = "promoted" | "eligible" | "insufficient" | "no_data" | "withdrawn
 
 const OUTCOME_STYLE: Record<string, string> = {
   promoted: "text-emerald-700 bg-emerald-50",
-  eligible: "text-blue-700 bg-blue-50",
+  eligible: "text-brand-700 bg-brand-50",
   insufficient: "text-red-700 bg-red-50",
   withdrawn: "text-slate-500 bg-slate-100",
   no_data: "text-slate-400 bg-slate-50",
@@ -168,7 +168,7 @@ export default async function YearEndPage({
         {[
           { label: "Total", value: summary.total, style: "" },
           { label: "Promovidos", value: summary.promoted, style: "text-emerald-700" },
-          { label: "Aptos", value: summary.eligible, style: "text-blue-700" },
+          { label: "Aptos", value: summary.eligible, style: "text-brand-700" },
           { label: "Insuficientes", value: summary.insufficient, style: "text-red-700" },
           { label: "Bajas", value: summary.withdrawn, style: "text-slate-500" },
         ].map((s) => (
@@ -180,7 +180,7 @@ export default async function YearEndPage({
       </div>
 
       {hasPending && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 mb-4 text-sm text-blue-800">
+        <div className="bg-brand-50 border border-brand-200 rounded-xl px-5 py-3 mb-4 text-sm text-brand-800">
           Hay <strong>{summary.eligible}</strong> {summary.eligible === 1 ? "alumno apto pendiente" : "alumnos aptos pendientes"} de promoción. Usá el botón &ldquo;Cerrar ciclo lectivo&rdquo; para procesarlos.
         </div>
       )}

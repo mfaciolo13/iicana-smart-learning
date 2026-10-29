@@ -112,7 +112,7 @@ export function BarsChart({
             <BarGradient key={c} id={gradId(uid, c)} color={c} horizontal={isVertical} />
           ))}
         </defs>
-        <CartesianGrid strokeDasharray="2 6" horizontal={!isVertical} vertical={isVertical} stroke="#e2e8f0" />
+        <CartesianGrid strokeDasharray="2 6" horizontal={!isVertical} vertical={isVertical} stroke="#e1e5ea" />
         {categoryAxis}
         {valueAxis}
         <Tooltip
@@ -140,7 +140,7 @@ export function BarsChart({
               stackId={stacked ? "stack" : undefined}
               radius={stacked ? 0 : isVertical ? [0, 8, 8, 0] : [8, 8, 0, 0]}
               maxBarSize={isVertical ? 16 : 34}
-              background={isVertical && single ? { fill: "#f8fafc", radius: 8 } : undefined}
+              background={isVertical && single ? { fill: "#f6f7f9", radius: 8 } : undefined}
             >
               {single && colorKey
                 ? data.map((row, idx) => <Cell key={idx} fill={fillFor(String((row as Record<string, unknown>)[colorKey] ?? color))} />)

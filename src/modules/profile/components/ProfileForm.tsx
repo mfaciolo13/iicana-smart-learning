@@ -2,9 +2,10 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { Camera } from "lucide-react";
+import { getInitials } from "@/lib/initials";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { updateProfileAction } from "../actions";
@@ -24,9 +25,6 @@ function sanitizePhoneInput(e: React.FormEvent<HTMLInputElement>) {
   if (cleaned !== el.value) el.value = cleaned;
 }
 
-function getInitials(name: string) {
-  return name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
-}
 
 const profileSchema = z.object({
   fullName: personNameField("El nombre"),
@@ -51,11 +49,19 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
 
   const [preview, setPreview] = useState<string | null>(avatarUrl);
   const fileRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  useEffect(() => () => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+  }, []);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPreview(URL.createObjectURL(file));
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
+    setPreview(previewUrl);
   }
 
   return (
@@ -65,7 +71,7 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="w-24 h-24 rounded-full overflow-hidden focus:outline-none"
+            className="w-24 h-24 rounded-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             aria-label="Cambiar foto de perfil"
           >
             {preview ? (
@@ -74,12 +80,12 @@ export function ProfileForm({ fullName, email, phone, avatarUrl }: ProfileFormPr
             ) : (
               <div
                 className="w-full h-full flex items-center justify-center text-2xl font-bold text-white"
-                style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+                style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
               >
                 {getInitials(fullName)}
               </div>
             )}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center rounded-full">
               <Camera className="w-6 h-6 text-white" />
             </div>
           </button>

@@ -37,8 +37,8 @@ export function Card({
       )}
     >
       {hasHeader && (
-        <div className={cn("flex items-start justify-between gap-4 border-b border-slate-100", paddingMap[padding])}>
-          <div>
+        <div className={cn("flex flex-wrap items-start justify-between gap-4 border-b border-slate-100", paddingMap[padding])}>
+          <div className="min-w-0 flex-1 basis-48 break-words">
             {title && (
               <h3 className="text-base font-semibold text-slate-900">{title}</h3>
             )}
@@ -46,7 +46,7 @@ export function Card({
               <p className="text-sm text-slate-500 mt-0.5">{description}</p>
             )}
           </div>
-          {actions && <div className="shrink-0">{actions}</div>}
+          {actions && <div className="flex max-w-full flex-wrap gap-2">{actions}</div>}
         </div>
       )}
 

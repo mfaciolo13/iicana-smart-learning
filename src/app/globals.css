@@ -1,63 +1,195 @@
 @import "tailwindcss";
 
-/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+/* ─── Design Tokens ───────────────────────────────────────────────────────────
+   Paleta institucional (tomada de iicana.org): azul marino #2d5383 como color
+   principal, rojo #bb4141 y naranja #e27c00 como acentos, verde #3aa348 y
+   mostaza #c4960d como secundarios, sobre neutros fríos.
+   Las escalas slate / emerald / amber / red / orange / violet de Tailwind se
+   sobreescriben acá, así todo el código existente adopta la paleta sin tocar
+   cada clase. Ver docs/IDENTIDAD_VISUAL.md.
+──────────────────────────────────────────────────────────────────────────── */
 @theme {
-  /* Brand */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  /* Azul institucional (brand) — 700 es el #2d5383 del logo */
+  --color-brand-50: #eef3f9;
+  --color-brand-100: #d9e4f1;
+  --color-brand-200: #b3c8e2;
+  --color-brand-300: #86a6cc;
+  --color-brand-400: #5a84b3;
+  --color-brand-500: #4a7bb0;
+  --color-brand-600: #3a669a;
+  --color-brand-700: #2d5383;
+  --color-brand-800: #244470;
+  --color-brand-900: #1b3356;
+  --color-brand-950: #122240;
 
-  /* Accent */
-  --color-accent-500: #f59e0b;
-  --color-accent-600: #d97706;
+  /* Naranja (accent) — el resaltado del sitio institucional */
+  --color-accent-50: #fdf3e6;
+  --color-accent-100: #fae1bf;
+  --color-accent-200: #f5c285;
+  --color-accent-300: #efa24d;
+  --color-accent-400: #e98d22;
+  --color-accent-500: #e27c00;
+  --color-accent-600: #bd6700;
+  --color-accent-700: #975200;
 
-  /* Semantic */
-  --color-success-50: #ecfdf5;
-  --color-success-500: #10b981;
-  --color-warning-50: #fffbeb;
-  --color-warning-500: #f59e0b;
-  --color-danger-50: #fef2f2;
-  --color-danger-500: #ef4444;
-  --color-info-500: #0ea5e9;
+  /* Neutros fríos — reemplazan a slate */
+  --color-slate-50: #f6f7f9;
+  --color-slate-100: #eef0f3;
+  --color-slate-200: #e1e5ea;
+  --color-slate-300: #c9d0d8;
+  --color-slate-400: #94a0ad;
+  --color-slate-500: #6b7786;
+  --color-slate-600: #515c6a;
+  --color-slate-700: #3b4450;
+  --color-slate-800: #262d37;
+  --color-slate-900: #161b22;
+  --color-slate-950: #0d1117;
 
-  /* Neutral surface */
+  /* Verde institucional — reemplaza a emerald (éxito, pagos al día, presente) */
+  --color-emerald-50: #edf7ee;
+  --color-emerald-100: #d3ecd6;
+  --color-emerald-200: #a9d9ae;
+  --color-emerald-300: #7cc485;
+  --color-emerald-400: #56b262;
+  --color-emerald-500: #3aa348;
+  --color-emerald-600: #2f873b;
+  --color-emerald-700: #276c31;
+  --color-emerald-800: #205527;
+  --color-emerald-900: #1a4420;
+
+  /* Mostaza institucional — reemplaza a amber (advertencia, pendiente) */
+  --color-amber-50: #fbf6e6;
+  --color-amber-100: #f5e8bd;
+  --color-amber-200: #ead27f;
+  --color-amber-300: #ddbb45;
+  --color-amber-400: #d0a722;
+  --color-amber-500: #c4960d;
+  --color-amber-600: #a37c0b;
+  --color-amber-700: #826209;
+  --color-amber-800: #664d09;
+  --color-amber-900: #523e08;
+
+  /* Rojo institucional — reemplaza a red (error, vencido, ausente) */
+  --color-red-50: #f9eeee;
+  --color-red-100: #f2d6d6;
+  --color-red-200: #e6adad;
+  --color-red-300: #d98282;
+  --color-red-400: #cc5e5e;
+  --color-red-500: #bb4141;
+  --color-red-600: #9e3535;
+  --color-red-700: #7f2b2b;
+  --color-red-800: #662323;
+  --color-red-900: #521d1d;
+
+  /* Naranja — reemplaza a orange */
+  --color-orange-50: #fdf3e6;
+  --color-orange-100: #fae1bf;
+  --color-orange-200: #f5c285;
+  --color-orange-300: #efa24d;
+  --color-orange-400: #e98d22;
+  --color-orange-500: #e27c00;
+  --color-orange-600: #bd6700;
+  --color-orange-700: #975200;
+  --color-orange-800: #764100;
+  --color-orange-900: #5f3500;
+
+  /* Ciruela — reemplaza a violet (series secundarias de gráficos) */
+  --color-violet-50: #f3f0f7;
+  --color-violet-100: #e2dcec;
+  --color-violet-200: #c7bbd9;
+  --color-violet-300: #a893c1;
+  --color-violet-400: #8c70a8;
+  --color-violet-500: #74578f;
+  --color-violet-600: #5f4676;
+  --color-violet-700: #4d3960;
+  --color-violet-800: #3e2f4d;
+  --color-violet-900: #30253c;
+
+  /* Semánticos (alias) */
+  --color-success-50: #edf7ee;
+  --color-success-500: #3aa348;
+  --color-warning-50: #fbf6e6;
+  --color-warning-500: #c4960d;
+  --color-danger-50: #f9eeee;
+  --color-danger-500: #bb4141;
+  --color-info-500: #0284d6;
+
+  /* Superficies */
   --color-surface: #ffffff;
-  --color-surface-2: #f1f5f9;
+  --color-surface-2: #eef0f3;
 
-  /* Font */
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
+  /* Tipografía */
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Radios un poco más contenidos que el default (menos "pastilla") */
+  --radius-xl: 0.625rem;
+  --radius-2xl: 0.75rem;
+
+  /* Sombras muy suaves, tintadas con el gris azulado */
+  --shadow-sm: 0 1px 2px 0 rgb(22 27 34 / 0.05);
+  --shadow-md: 0 2px 6px -1px rgb(22 27 34 / 0.08), 0 1px 2px 0 rgb(22 27 34 / 0.04);
+  --shadow-lg: 0 10px 24px -6px rgb(22 27 34 / 0.14), 0 2px 6px 0 rgb(22 27 34 / 0.06);
+  --shadow-xl: 0 20px 40px -12px rgb(22 27 34 / 0.2);
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────────── */
-:root {
-  --background: #f8fafc;
-}
+@layer base {
+  :root {
+    --background: var(--color-slate-50);
+    color-scheme: light;
+  }
 
-body {
-  background-color: var(--background);
-  color: #0f172a;
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
+  body {
+    background-color: var(--background);
+    color: var(--color-slate-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-input,
-select,
-textarea {
-  color: #0f172a;
-  background-color: #ffffff;
-}
+  /* Títulos de página y de sección en serif. Los h3 (cards) quedan en sans. */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    font-variation-settings: "SOFT" 30;
+  }
 
-input::placeholder,
-textarea::placeholder {
-  color: #94a3b8;
+  /* Cifras alineadas en tablas y listados */
+  table,
+  tbody,
+  td {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: var(--color-brand-100);
+    color: var(--color-slate-900);
+  }
+
+  input,
+  select,
+  textarea {
+    color: var(--color-slate-900);
+    background-color: #ffffff;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-slate-400);
+  }
+
+  /* Tailwind 4 dejó de poner cursor: pointer en los botones; se restaura acá. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  [role="combobox"]:not(:disabled),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
 }
 
 /* ─── Reduced motion ─────────────────────────────────────────────────────────── */

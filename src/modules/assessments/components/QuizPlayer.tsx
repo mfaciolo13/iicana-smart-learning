@@ -83,18 +83,29 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
         <h2 className="text-xl font-bold text-slate-900">{topic}</h2>
       </div>
 
+      {error && (
+        <p className="text-sm text-red-600 mb-3" role="alert">{error}</p>
+      )}
+
       {/* Progress bar */}
       <div className="mb-6">
         <div className="flex justify-between text-xs text-slate-400 mb-2">
           <span>Pregunta {current + 1} de {questions.length}</span>
           <span>{answeredCount}/{questions.length} respondidas</span>
         </div>
-        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-2 bg-slate-100 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-label="Preguntas respondidas"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={answeredCount}
+        >
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${progress}%`,
-              background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
+              background: "linear-gradient(90deg, #3a669a, #e27c00)",
             }}
           />
         </div>
@@ -106,6 +117,8 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
               key={i}
               type="button"
               onClick={() => setCurrent(i)}
+              aria-label={`Pregunta ${i + 1}`}
+              aria-current={i === current ? "step" : undefined}
               className={[
                 "w-7 h-7 rounded-full text-xs font-bold transition-all",
                 i === current
@@ -116,7 +129,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
                       : "bg-red-100 text-red-600"
                     : "bg-slate-100 text-slate-400 hover:bg-slate-200",
               ].join(" ")}
-              style={i === current ? { background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" } : undefined}
+              style={i === current ? { background: "linear-gradient(135deg, #3a669a, #2d5383)" } : undefined}
             >
               {i + 1}
             </button>
@@ -138,15 +151,15 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             const isChosen = chosenIndex === i;
             const isCorrectOption = i === correctIndex;
 
-            let optionClass = "flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-150 ";
+            let optionClass = "flex w-full items-center gap-3 p-4 text-left rounded-xl border-2 cursor-pointer transition-all duration-150 ";
             let letterClass = "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all ";
 
             if (!isConfirmed) {
               if (isChosen) {
-                optionClass += "border-blue-400 bg-blue-50";
-                letterClass += "bg-blue-400 text-white";
+                optionClass += "border-brand-400 bg-brand-50";
+                letterClass += "bg-brand-400 text-white";
               } else {
-                optionClass += "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50";
+                optionClass += "border-slate-200 hover:border-brand-300 hover:bg-brand-50/50";
                 letterClass += "bg-slate-100 text-slate-500";
               }
             } else {
@@ -163,12 +176,13 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
             }
 
             return (
-              <div
+              <button
                 key={i}
-                role="button"
-                tabIndex={isConfirmed ? -1 : 0}
+                type="button"
+                disabled={isConfirmed}
+                aria-pressed={isChosen}
                 onClick={() => pick(i)}
-                onKeyDown={(e) => e.key === "Enter" && pick(i)}
+
                 className={optionClass}
               >
                 <span className={letterClass}>{OPTION_LETTERS[i]}</span>
@@ -179,7 +193,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
                 {isConfirmed && isChosen && !isCorrectOption && (
                   <span className="ml-auto text-red-500 text-lg">✗</span>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -219,7 +233,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
               onClick={confirm}
               disabled={checking}
               className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
-              style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+              style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
             >
               {checking ? "Verificando..." : "Confirmar"}
             </button>
@@ -230,7 +244,7 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
               type="button"
               onClick={next}
               className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95 inline-flex items-center gap-1"
-              style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+              style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
             >
               Siguiente <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -240,18 +254,16 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
 
       {/* Submit section */}
       {allAnswered && (
-        <div className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-200 rounded-2xl text-center">
+        <div className="mt-6 p-5 bg-gradient-to-r from-brand-50 to-violet-50 border border-brand-200 rounded-2xl text-center">
           <p className="text-base font-semibold text-slate-800 mb-1">¡Respondiste todas las preguntas!</p>
           <p className="text-sm text-slate-500 mb-4">Enviá tus respuestas para ver tu puntaje final.</p>
-          {error && (
-            <p className="text-sm text-red-600 mb-3">{error}</p>
-          )}
+
           <button
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
             className="px-8 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)" }}
+            style={{ background: "linear-gradient(135deg, #3a669a, #2d5383)" }}
           >
             {submitting ? "Enviando..." : "Enviar evaluación 🚀"}
           </button>

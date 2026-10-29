@@ -18,14 +18,21 @@ export function DashboardShell({ role, fullName, avatarUrl, userId, initialUnrea
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (!sidebarOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
     };
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, [sidebarOpen]);
 
   return (
@@ -33,7 +40,7 @@ export function DashboardShell({ role, fullName, avatarUrl, userId, initialUnrea
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -56,7 +63,7 @@ export function DashboardShell({ role, fullName, avatarUrl, userId, initialUnrea
           initialUnreadCount={initialUnreadCount}
           onMenuClick={() => setSidebarOpen((v) => !v)}
         />
-        <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">{children}</main>
       </div>
     </div>
   );

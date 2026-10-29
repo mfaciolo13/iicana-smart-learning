@@ -45,12 +45,12 @@ export function NotificationList({
         return (
           <li
             key={n.id}
-            className={`flex items-start gap-4 py-4 px-1 transition-colors ${!n.read ? "bg-blue-50/40" : ""}`}
+            className={`flex items-start gap-4 py-4 px-1 transition-colors ${!n.read ? "bg-brand-50/40" : ""}`}
           >
             {/* Unread dot */}
             <div className="mt-1.5 shrink-0">
               {!n.read ? (
-                <span className="w-2 h-2 rounded-full bg-blue-500 block" />
+                <span className="w-2 h-2 rounded-full bg-brand-500 block" />
               ) : (
                 <span className="w-2 h-2 rounded-full bg-transparent block" />
               )}

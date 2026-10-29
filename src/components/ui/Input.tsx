@@ -21,16 +21,28 @@ interface FieldProps {
 }
 
 export function Field({ label, required, helper, error, className, children, id }: FieldProps) {
-  const childrenWithProps = Children.map(children, (child) =>
+  const descriptionId = useId();
+  const childrenWithProps = Children.map(children, (child) => {
     // `error` sólo se inyecta en los controles que lo aceptan; en un elemento DOM crudo (botones de cupo o
     // nota, input hidden) React emitía "Received `false` for a non-boolean attribute `error`" (SCRUM-237).
-    isValidElement(child) && (child.type === Input || child.type === Select || child.type === Textarea)
-      ? cloneElement(child as React.ReactElement<{ error?: boolean }>, { error: !!error })
-      : child
-  );
+    if (!isValidElement(child) || (child.type !== Input && child.type !== Select && child.type !== Textarea)) {
+      return child;
+    }
+    const control = child as React.ReactElement<{
+      error?: boolean;
+      "aria-invalid"?: InputHTMLAttributes<HTMLInputElement>["aria-invalid"];
+      "aria-describedby"?: string;
+    }>;
+    return cloneElement(control, {
+      error: !!error,
+      "aria-invalid": error ? true : control.props["aria-invalid"],
+      "aria-describedby": [control.props["aria-describedby"], (error || helper) && descriptionId]
+        .filter(Boolean).join(" ") || undefined,
+    });
+  });
 
   return (
-    <div className={cn("flex flex-col gap-1", className)}>
+    <div className={cn("flex min-w-0 flex-col gap-1", className)}>
       {label && (
         <label
           htmlFor={id}
@@ -42,11 +54,11 @@ export function Field({ label, required, helper, error, className, children, id 
       )}
       {childrenWithProps}
       {error ? (
-        <p className="text-xs text-danger-500" role="alert" aria-live="polite">
+        <p id={descriptionId} className="text-xs text-danger-500" role="alert" aria-live="polite">
           {error}
         </p>
       ) : helper ? (
-        <p className="text-xs text-slate-400">{helper}</p>
+        <p id={descriptionId} className="text-xs text-slate-400">{helper}</p>
       ) : null}
     </div>
   );
@@ -55,7 +67,7 @@ export function Field({ label, required, helper, error, className, children, id 
 // ─── Shared input classes ─────────────────────────────────────────────────────
 
 const inputBase =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-700 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-700 disabled:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60";
 
 const inputError = "border-danger-500 focus:ring-danger-500 focus:border-danger-500";
 
@@ -122,7 +134,11 @@ export function Select({ className, error, children, ref, id, ...props }: Select
   const sync = useCallback(() => {
     const el = selectRef.current;
     if (!el) return;
-    const next = Array.from(el.options).map((o) => ({ value: o.value, label: o.text, disabled: o.disabled }));
+    const next = Array.from(el.options).map((o) => ({
+      value: o.value,
+      label: o.text,
+      disabled: o.disabled || (o.parentElement instanceof HTMLOptGroupElement && o.parentElement.disabled),
+    }));
     setOptions((prev) => (sameOptions(prev, next) ? prev : next));
     setSelectedValue(el.value);
   }, []);
@@ -131,12 +147,17 @@ export function Select({ className, error, children, ref, id, ...props }: Select
     const el = selectRef.current;
     if (!el) return;
     const form = el.form;
-    const onReset = () => setTimeout(sync, 0);
+    let resetTimer: ReturnType<typeof setTimeout> | undefined;
+    const onReset = () => {
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(sync, 0);
+    };
     const observer = new MutationObserver(sync);
     observer.observe(el, { childList: true, subtree: true, characterData: true, attributes: true });
     el.addEventListener("change", sync);
     form?.addEventListener("reset", onReset);
     return () => {
+      clearTimeout(resetTimer);
       observer.disconnect();
       el.removeEventListener("change", sync);
       form?.removeEventListener("reset", onReset);
@@ -180,7 +201,8 @@ export function Select({ className, error, children, ref, id, ...props }: Select
   function openList() {
     if (props.disabled) return;
     setQuery("");
-    setActive(Math.max(choices.findIndex((o) => o.value === selectedValue), 0));
+    const selectedIndex = choices.findIndex((o) => o.value === selectedValue && !o.disabled);
+    setActive(selectedIndex >= 0 ? selectedIndex : choices.findIndex((o) => !o.disabled));
     setOpen(true);
     requestAnimationFrame(() => searchRef.current?.focus());
   }
@@ -197,12 +219,13 @@ export function Select({ className, error, children, ref, id, ...props }: Select
   }
 
   function onSearchKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    const enabled = filtered.flatMap((option, index) => option.disabled ? [] : [index]);
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActive((i) => Math.min(i + 1, filtered.length - 1));
+      setActive((i) => enabled.find((index) => index > i) ?? enabled[enabled.length - 1] ?? -1);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActive((i) => Math.max(i - 1, 0));
+      setActive((i) => [...enabled].reverse().find((index) => index < i) ?? enabled[0] ?? -1);
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (filtered[active]) pick(filtered[active]);
@@ -216,7 +239,7 @@ export function Select({ className, error, children, ref, id, ...props }: Select
   }
 
   return (
-    <div ref={wrapperRef} className={searchable ? "relative" : "contents"}>
+    <div ref={wrapperRef} className={searchable ? "relative min-w-0" : "contents"}>
       <select
         ref={setRefs}
         id={searchable ? undefined : id}
@@ -237,7 +260,11 @@ export function Select({ className, error, children, ref, id, ...props }: Select
             aria-expanded={open}
             aria-controls={listId}
             aria-haspopup="listbox"
-            aria-invalid={error || undefined}
+            aria-label={props["aria-label"]}
+            aria-labelledby={props["aria-labelledby"]}
+            aria-describedby={props["aria-describedby"]}
+            aria-required={props.required || props["aria-required"]}
+            aria-invalid={error || props["aria-invalid"]}
             disabled={props.disabled}
             onClick={() => (open ? setOpen(false) : openList())}
             onKeyDown={(e) => {
@@ -248,7 +275,7 @@ export function Select({ className, error, children, ref, id, ...props }: Select
             }}
             className={cn(inputBase, "flex items-center justify-between gap-2 text-left", error && inputError, className)}
           >
-            <span className={cn("truncate", (!selected || selected.value === "") && "text-slate-400")}>
+            <span className={cn("min-w-0 truncate", (!selected || selected.value === "") && "text-slate-400")}>
               {selected?.label || "Seleccioná una opción"}
             </span>
             <ChevronDown className="w-4 h-4 shrink-0 text-slate-400" />
@@ -293,7 +320,7 @@ export function Select({ className, error, children, ref, id, ...props }: Select
                         o.disabled && "cursor-not-allowed opacity-50"
                       )}
                     >
-                      <span className="truncate">{o.label}</span>
+                      <span className="min-w-0 truncate">{o.label}</span>
                       {o.value === selectedValue && <Check className="w-4 h-4 shrink-0" />}
                     </li>
                   ))

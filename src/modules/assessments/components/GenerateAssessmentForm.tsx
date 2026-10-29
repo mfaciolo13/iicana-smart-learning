@@ -29,7 +29,7 @@ const AI_SUPPORTED_MIME_TYPES = new Set(["application/pdf", "image/png", "image/
 
 function DocumentIcon({ mimeType }: { mimeType: string }) {
   if (mimeType === "application/pdf" || mimeType.includes("word")) return <FileText className="w-3.5 h-3.5 text-red-500 shrink-0" />;
-  if (mimeType.startsWith("image/")) return <FileImage className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
+  if (mimeType.startsWith("image/")) return <FileImage className="w-3.5 h-3.5 text-brand-500 shrink-0" />;
   return <File className="w-3.5 h-3.5 text-slate-400 shrink-0" />;
 }
 

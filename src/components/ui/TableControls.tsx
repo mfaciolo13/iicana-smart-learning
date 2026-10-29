@@ -29,6 +29,7 @@ export function SortableTh({ label, field, ctx, className, plain }: SortableThPr
   const Icon = !active ? ArrowUpDown : ctx.query.dir === "asc" ? ArrowUp : ArrowDown;
   return (
     <th
+      scope="col"
       className={cn(plain ? TH_PLAIN : TH_BASE, className)}
       aria-sort={active ? (ctx.query.dir === "asc" ? "ascending" : "descending") : "none"}
     >
@@ -46,7 +47,7 @@ export function SortableTh({ label, field, ctx, className, plain }: SortableThPr
 /** Encabezado de columna: ordenable si el listado recibe su contexto de orden, texto plano si no. */
 export function Th({ label, field, sort, className, plain }: { label: string; field: string; sort?: SortContext; className?: string; plain?: boolean }) {
   if (sort) return <SortableTh label={label} field={field} ctx={sort} className={className} plain={plain} />;
-  return <th className={cn(plain ? TH_PLAIN : TH_BASE, className)}>{label}</th>;
+  return <th scope="col" className={cn(plain ? TH_PLAIN : TH_BASE, className)}>{label}</th>;
 }
 
 interface PaginationProps {
@@ -71,7 +72,7 @@ export function Pagination({ basePath, searchParams, page, noun = "resultados", 
         Mostrando {page.from}–{page.to} de {page.total} {page.total === 1 && nounSingular ? nounSingular : noun}
       </p>
       {page.pageCount > 1 && (
-        <div className="flex items-center gap-1">
+        <div className="flex max-w-full flex-wrap items-center gap-1">
           {page.page > 1 ? (
             <Link href={href(page.page - 1)} className={cn(linkBase, "hover:bg-slate-100")} aria-label="Página anterior">
               <ChevronLeft className="w-4 h-4" />

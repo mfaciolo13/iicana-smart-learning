@@ -27,7 +27,7 @@ export function ChartTooltip({ active, label, payload, format, colorKey }: Chart
       <ul className="space-y-0.5">
         {payload.map((p, i) => {
           const rowColor = colorKey ? (p.payload?.[colorKey] as string | undefined) : undefined;
-          const dot = rowColor ?? p.color ?? "#94a3b8";
+          const dot = rowColor ?? p.color ?? "#94a0ad";
           return (
             <li key={`${p.name}-${i}`} className="flex items-center gap-2 text-xs text-white">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: dot }} />

@@ -84,7 +84,7 @@ export function AssessmentsListPage({ sp, basePath, items, subtitle }: Assessmen
           { label: "Total", value: total, color: "text-slate-700" },
           { label: "Publicadas", value: published, color: "text-emerald-600" },
           { label: "Borradores", value: drafts, color: "text-amber-600" },
-          { label: "Intentos", value: totalAttempts, color: "text-blue-600" },
+          { label: "Intentos", value: totalAttempts, color: "text-brand-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400 mb-1">{s.label}</p>

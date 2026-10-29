@@ -49,8 +49,8 @@ export async function ActivityFeed() {
         <div className="space-y-3.5">
           {items.map((item) => (
             <div key={item.id} className="flex items-start gap-3">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${item.type === "enrollment" ? "bg-blue-50" : "bg-emerald-50"}`}>
-                {item.type === "enrollment" ? <UserPlus className="w-3.5 h-3.5 text-blue-600" /> : <CreditCard className="w-3.5 h-3.5 text-emerald-600" />}
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${item.type === "enrollment" ? "bg-brand-50" : "bg-emerald-50"}`}>
+                {item.type === "enrollment" ? <UserPlus className="w-3.5 h-3.5 text-brand-600" /> : <CreditCard className="w-3.5 h-3.5 text-emerald-600" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-700 leading-snug">{item.label}</p>

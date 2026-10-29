@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 interface StarRatingProps {
   name: string;
@@ -10,6 +10,7 @@ interface StarRatingProps {
 }
 
 export function StarRating({ name, label, defaultValue = 0, onChange }: StarRatingProps) {
+  const labelId = useId();
   const [value, setValue] = useState(defaultValue);
 
   function handleClick(star: number) {
@@ -22,8 +23,8 @@ export function StarRating({ name, label, defaultValue = 0, onChange }: StarRati
 
   return (
     <div>
-      <p className="text-sm text-slate-700 mb-2">{label}</p>
-      <div className="flex items-center gap-1">
+      <p id={labelId} className="text-sm text-slate-700 mb-2">{label}</p>
+      <div className="flex flex-wrap items-center gap-1" role="group" aria-labelledby={labelId}>
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
@@ -35,6 +36,7 @@ export function StarRating({ name, label, defaultValue = 0, onChange }: StarRati
               star <= active ? "text-amber-400" : "text-slate-200"
             } hover:text-amber-400`}
             aria-label={`${star} estrellas`}
+            aria-pressed={star === value}
           >
             ★
           </button>

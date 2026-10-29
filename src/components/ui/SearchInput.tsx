@@ -44,7 +44,7 @@ export function SearchInput({ placeholder, resultCount, className }: SearchInput
     timer.current = setTimeout(() => apply(next), 300);
   }
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => clearTimeout(timer.current), [applied]);
 
   // Si la búsqueda cambia desde afuera (por ejemplo, al quitar su chip de filtro), el campo la sigue.
   // Se ajusta durante el render, que es el patrón recomendado en lugar de un efecto.
@@ -72,9 +72,9 @@ export function SearchInput({ placeholder, resultCount, className }: SearchInput
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           aria-label={placeholder}
-          className="w-full"
+          className="min-w-0 flex-1"
         />
-        <Button type="submit" variant="secondary" iconLeft={<Search className="w-4 h-4" />}>
+        <Button type="submit" variant="secondary" className="shrink-0" iconLeft={<Search className="w-4 h-4" />}>
           Buscar
         </Button>
       </form>

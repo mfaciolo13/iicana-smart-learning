@@ -44,7 +44,7 @@ export function TrendChart({ data, xKey, series, format, height = 240, kind = "a
   };
   const axes = (
     <>
-      <CartesianGrid strokeDasharray="2 6" vertical={false} stroke="#e2e8f0" />
+      <CartesianGrid strokeDasharray="2 6" vertical={false} stroke="#e1e5ea" />
       <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: COLORS.axis }} axisLine={false} tickLine={false} />
       <YAxis
         width={48}
@@ -55,7 +55,7 @@ export function TrendChart({ data, xKey, series, format, height = 240, kind = "a
         tickLine={false}
         allowDecimals={false}
       />
-      <Tooltip content={<ChartTooltip format={format} />} cursor={{ stroke: "#cbd5e1", strokeDasharray: "3 3" }} />
+      <Tooltip content={<ChartTooltip format={format} />} cursor={{ stroke: "#c9d0d8", strokeDasharray: "3 3" }} />
       {series.length > 1 && <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />}
       {referenceLine && (
         <ReferenceLine

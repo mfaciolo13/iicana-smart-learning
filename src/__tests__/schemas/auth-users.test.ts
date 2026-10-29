@@ -1,10 +1,39 @@
 ﻿import { describe, it, expect } from "vitest";
 import { loginSchema } from "@/modules/auth/schemas";
 import { updateUserSchema } from "@/modules/users/schemas";
+import { phoneField } from "@/lib/validation";
 
 // SCRUM-102: Tests unitarios — schemas Zod de autenticación y usuarios
 
+describe("phoneField", () => {
+  it.each([undefined, "", "   ", "\t\n"])("trata %j como teléfono omitido", (value) => {
+    expect(phoneField().parse(value)).toBeUndefined();
+  });
+
+  it("normaliza espacios alrededor de un teléfono válido", () => {
+    expect(phoneField().parse(" 3511234567 ")).toBe("3511234567");
+  });
+
+  it("sigue rechazando caracteres no numéricos", () => {
+    expect(phoneField().safeParse("351-1234567").success).toBe(false);
+  });
+});
+
 describe("loginSchema", () => {
+  it("normaliza espacios alrededor del email", () => {
+    expect(loginSchema.parse({ email: " admin@test.com ", password: "123456" }).email).toBe("admin@test.com");
+  });
+
+  it("conserva los espacios de la contraseña", () => {
+    expect(loginSchema.parse({ email: "admin@test.com", password: " 123456 " }).password).toBe(" 123456 ");
+  });
+
+  it("muestra el mensaje de email requerido si solo hay espacios", () => {
+    const result = loginSchema.safeParse({ email: "   ", password: "123456" });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].message).toBe("Ingresá tu email");
+  });
+
   it("acepta email válido y password suficiente", () => {
     const result = loginSchema.safeParse({ email: "admin@test.com", password: "123456" });
     expect(result.success).toBe(true);
