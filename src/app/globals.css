@@ -69,3 +69,11 @@ textarea::placeholder {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Recharts 3 vuelve enfocable el gráfico y el navegador le dibuja un recuadro negro al hacer clic. */
+.recharts-wrapper,
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-wrapper svg:focus {
+  outline: none;
+}

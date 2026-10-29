@@ -207,59 +207,56 @@ export default async function AdministrativoDashboardPage() {
         })}
       </div>
 
-      {/* Quick actions + Activity feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-slate-900 mb-4">Accesos rápidos</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={action.href}
-                  href={action.href}
-                  className="group flex flex-col gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all"
-                >
-                  <Icon className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" strokeWidth={1.5} />
-                  <div>
-                    <p className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">{action.label}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{action.desc}</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {quickActions.map((action) => {
+          const Icon = action.icon;
+          return (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="group flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-blue-200 hover:bg-blue-50/50 transition-all"
+            >
+              <div className="w-9 h-9 rounded-xl bg-slate-50 group-hover:bg-blue-100 flex items-center justify-center shrink-0 transition-colors">
+                <Icon className="w-4.5 h-4.5 text-slate-500 group-hover:text-blue-600 transition-colors" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-700 group-hover:text-slate-900 truncate">{action.label}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 truncate">{action.desc}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
 
-        {/* Activity feed */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-slate-900 mb-4">Actividad reciente</h2>
-          {activityItems.length === 0 ? (
-            <p className="text-xs text-slate-400 py-6 text-center">Sin actividad reciente</p>
-          ) : (
-            <div className="space-y-3.5">
-              {activityItems.map((item) => (
-                <div key={item.id} className="flex items-start gap-3">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                      item.type === "enrollment" ? "bg-blue-50" : "bg-emerald-50"
-                    }`}
-                  >
-                    {item.type === "enrollment" ? (
-                      <UserPlus className="w-3.5 h-3.5 text-blue-600" />
-                    ) : (
-                      <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-700 leading-snug">{item.label}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{relativeTime(item.timestamp)}</p>
-                  </div>
+      {/* Activity feed */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4">Actividad reciente</h2>
+        {activityItems.length === 0 ? (
+          <p className="text-xs text-slate-400 py-6 text-center">Sin actividad reciente</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5">
+            {activityItems.map((item) => (
+              <div key={item.id} className="flex items-start gap-3">
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                    item.type === "enrollment" ? "bg-blue-50" : "bg-emerald-50"
+                  }`}
+                >
+                  {item.type === "enrollment" ? (
+                    <UserPlus className="w-3.5 h-3.5 text-blue-600" />
+                  ) : (
+                    <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-slate-700 leading-snug">{item.label}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{relativeTime(item.timestamp)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="pt-2">
