@@ -5,7 +5,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { readFileSync, writeFileSync } from "fs";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
 const REPO = "mfaciolo13/iicana-smart-learning";
 const GH_TOKEN = process.env.GITHUB_TOKEN!;
@@ -158,12 +158,16 @@ Analizá los errores. Para cada archivo que necesite fix, usá write_file con el
     .map(([f, r]) => `- \`${f}\`: ${r}`)
     .join("\n");
 
-  execSync('git config user.name "github-actions[bot]"');
-  execSync('git config user.email "github-actions[bot]@users.noreply.github.com"');
-  execSync(`git checkout -b ${branch}`);
-  execSync(`git add ${Object.keys(changedFiles).join(" ")}`);
-  execSync(`git commit -m "fix(e2e): auto-fix de tests E2E via Claude AI\n\n${changedList}"`);
-  execSync(`git push origin ${branch}`);
+  // execFileSync (sin shell): el texto generado por el modelo nunca se interpreta como comando
+  const git = (...args: string[]) => execFileSync("git", args, { stdio: "inherit" });
+  git("config", "user.name", "github-actions[bot]");
+  git("config", "user.email", "github-actions[bot]@users.noreply.github.com");
+  git("checkout", "-b", branch);
+  git("add", "--", ...Object.keys(changedFiles));
+  git("commit", "-m", `fix(e2e): auto-fix de tests E2E via Claude AI
+
+${changedList}`);
+  git("push", "origin", branch);
 
   const prRes = await fetch(`https://api.github.com/repos/${REPO}/pulls`, {
     method: "POST",
