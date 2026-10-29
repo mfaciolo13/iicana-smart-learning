@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole, getCurrentUser } from "@/lib/auth/helpers";
 import { portalPath } from "@/lib/portal";
-import { sendInstitutionalNotificationEmail } from "@/lib/email";
+import { sendInstitutionalNotificationEmail, sendInstitutionalNotificationEmails } from "@/lib/email";
 import { sendNotificationSchema, updateNotificationSettingSchema, updateUserNotificationPreferenceSchema } from "./schemas";
 import {
   markAsRead,
@@ -63,9 +63,7 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
     if (!(await trySend(() => sendToRole(role, payload)))) return { error: SEND_ERROR };
     try {
       const recipients = await getEmailsForRole(role);
-      await Promise.all(
-        recipients.map((r) => sendInstitutionalNotificationEmail({ to: r.email, fullName: r.fullName, title, body }))
-      );
+      await sendInstitutionalNotificationEmails({ recipients, title, body });
     } catch (e) {
       console.error("[notification email role]", e);
     }
@@ -74,9 +72,7 @@ export async function sendNotificationAction(_prev: ActionResult, formData: Form
     if (!(await trySend(() => sendToCourse(courseId, payload)))) return { error: SEND_ERROR };
     try {
       const recipients = await getEmailsForCourse(courseId);
-      await Promise.all(
-        recipients.map((r) => sendInstitutionalNotificationEmail({ to: r.email, fullName: r.fullName, title, body }))
-      );
+      await sendInstitutionalNotificationEmails({ recipients, title, body });
     } catch (e) {
       console.error("[notification email course]", e);
     }
