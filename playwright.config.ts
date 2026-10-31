@@ -42,17 +42,15 @@ const webServerEnv: Record<string, string> = {
   RESEND_API_KEY: "disabled-for-e2e",
 };
 
-// Comando de build: Next.js lee variables de entorno directamente desde el
-// entorno del proceso Node que ejecuta el compilador. pnpm no siempre propaga
-// el `env` de webServer a sus procesos hijos (depende de la versión y del
-// packageManager hook). Para garantizar que RESEND_API_KEY llegue al paso de
-// `next build` (donde se hace la page-data collection de /api/cron/*), la
-// inyectamos explícitamente mediante `env VAR=val` — comando POSIX estándar
-// disponible en todos los runners Linux/macOS de GitHub Actions — en lugar de
-// la sintaxis de asignación de shell (`VAR=val cmd`), que algunos shells
-// restringen. `env` es un binario del sistema, no una feature del shell.
-const buildCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm build";
-const startCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm start";
+// Usamos `sh -c 'export VAR=val && cmd'` para garantizar que la variable de
+// entorno esté presente en TODOS los subprocesos de la cadena de comandos,
+// incluyendo los child processes que pnpm lanza internamente (como next build).
+// Este enfoque es más robusto que el binario `env VAR=val cmd` porque el
+// `export` del shell queda activo para toda la cadena `&&` en el mismo proceso.
+const buildCommand =
+  "sh -c 'export RESEND_API_KEY=disabled-for-e2e && pnpm build'";
+const startCommand =
+  "sh -c 'export RESEND_API_KEY=disabled-for-e2e && pnpm start'";
 const devCommand = "pnpm dev"; // dev no hace page-data collection estática
 
 export default defineConfig({
@@ -117,10 +115,11 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // Usamos `env VAR=val cmd` (binario POSIX) en lugar de la sintaxis de
-      // asignación de shell (`VAR=val cmd`) para máxima portabilidad en CI.
-      // Esto garantiza que RESEND_API_KEY esté presente cuando `next build`
-      // hace la page-data collection de rutas API que instancian Resend.
+      // `sh -c 'export VAR=val && cmd'` garantiza que la variable quede
+      // exportada en el entorno del shell que ejecuta toda la cadena `&&`,
+      // incluyendo los subprocesos internos que pnpm lanza para next build/start.
+      // Esto es más robusto que el binario POSIX `env VAR=val cmd` porque
+      // ese binario solo afecta al proceso inmediato, no a los nietos.
       command: process.env.E2E_PROD
         ? `${buildCommand} && ${startCommand}`
         : devCommand,
