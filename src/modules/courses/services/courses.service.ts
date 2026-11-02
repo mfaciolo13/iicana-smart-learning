@@ -1,4 +1,5 @@
-import { db } from "@/lib/drizzle";
+import { db, dbTx } from "@/lib/drizzle";
+
 import { courses, teachers, profiles, enrollments, students } from "@/lib/drizzle/schema";
 import { alias } from "drizzle-orm/pg-core";
 import { eq, ilike, sql, and } from "drizzle-orm";
@@ -146,7 +147,9 @@ export async function createCourse(input: CreateCourseInput) {
   return course;
 }
 
-export async function updateCourse(input: UpdateCourseInput) {
+type Tx = Parameters<Parameters<typeof dbTx.transaction>[0]>[0];
+
+export async function updateCourse(input: UpdateCourseInput, exec: typeof db | Tx = db) {
   const { id, classDays, classTime, classDurationMinutes, ...data } = input;
 
   const scheduleFields =
@@ -159,7 +162,7 @@ export async function updateCourse(input: UpdateCourseInput) {
         }
       : {};
 
-  const [updated] = await db
+  const [updated] = await exec
     .update(courses)
     // "" (campo vaciado en el formulario) limpia el aula.
     .set({ ...data, ...(data.classroom === "" ? { classroom: null } : {}), ...scheduleFields, updatedAt: new Date() })
@@ -170,4 +173,30 @@ export async function updateCourse(input: UpdateCourseInput) {
 
 export async function deleteCourse(id: string) {
   await db.delete(courses).where(eq(courses.id, id));
+}
+
+export type CheckedUpdate = { ok: true; course: typeof courses.$inferSelect } | { ok: false; error: string; field?: string };
+
+/**
+ * Actualiza un curso verificando el cupo en la MISMA transacción y con la fila del curso bloqueada:
+ * es el mismo bloqueo que toma la inscripción, así una inscripción concurrente no puede colarse entre
+ * el conteo y la actualización (antes eran sentencias sueltas).
+ */
+export async function updateCourseChecked(input: UpdateCourseInput): Promise<CheckedUpdate> {
+  return dbTx.transaction(async (tx) => {
+    const [locked] = await tx.select({ id: courses.id }).from(courses).where(eq(courses.id, input.id)).for("update");
+    if (!locked) return { ok: false, error: "El curso no existe" } as const;
+    if (input.maxCapacity !== undefined) {
+      const [row] = await tx
+        .select({ n: sql<number>`cast(count(*) as int)` })
+        .from(enrollments)
+        .where(and(eq(enrollments.courseId, input.id), eq(enrollments.status, "active")));
+      const n = row?.n ?? 0;
+      if (n > input.maxCapacity) {
+        return { ok: false, error: `El curso tiene ${n} alumnos inscriptos: el cupo no puede ser menor.`, field: "maxCapacity" } as const;
+      }
+    }
+    const course = await updateCourse(input, tx);
+    return { ok: true, course } as const;
+  });
 }

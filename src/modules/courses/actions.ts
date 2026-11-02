@@ -3,11 +3,13 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { requireRole } from "@/lib/auth/helpers";
 import { db } from "@/lib/drizzle";
-import { teachers, profiles, enrollments } from "@/lib/drizzle/schema";
-import { eq, and, count } from "drizzle-orm";
+import { teachers, profiles } from "@/lib/drizzle/schema";
+import { eq } from "drizzle-orm";
 import { sendTeacherAssignmentEmail } from "@/lib/email";
 import { createCourseSchema, updateCourseSchema } from "./schemas";
-import { createCourse, updateCourse, deleteCourse, getCourseById } from "./services/courses.service";
+import { createCourse, updateCourseChecked, deleteCourse, getCourseById } from "./services/courses.service";
+import { findScheduleConflictsForCourse } from "@/modules/enrollments/services/enrollments.service";
+import { formatSchedule } from "./lib/schedule";
 import type { ActionResult } from "@/lib/action-result";
 import { refreshAnalytics } from "@/lib/analytics-cache";
 
@@ -80,22 +82,32 @@ export async function updateCourseAction(_prev: ActionResult, formData: FormData
     };
   }
 
-  // El cupo no puede quedar por debajo de los alumnos activos ya inscriptos (SCRUM-324).
-  if (parsed.data.maxCapacity !== undefined) {
-    const [{ n }] = await db
-      .select({ n: count() })
-      .from(enrollments)
-      .where(and(eq(enrollments.courseId, parsed.data.id), eq(enrollments.status, "active")));
-    if (n > parsed.data.maxCapacity) {
-      return {
-        error: `El curso tiene ${n} alumnos inscriptos: el cupo no puede ser menor.`,
-        fieldErrors: { maxCapacity: `Hay ${n} alumnos inscriptos` },
-      };
+  const prevCourse = await getCourseById(parsed.data.id);
+  if (!prevCourse) return { error: "El curso no existe" };
+
+  // Cambiar días, hora o duración vuelve a aplicar la regla de superposición de horarios de los alumnos
+  // ya inscriptos (la inscripción la hace cumplir, pero la edición del curso la salteaba).
+  if (parsed.data.classDays || parsed.data.classTime || parsed.data.classDurationMinutes !== undefined) {
+    const newSchedule = formatSchedule(
+      parsed.data.classDays ?? prevCourse.classDays,
+      parsed.data.classTime ?? prevCourse.classTime.slice(0, 5),
+      parsed.data.classDurationMinutes ?? prevCourse.classDurationMinutes,
+    );
+    if (newSchedule && newSchedule !== prevCourse.schedule) {
+      const conflicts = await findScheduleConflictsForCourse(parsed.data.id, newSchedule);
+      if (conflicts.length > 0) {
+        const sample = conflicts.slice(0, 3).map((c) => `${c.studentName} (también cursa "${c.otherCourse}")`).join(", ");
+        return { error: `El nuevo horario se superpone con otro curso de ${conflicts.length} alumno${conflicts.length === 1 ? "" : "s"} inscripto${conflicts.length === 1 ? "" : "s"}: ${sample}${conflicts.length > 3 ? "…" : ""}` };
+      }
     }
   }
 
-  const prevCourse = await getCourseById(parsed.data.id);
-  const updatedCourse = await updateCourse(parsed.data);
+  // El cupo se verifica dentro de la misma transacción (SCRUM-324): no puede quedar por debajo de los inscriptos.
+  const result = await updateCourseChecked(parsed.data);
+  if (!result.ok) {
+    return { error: result.error, ...(result.field && { fieldErrors: { [result.field]: result.error } }) };
+  }
+  const updatedCourse = result.course;
 
   // Email teacher only when they are newly assigned (not already in that role)
   if (parsed.data.teacherId && parsed.data.teacherId !== prevCourse?.teacherId) {

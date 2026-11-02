@@ -22,6 +22,8 @@ export const DAY_LABELS_ES: Record<DayOfWeek, string> = {
 
 // El instituto no dicta clases los domingos
 export const SELECTABLE_DAYS = DAY_OF_WEEK_VALUES.filter((d) => d !== "sunday");
+/** Mismo conjunto como tupla, para validar en el servidor (antes el esquema aceptaba la semana completa). */
+export const CLASS_DAY_VALUES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const satisfies readonly DayOfWeek[];
 
 export const DURATION_OPTIONS = [45, 60, 90, 120, 150, 180];
 

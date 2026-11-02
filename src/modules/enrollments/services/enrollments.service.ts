@@ -1,9 +1,10 @@
 import { db, dbTx } from "@/lib/drizzle";
 import { enrollments, students, courses, profiles, teachers } from "@/lib/drizzle/schema";
-import { eq, ne, and, ilike, or, count } from "drizzle-orm";
+import { eq, ne, and, ilike, or, count, inArray } from "drizzle-orm";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { CreateEnrollmentInput, UpdateEnrollmentInput } from "../schemas";
 import type { EnrollmentListItem, EnrollmentWithDetails } from "../types";
+import { schedulesOverlap } from "@/modules/courses/lib/overlap";
 
 export async function getEnrollments(search?: string): Promise<EnrollmentListItem[]> {
   const studentProfiles = db
@@ -139,30 +140,6 @@ export async function getEnrollmentsByTeacherProfile(teacherProfileId: string): 
     .orderBy(courses.name, profiles.fullName);
 
   return rows as EnrollmentListItem[];
-}
-
-function parseScheduleMinutes(schedule: string): { days: string[]; start: number; end: number } | null {
-  const spaceIdx = schedule.lastIndexOf(" ");
-  if (spaceIdx === -1) return null;
-  const daysPart = schedule.slice(0, spaceIdx);
-  const timesPart = schedule.slice(spaceIdx + 1);
-  const days = daysPart.split("/").filter(Boolean);
-  const sep = timesPart.includes("–") ? "–" : "-";
-  const parts = timesPart.split(sep).map((t) => t.trim());
-  if (parts.length !== 2) return null;
-  const toMin = (t: string) => {
-    const [h = "0", m = "0"] = t.split(":");
-    return parseInt(h) * 60 + parseInt(m);
-  };
-  return { days, start: toMin(parts[0]), end: toMin(parts[1]) };
-}
-
-function schedulesOverlap(a: string, b: string): boolean {
-  const pa = parseScheduleMinutes(a);
-  const pb = parseScheduleMinutes(b);
-  if (!pa || !pb) return false;
-  if (!pa.days.some((d) => pb.days.includes(d))) return false;
-  return pa.start < pb.end && pb.start < pa.end;
 }
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -312,4 +289,32 @@ export async function updateEnrollment(
 
 export async function deleteEnrollment(id: string) {
   await db.delete(enrollments).where(eq(enrollments.id, id));
+}
+
+/**
+ * Alumnos con inscripción activa en el curso cuyo horario chocaría con `schedule` por otro curso activo
+ * suyo. Se usa al cambiar el horario de un curso: la regla de superposición también rige ahí.
+ */
+export async function findScheduleConflictsForCourse(courseId: string, schedule: string): Promise<{ studentName: string; otherCourse: string }[]> {
+  const mine = await db
+    .select({ studentId: enrollments.studentId, studentName: profiles.fullName })
+    .from(enrollments)
+    .innerJoin(students, eq(enrollments.studentId, students.id))
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .where(and(eq(enrollments.courseId, courseId), eq(enrollments.status, "active")));
+  if (mine.length === 0) return [];
+
+  const others = await db
+    .select({ studentId: enrollments.studentId, courseName: courses.name, schedule: courses.schedule })
+    .from(enrollments)
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(and(inArray(enrollments.studentId, mine.map((m) => m.studentId)), eq(enrollments.status, "active"), ne(enrollments.courseId, courseId)));
+
+  const conflicts: { studentName: string; otherCourse: string }[] = [];
+  for (const o of others) {
+    if (schedulesOverlap(schedule, o.schedule)) {
+      conflicts.push({ studentName: mine.find((m) => m.studentId === o.studentId)!.studentName, otherCourse: o.courseName });
+    }
+  }
+  return conflicts;
 }
