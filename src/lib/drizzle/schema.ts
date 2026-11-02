@@ -639,6 +639,52 @@ export const emailOutbox = pgTable("email_outbox", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Intento de pago electrónico (Mercado Pago) de una cuota, con el importe congelado al iniciarlo. */
+export const paymentOperations = pgTable("payment_operations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  paymentId: uuid("payment_id")
+    .notNull()
+    .references(() => payments.id, { onDelete: "restrict" }),
+  studentId: uuid("student_id")
+    .notNull()
+    .references(() => students.id, { onDelete: "restrict" }),
+  method: text("method").notNull(), // transfer | card
+  status: text("status").notNull().default("created"), // created | pending | approved | rejected | cancelled | refunded | expired | duplicate | failed
+  listPriceSnapshot: numeric("list_price_snapshot", { precision: 12, scale: 2 }).notNull(),
+  discountAmount: numeric("discount_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  discountPercentage: numeric("discount_percentage", { precision: 5, scale: 2 }).notNull().default("0"),
+  surchargeAmount: numeric("surcharge_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  finalAmount: numeric("final_amount", { precision: 12, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("ARS"),
+  internalReference: text("internal_reference").notNull().unique(),
+  provider: text("provider").notNull().default("mercadopago"),
+  providerPreferenceId: text("provider_preference_id"),
+  providerPaymentId: text("provider_payment_id"),
+  providerStatus: text("provider_status"),
+  providerStatusDetail: text("provider_status_detail"),
+  initPoint: text("init_point"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  rawResponse: jsonb("raw_response"),
+  createdBy: uuid("created_by"),
+  confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Notificaciones recibidas del proveedor, para trazabilidad e idempotencia. */
+export const paymentProviderEvents = pgTable("payment_provider_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: text("provider").notNull().default("mercadopago"),
+  eventKey: text("event_key").notNull().unique(),
+  topic: text("topic"),
+  resourceId: text("resource_id"),
+  payload: jsonb("payload"),
+  outcome: text("outcome"),
+  errorMessage: text("error_message"),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
 

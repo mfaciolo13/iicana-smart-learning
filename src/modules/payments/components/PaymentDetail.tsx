@@ -4,6 +4,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getPaymentById } from "../services/payments.service";
 import { getPricingRates } from "../services/settings.service";
 import { getDocumentsForPayment } from "../services/documents.service";
+import { listOperationsForPayment } from "../services/mp.service";
+import { formatDateTimeAR } from "../lib/emails";
 import { pricesOf } from "../services/collect.service";
 import { quoteAllMethods, METHOD_LABELS } from "../lib/pricing";
 import { periodLabel } from "../lib/emails";
@@ -25,6 +27,18 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutr
   cancelled: { label: "Anulado", variant: "neutral" },
 };
 
+const OPERATION_LABELS: Record<string, string> = {
+  created: "Iniciado",
+  pending: "En proceso",
+  approved: "Aprobado",
+  rejected: "Rechazado",
+  cancelled: "Cancelado",
+  refunded: "Reembolsado",
+  expired: "Vencido",
+  duplicate: "Duplicado (reembolsar)",
+  failed: "Fallido",
+};
+
 const money = (v: string | null) => (v == null ? "—" : formatCents(toCents(v)));
 
 /** Detalle de un pago para Dirección y Administrativo (`portal` = "director" | "administrativo"). */
@@ -43,7 +57,7 @@ export async function PaymentDetail({ id, portal }: { id: string; portal: "direc
   const isCancelled = payment.status === "cancelled";
   const base = `/${portal}`;
 
-  const [rates, documents] = await Promise.all([getPricingRates(), getDocumentsForPayment(payment.id)]);
+  const [rates, documents, operations] = await Promise.all([getPricingRates(), getDocumentsForPayment(payment.id), listOperationsForPayment(payment.id)]);
   const quotes = isCollectable ? quoteAllMethods(pricesOf(payment), today, rates) : null;
   const invoice = documents.find((d) => d.documentType === "invoice_c");
   const hasBreakdown = payment.status === "paid" && payment.finalAmount != null;
@@ -194,6 +208,28 @@ export async function PaymentDetail({ id, portal }: { id: string; portal: "direc
                   ? "Los descuentos rigen hasta el día " + rates.discountLastDay + " de cada mes, inclusive."
                   : "Los descuentos de esta cuota ya no rigen: transferencia y efectivo van a precio de lista."}
               </p>
+            </Card>
+          )}
+
+          {operations.length > 0 && (
+            <Card title="Pagos online (Mercado Pago)" padding="md">
+              <ul className="divide-y divide-slate-100 text-sm">
+                {operations.map((o) => (
+                  <li key={o.id} className="py-2.5 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-slate-800">
+                        {o.method === "card" ? "Tarjeta" : "Transferencia"} · {formatCents(toCents(o.finalAmount))}
+                      </p>
+                      <p className="text-xs text-slate-400 font-mono">
+                        {o.internalReference}{o.providerPaymentId ? ` · MP ${o.providerPaymentId}` : ""} · {formatDateTimeAR(o.createdAt)}
+                      </p>
+                    </div>
+                    <Badge variant={o.status === "approved" ? "success" : o.status === "pending" || o.status === "created" ? "info" : o.status === "rejected" || o.status === "failed" || o.status === "duplicate" ? "danger" : "neutral"}>
+                      {OPERATION_LABELS[o.status] ?? o.status}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
             </Card>
           )}
 

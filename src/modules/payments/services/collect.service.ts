@@ -50,6 +50,8 @@ export interface CollectInput {
   providerPaymentId?: string;
   observations?: string;
   internalReference?: string;
+  /** Se ejecuta DENTRO de la transacción, después de marcar la cuota: sirve para cerrar la operación en el mismo commit. */
+  inTransaction?: (tx: DbExecutor, paid: typeof payments.$inferSelect) => Promise<void>;
 }
 
 export function newInternalReference(): string {
@@ -138,6 +140,8 @@ export async function collectPayment(input: CollectInput): Promise<CollectSucces
           actor: input.actor,
         });
       }
+
+      await input.inTransaction?.(tx, paid);
 
       const receipt = await ensureReceipt(tx, { paymentId: paid.id, amount: cols.finalAmount });
       const emailIds = await enqueueReceiptEmail(tx, paid, receipt);
