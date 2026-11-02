@@ -11,6 +11,12 @@ import { pricesOf } from "../services/collect.service";
 import { quoteAllMethods, METHOD_LABELS, type PriceQuote } from "../lib/pricing";
 import { periodLabel } from "../lib/period-label";
 import { quoteNote } from "./CollectForm";
+import { PayOnlineButtons } from "./PayOnlineButtons";
+import { FormButton } from "@/components/ui/FormButton";
+import { refreshOnlinePaymentsAction } from "../online-actions";
+import { getActiveOperationsByPayment, reconcileStudentOperations } from "../services/mp.service";
+import { isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { formatDateTimeAR } from "./../lib/emails";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   paid: { label: "Pagada", variant: "success" },
@@ -36,7 +42,7 @@ function QuoteTile({ quote }: { quote: PriceQuote }) {
 }
 
 /** Pantalla "Mis pagos" del alumno: cuotas con sus precios por medio de pago e historial. Solo ve lo propio. */
-export async function StudentPayments() {
+export async function StudentPayments({ mp }: { mp?: string } = {}) {
   const studentId = await getCurrentStudentId();
   if (!studentId) {
     return (
@@ -50,10 +56,14 @@ export async function StudentPayments() {
   }
 
   const today = todayInstitute();
-  const [all, collectable, rates] = await Promise.all([
+  // Al volver de Mercado Pago se consulta el estado OFICIAL del pago: la URL de retorno no confirma nada.
+  if (mp) await reconcileStudentOperations(studentId);
+  const online = isMercadoPagoConfigured();
+  const [all, collectable, rates, activeOps] = await Promise.all([
     getPayments(undefined, studentId),
     getCollectableCuotas().then((c) => c.filter((x) => x.studentId === studentId)),
     getPricingRates(),
+    getActiveOperationsByPayment(studentId),
   ]);
 
   const history = all.filter((p) => p.status === "paid" || p.status === "cancelled");
@@ -62,6 +72,14 @@ export async function StudentPayments() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-slate-900">Mis Pagos</h2>
+
+      {mp && (
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 text-sm text-brand-800">
+          {mp === "failure"
+            ? "El pago no se completó. Podés intentarlo de nuevo cuando quieras."
+            : "Estamos verificando tu pago con Mercado Pago. La cuota figura como pagada recién cuando Mercado Pago lo confirma; si no cambia en unos minutos, tocá «Actualizar estado»."}
+        </div>
+      )}
 
       {collectable.length === 0 ? (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-sm text-emerald-800">
@@ -77,7 +95,8 @@ export async function StudentPayments() {
           {collectable.map((c) => {
             const quotes = quoteAllMethods(pricesOf(c), today, rates);
             const overdue = c.dueDate < today;
-            const cfg = STATUS_CONFIG[overdue && c.status === "pending" ? "overdue" : c.status];
+            const activeOp = activeOps.get(c.id);
+            const cfg = activeOp ? { label: "En proceso", variant: "info" as const } : STATUS_CONFIG[overdue && c.status === "pending" ? "overdue" : c.status];
             return (
               <Card
                 key={c.id}
@@ -100,6 +119,30 @@ export async function StudentPayments() {
                     : "Los descuentos de esta cuota ya no están vigentes: transferencia y efectivo van a precio de lista."}{" "}
                   El pago en efectivo se hace en la academia y se acredita cuando administración lo registra.
                 </p>
+                {activeOp && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    Tenés un pago por {activeOp.method === "card" ? "tarjeta" : "transferencia"} de {formatCents(toCents(activeOp.finalAmount))} en curso; el importe se mantiene hasta {formatDateTimeAR(activeOp.expiresAt)}.
+                  </p>
+                )}
+                {online ? (
+                  <>
+                    <PayOnlineButtons
+                      paymentId={c.id}
+                      transferCents={quotes.transfer.finalCents}
+                      cardCents={quotes.card.finalCents}
+                      activeMethod={activeOp ? (activeOp.method as "transfer" | "card") : undefined}
+                    />
+                    {activeOp && (
+                      <div className="mt-2">
+                        <FormButton action={refreshOnlinePaymentsAction} variant="ghost" size="sm">
+                          Actualizar estado
+                        </FormButton>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-400 mt-3">El pago online todavía no está habilitado: abonalo en la academia.</p>
+                )}
               </Card>
             );
           })}
