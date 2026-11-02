@@ -7,6 +7,7 @@ import { InquiryForm } from "@/modules/marketing/components/InquiryForm";
 import { FormButton } from "@/components/ui/FormButton";
 import type { CampaignDetail } from "@/modules/marketing/services/marketing.service";
 import { formatDateAR } from "@/lib/format";
+import { isUuid } from "@/lib/uuid";
 
 const CHANNEL_LABELS: Record<string, string> = {
   social_media: "Redes sociales",
@@ -35,6 +36,7 @@ export default async function CampaignDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const supabase = await createClient();
 

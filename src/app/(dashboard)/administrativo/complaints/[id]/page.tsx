@@ -7,6 +7,7 @@ import { updateComplaintStatusAction } from "@/modules/complaints/actions";
 import { ComplaintStatusForm } from "@/modules/complaints/components/ComplaintStatusForm";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { isUuid } from "@/lib/uuid";
 
 const TYPE_LABELS: Record<string, string> = {
   academic: "Académico",
@@ -37,6 +38,7 @@ export default async function ComplaintDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   await requireRole(["director", "administrativo"]);
   // Lectura por Drizzle tras validar el rol: con el JWT del usuario, RLS devolvía 404 (SCRUM-272).

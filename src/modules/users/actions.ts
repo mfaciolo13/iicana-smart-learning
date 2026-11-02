@@ -9,7 +9,7 @@ import { profiles } from "@/lib/drizzle/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { updateUserSchema, createAdministrativoSchema } from "./schemas";
-import { updateUser, banUser, unbanUser } from "./services/users.service";
+import { updateUser, banUser, unbanUser, checkRoleChange } from "./services/users.service";
 import { sendInvitationEmail } from "@/lib/email";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
@@ -70,14 +70,19 @@ export async function createAdministrativoAction(_prev: ActionResult, formData: 
 
   const safeInviteUrl = await buildInviteUrl(authData.user.id);
 
-  await sendInvitationEmail({
+  // Si Resend falla no se puede decir "listo": se avisa para que se reenvíe la invitación.
+  const inviteSent = await sendInvitationEmail({
     to: parsed.data.email,
     fullName: parsed.data.fullName,
     role: "administrativo",
     inviteLink: safeInviteUrl,
-  }).catch(() => {});
+  }).then(() => true).catch(() => false);
 
   revalidatePath("/director/users");
+  if (!inviteSent) {
+    // El usuario se creó; se lo lleva a su ficha para que se reenvíe la invitación.
+    redirect(`/director/users/${authData.user.id}`);
+  }
   redirect("/director/users");
 }
 
@@ -109,6 +114,9 @@ export async function updateUserAction(_prev: ActionResult, formData: FormData):
   if (currentUser?.id === parsed.data.id && parsed.data.role !== "director") {
     return { error: "No podés cambiar tu propio rol. Pedile a otro director que lo haga." };
   }
+
+  const roleProblem = await checkRoleChange(parsed.data.id, parsed.data.role);
+  if (roleProblem) return { error: roleProblem };
 
   await updateUser(parsed.data);
 
@@ -158,12 +166,13 @@ export async function resendInvitationAction(_prev: ActionResult, formData: Form
   }
   const safeInviteUrl = await buildInviteUrl(target.id);
 
-  await sendInvitationEmail({
+  const sent = await sendInvitationEmail({
     to: email,
     fullName: fullName || email,
     role: target.role,
     inviteLink: safeInviteUrl,
-  }).catch(() => {});
+  }).then(() => true).catch(() => false);
+  if (!sent) return { error: `No se pudo enviar el email a ${email}. Revisá el servicio de correo e intentá de nuevo.` };
 
   return { success: `Invitación reenviada a ${email}` };
 }

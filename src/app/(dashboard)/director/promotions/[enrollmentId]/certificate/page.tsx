@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "./PrintButton";
 import { LEVEL_LABELS } from "@/lib/level-labels";
+import { isUuid } from "@/lib/uuid";
 
 function certNumber(enrollmentId: string) {
   return "CERT-" + enrollmentId.replace(/-/g, "").slice(0, 8).toUpperCase();
@@ -15,6 +16,7 @@ export default async function CertificatePage({
   params: Promise<{ enrollmentId: string }>;
 }) {
   const { enrollmentId } = await params;
+  if (!isUuid(enrollmentId)) notFound();
 
   const supabase = await createClient();
   const { data: row } = await supabase

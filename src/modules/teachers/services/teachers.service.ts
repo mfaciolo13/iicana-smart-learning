@@ -1,6 +1,6 @@
 import { db, dbTx } from "@/lib/drizzle";
-import { teachers, profiles } from "@/lib/drizzle/schema";
-import { eq, ilike, or } from "drizzle-orm";
+import { teachers, profiles, courses } from "@/lib/drizzle/schema";
+import { eq, ilike, or, sql } from "drizzle-orm";
 import type { CreateTeacherInput, UpdateTeacherInput } from "../schemas";
 import type { TeacherListItem, TeacherWithProfile } from "../types";
 
@@ -12,6 +12,8 @@ export async function getTeachers(search?: string): Promise<TeacherListItem[]> {
       specialization: teachers.specialization,
       fullName: profiles.fullName,
       email: profiles.email,
+      // Un docente dado de baja conserva su ficha (evaluaciones, historial) pero su cuenta queda bloqueada.
+      deactivated: sql<boolean>`coalesce((select u.banned_until > now() from auth.users u where u.id = ${teachers.profileId}), false)`,
     })
     .from(teachers)
     .innerJoin(profiles, eq(teachers.profileId, profiles.id))
@@ -75,7 +77,7 @@ export async function createTeacher(profileId: string, input: CreateTeacherInput
   return teacher;
 }
 
-export async function updateTeacher(input: UpdateTeacherInput) {
+export async function updateTeacher(input: Omit<UpdateTeacherInput, "phone"> & { phone?: string | null }) {
   // fullName y phone viven en `profiles`, no en `teachers` (SCRUM-242).
   const { id, fullName, phone, ...rest } = input;
   const teacherData = rest.specialization === "" ? { ...rest, specialization: null } : rest;
@@ -101,4 +103,26 @@ export async function updateTeacher(input: UpdateTeacherInput) {
 
 export async function deleteTeacher(id: string) {
   await db.delete(teachers).where(eq(teachers.id, id));
+}
+
+/** Qué se perdería al borrar al docente: cursos a cargo, encuestas anónimas y observaciones de clase. */
+export async function getTeacherRemovalInfo(id: string) {
+  const [row] = await db
+    .select({
+      profileId: teachers.profileId,
+      courses: sql<number>`(select cast(count(*) as int) from courses where courses.teacher_id = ${teachers.id})`,
+      surveys: sql<number>`(select cast(count(*) as int) from teacher_surveys where teacher_surveys.teacher_id = ${teachers.id})`,
+      observations: sql<number>`(select cast(count(*) as int) from class_observations where class_observations.teacher_id = ${teachers.id})`,
+    })
+    .from(teachers)
+    .where(eq(teachers.id, id))
+    .limit(1);
+  if (!row) return null;
+  return { profileId: row.profileId, courses: row.courses, evaluations: row.surveys + row.observations };
+}
+
+/** Quita al docente de todos sus cursos (quedan sin docente asignado, no se borran). */
+export async function unassignTeacherCourses(id: string): Promise<number> {
+  const rows = await db.update(courses).set({ teacherId: null, updatedAt: new Date() }).where(eq(courses.teacherId, id)).returning({ id: courses.id });
+  return rows.length;
 }

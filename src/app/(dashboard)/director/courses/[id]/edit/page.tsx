@@ -4,6 +4,7 @@ import { updateCourseAction } from "@/modules/courses/actions";
 import { CourseForm } from "@/modules/courses/components/CourseForm";
 import type { CourseWithTeacher } from "@/modules/courses/types";
 import { getCachedTeachers } from "@/lib/query-cache";
+import { isUuid } from "@/lib/uuid";
 
 export default async function EditCoursePage({
   params,
@@ -11,6 +12,7 @@ export default async function EditCoursePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const [{ data: courseRow }, teachers] = await Promise.all([

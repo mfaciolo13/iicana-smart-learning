@@ -3,22 +3,13 @@ import { Eye, ChevronRight } from "lucide-react";
 import type { StudentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 import { SortableTh, type SortContext } from "@/components/ui/TableControls";
-
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   active: { label: "Activo", variant: "success" },
   inactive: { label: "Inactivo", variant: "neutral" },
   suspended: { label: "Suspendido", variant: "danger" },
   graduated: { label: "Egresado", variant: "info" as never },
-};
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Principiante",
-  elementary: "Elemental",
-  pre_intermediate: "Pre-intermedio",
-  intermediate: "Intermedio",
-  upper_intermediate: "Upper-intermedio",
-  advanced: "Avanzado",
 };
 
 interface StudentListProps {

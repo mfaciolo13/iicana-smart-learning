@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { QuizPlayer } from "@/modules/assessments/components/QuizPlayer";
 import { isStudentEnrolledInCourse } from "@/modules/assessments/services/assessments.service";
 import type { QuizQuestion, PublicQuizQuestion } from "@/modules/assessments/types";
+import { isUuid } from "@/lib/uuid";
 
 export default async function AlumnoAssessmentPage({
   params,
@@ -13,6 +14,7 @@ export default async function AlumnoAssessmentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const user = await getServerUser();
   if (!user) redirect("/login");
 

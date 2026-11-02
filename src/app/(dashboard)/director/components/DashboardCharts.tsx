@@ -7,15 +7,7 @@ import { GradesChart } from "./GradesChart";
 import { StudentsLevelChart } from "./StudentsLevelChart";
 import { PaymentsDonut } from "./PaymentsDonut";
 import type { PaymentStatusCount, StudentsByLevel } from "@/modules/reports/services/dashboard.service";
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Principiante",
-  elementary: "Elemental",
-  pre_intermediate: "Pre-inter.",
-  intermediate: "Intermedio",
-  upper_intermediate: "Upper-inter.",
-  advanced: "Avanzado",
-};
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 const LEVEL_ORDER = ["beginner", "elementary", "pre_intermediate", "intermediate", "upper_intermediate", "advanced"];
 

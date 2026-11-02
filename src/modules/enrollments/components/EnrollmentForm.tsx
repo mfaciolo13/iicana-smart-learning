@@ -12,17 +12,9 @@ import { Card } from "@/components/ui/Card";
 import { createEnrollmentSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
 import { useFormAction } from "@/lib/use-form-action";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 type FormValues = z.infer<typeof createEnrollmentSchema>;
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Principiante",
-  elementary: "Elemental",
-  pre_intermediate: "Pre-intermedio",
-  intermediate: "Intermedio",
-  upper_intermediate: "Upper-intermedio",
-  advanced: "Avanzado",
-};
 
 interface EnrollmentFormProps {
   /** Destino del botón "Cancelar" (por defecto, portal director). */

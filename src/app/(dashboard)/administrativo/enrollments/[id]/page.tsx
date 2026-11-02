@@ -7,20 +7,14 @@ import { FormButton } from "@/components/ui/FormButton";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { EnrollmentStatusForm } from "@/modules/enrollments/components/EnrollmentStatusForm";
+import { LEVEL_LABELS } from "@/lib/level-labels";
+import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/uuid";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "warning" }> = {
   active: { label: "Activo", variant: "success" },
   completed: { label: "Completado", variant: "neutral" },
   withdrawn: { label: "Dado de baja", variant: "warning" },
-};
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Principiante",
-  elementary: "Elemental",
-  pre_intermediate: "Pre-intermedio",
-  intermediate: "Intermedio",
-  upper_intermediate: "Upper-intermedio",
-  advanced: "Avanzado",
 };
 
 export default async function EnrollmentDetailPage({
@@ -29,6 +23,7 @@ export default async function EnrollmentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const enrollment = await getEnrollmentById(id);
   // SCRUM-234: tras eliminar desde el detalle, volver al listado en lugar de mostrar un 404.

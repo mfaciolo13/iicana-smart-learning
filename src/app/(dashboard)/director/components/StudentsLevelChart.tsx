@@ -3,19 +3,11 @@
 import { BarsChart } from "@/components/charts/BarsChart";
 import { COLORS } from "@/components/charts/palette";
 import type { StudentsByLevel } from "@/modules/reports/services/dashboard.service";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 interface Props {
   data: StudentsByLevel[];
 }
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Princ.",
-  elementary: "Elem.",
-  pre_intermediate: "Pre-Int.",
-  intermediate: "Inter.",
-  upper_intermediate: "Upper.",
-  advanced: "Avanz.",
-};
 
 const LEVEL_ORDER = ["beginner", "elementary", "pre_intermediate", "intermediate", "upper_intermediate", "advanced"];
 

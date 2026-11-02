@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { submitSurveyAction } from "@/modules/teacher-evaluations/actions";
 import { SurveyForm } from "@/modules/teacher-evaluations/components/SurveyForm";
 import { getActiveEnrollmentForSurvey, hasSurveySubmitted } from "@/modules/teacher-evaluations/services/teacher-evaluations.service";
+import { isUuid } from "@/lib/uuid";
 
 export default async function AlumnoSurveyPage({
   params,
@@ -11,6 +12,7 @@ export default async function AlumnoSurveyPage({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
+  if (!isUuid(courseId)) notFound();
 
   const user = await getServerUser();
   if (!user) redirect("/login");

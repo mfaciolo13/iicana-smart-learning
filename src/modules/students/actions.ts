@@ -6,7 +6,7 @@ import { requireRole } from "@/lib/auth/helpers";
 import { buildInviteUrl } from "@/lib/site-url";
 import { portalPath } from "@/lib/portal";
 import { createStudentSchema, updateStudentSchema } from "./schemas";
-import { createStudent, updateStudent, deleteStudent, setStudentAccessRestricted, dniExists, getStudentRemovalInfo } from "./services/students.service";
+import { createStudent, updateStudent, getStudentStatus, deleteStudent, setStudentAccessRestricted, dniExists, getStudentRemovalInfo } from "./services/students.service";
 import { removalMode } from "./lib/removal";
 import { sendInvitationEmail } from "@/lib/email";
 import { isUniqueViolation } from "@/lib/db-errors";
@@ -83,18 +83,19 @@ export async function createStudentAction(_prev: ActionResult, formData: FormDat
 
   const safeInviteUrl = await buildInviteUrl(authData.user.id);
 
-  await sendInvitationEmail({
+  // Si Resend falla no se puede decir "listo": se avisa para que se reenvíe la invitación.
+  const inviteSent = await sendInvitationEmail({
     to: parsed.data.email,
     fullName: parsed.data.fullName,
     role: "alumno",
     inviteLink: safeInviteUrl,
-  }).catch(() => {});
+  }).then(() => true).catch(() => false);
 
   updateTag("students");
   refreshAnalytics();
   revalidatePath("/director/students");
   revalidatePath("/administrativo/students");
-  return { success: "Alumno registrado correctamente", redirectTo: portalPath(role, "/students") };
+  return { success: inviteSent ? "Alumno registrado correctamente" : "Alumno registrado, pero NO se pudo enviar el email de invitación. Reenviala desde el detalle del usuario.", redirectTo: portalPath(role, "/students") };
 }
 
 export async function updateStudentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -128,8 +129,17 @@ export async function updateStudentAction(_prev: ActionResult, formData: FormDat
     return { error: "Ya existe otro alumno registrado con ese DNI" };
   }
 
+  // Un campo vacío significa "borrar el teléfono", no "no cambiar" (antes el éxito era falso).
+  const clearPhone = formData.has("phone") && !String(formData.get("phone") ?? "").trim();
+  const previous = await getStudentStatus(parsed.data.id);
+
   try {
-    await updateStudent(parsed.data);
+    await updateStudent({ ...parsed.data, ...(clearPhone && { phone: null }) });
+    // Reactivar a un alumno dado de baja también le devuelve el acceso (la baja lo había bloqueado).
+    if (previous?.status === "inactive" && parsed.data.status === "active") {
+      const { error: unbanError } = await createAdminClient().auth.admin.updateUserById(previous.profileId, { ban_duration: "none" });
+      if (unbanError) return { error: "El alumno quedó activo, pero no se pudo devolverle el acceso. Intentá de nuevo." };
+    }
   } catch (err) {
     if (isUniqueViolation(err)) {
       return { error: "Ya existe otro alumno registrado con ese DNI" };

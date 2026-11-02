@@ -12,6 +12,7 @@ import { createStudentSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
 import { useFormAction } from "@/lib/use-form-action";
 import { NAME_DISALLOWED_CHARS, PHONE_DISALLOWED_CHARS, todayInstitute } from "@/lib/validation";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 function sanitizeNameInput(e: React.FormEvent<HTMLInputElement>) {
   const el = e.currentTarget;
@@ -41,12 +42,12 @@ const MIN_BIRTH_DATE = dateYearsAgo(100);
 const MAX_BIRTH_DATE = dateYearsAgo(6);
 
 const LEVELS = [
-  { value: "beginner", label: "Principiante", range: "0–20 pts" },
-  { value: "elementary", label: "Elemental", range: "21–40 pts" },
-  { value: "pre_intermediate", label: "Pre-intermedio", range: "41–55 pts" },
-  { value: "intermediate", label: "Intermedio", range: "56–70 pts" },
-  { value: "upper_intermediate", label: "Upper-intermedio", range: "71–85 pts" },
-  { value: "advanced", label: "Avanzado", range: "86–100 pts" },
+  { value: "beginner", label: LEVEL_LABELS["beginner"], range: "0–20 pts" },
+  { value: "elementary", label: LEVEL_LABELS["elementary"], range: "21–40 pts" },
+  { value: "pre_intermediate", label: LEVEL_LABELS["pre_intermediate"], range: "41–55 pts" },
+  { value: "intermediate", label: LEVEL_LABELS["intermediate"], range: "56–70 pts" },
+  { value: "upper_intermediate", label: LEVEL_LABELS["upper_intermediate"], range: "71–85 pts" },
+  { value: "advanced", label: LEVEL_LABELS["advanced"], range: "86–100 pts" },
 ];
 
 const STATUSES = [
@@ -128,7 +129,7 @@ export function StudentForm({ student, action, submitLabel = "Guardar", cancelHr
 
       <Card title="Test de nivelación" padding="md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Puntaje del test" id="placementTestScore" helper="De 0 a 100. El nivel se asigna automáticamente como referencia." error={(errors as Record<string, { message?: string }>).placementTestScore?.message}>
+          <Field label="Puntaje del test" id="placementTestScore" helper="De 0 a 100. Es una referencia: elegí el nivel según la tabla de puntajes de abajo." error={(errors as Record<string, { message?: string }>).placementTestScore?.message}>
             <Input id="placementTestScore" type="text" inputMode="numeric" maxLength={3} onInput={sanitizeScoreInput} placeholder="Ej: 65" {...register("placementTestScore")} />
           </Field>
 

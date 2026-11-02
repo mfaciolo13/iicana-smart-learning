@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getServerUser } from "@/lib/auth/helpers";
 import { getAttemptResult } from "@/modules/assessments/services/assessments.service";
+import { isUuid } from "@/lib/uuid";
 
 const OPTION_LETTERS = ["A", "B", "C", "D"];
 
@@ -40,6 +41,7 @@ export default async function AttemptResultPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const user = await getServerUser();
   if (!user) redirect("/login");
 

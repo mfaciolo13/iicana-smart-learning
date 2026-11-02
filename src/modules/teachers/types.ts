@@ -17,4 +17,6 @@ export interface TeacherListItem {
   email: string;
   dni: string;
   specialization: string | null;
+  /** Dado de baja: su cuenta está bloqueada pero se conservan sus evaluaciones. */
+  deactivated?: boolean;
 }

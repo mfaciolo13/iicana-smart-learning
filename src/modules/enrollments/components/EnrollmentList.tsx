@@ -3,20 +3,12 @@ import { Eye, ChevronRight } from "lucide-react";
 import type { EnrollmentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 import { SortableTh, type SortContext } from "@/components/ui/TableControls";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "warning" }> = {
   active: { label: "Activo", variant: "success" },
   completed: { label: "Completado", variant: "neutral" },
   withdrawn: { label: "Dado de baja", variant: "warning" },
-};
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Principiante",
-  elementary: "Elemental",
-  pre_intermediate: "Pre-inter.",
-  intermediate: "Intermedio",
-  upper_intermediate: "Upper-inter.",
-  advanced: "Avanzado",
 };
 
 const TH = "text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4";

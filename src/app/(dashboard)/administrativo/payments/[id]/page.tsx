@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { formatDateAR } from "@/lib/format";
 import { todayInstitute } from "@/lib/validation";
+import { isUuid } from "@/lib/uuid";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   pending: { label: "Pendiente", variant: "warning" },
@@ -30,6 +31,7 @@ export default async function PaymentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const payment = await getPaymentById(id);
   if (!payment) notFound();

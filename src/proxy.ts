@@ -40,7 +40,10 @@ export async function proxy(request: NextRequest) {
   );
 
   if (isProtectedRoute && !user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Se recuerda a dónde quería ir para llevarlo ahí después de iniciar sesión.
+    const login = new URL("/login", request.url);
+    login.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(login);
   }
 
   // Control de acceso a /director/*. El rol sale de profiles (no de user_metadata, que edita el

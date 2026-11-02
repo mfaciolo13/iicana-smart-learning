@@ -53,12 +53,30 @@ export function dniField() {
     .regex(/^\d{7,8}$/, "El DNI debe contener solo números (7 u 8 dígitos)");
 }
 
-// Teléfono argentino: solo dígitos, sin código de país (+54).
+/**
+ * Deja un teléfono pegado en cualquier formato ("+54 9 351 373-3710", "(0351) 15-3733710") como el
+ * número nacional que se guarda: solo dígitos, sin +54, sin el 9 de celular y sin el 0 inicial.
+ * Antes un teléfono con "+" (como los que ya estaban cargados) no pasaba la validación y su dueño
+ * no podía guardar nada en su perfil.
+ */
+export function normalizePhoneInput(raw: string): string {
+  let v = raw.trim().replace(/[\s().-]/g, "");
+  const hadPlus = v.startsWith("+");
+  if (hadPlus) v = v.slice(1);
+  if (v.startsWith("54") && (hadPlus || v.length >= 12)) {
+    v = v.slice(2);
+    if (v.startsWith("9")) v = v.slice(1);
+  }
+  return v.replace(/^0+/, "");
+}
+
+// Teléfono argentino: se guarda solo con dígitos, sin código de país (+54).
 // Validado con libphonenumber-js usando el contexto del país AR.
 export function phoneField() {
   return z
     .string()
     .trim()
+    .transform(normalizePhoneInput)
     .pipe(z.union([
       z.literal(""),
       z

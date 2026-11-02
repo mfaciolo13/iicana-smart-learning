@@ -8,6 +8,8 @@ import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
 import type { GradeWithDetails, EvaluationType } from "@/modules/grades/types";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
+import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/uuid";
 
 function scoreVariant(score: number): "success" | "warning" | "danger" {
   if (score >= 7) return "success";
@@ -29,6 +31,7 @@ export default async function GradeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const [{ data: gradeRow }, { data: enrollmentRows }] = await Promise.all([

@@ -13,6 +13,9 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { EnrollmentList } from "@/modules/enrollments/components/EnrollmentList";
 import { PaymentList } from "@/modules/payments/components/PaymentList";
+import { LEVEL_LABELS } from "@/lib/level-labels";
+import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/uuid";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" | "info" }> = {
   active: { label: "Activo", variant: "success" },
@@ -21,21 +24,13 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutr
   graduated: { label: "Egresado", variant: "info" },
 };
 
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Principiante",
-  elementary: "Elemental",
-  pre_intermediate: "Pre-intermedio",
-  intermediate: "Intermedio",
-  upper_intermediate: "Upper-intermedio",
-  advanced: "Avanzado",
-};
-
 export default async function StudentDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const [student, studentEnrollments, studentPayments] = await Promise.all([
     getStudentById(id),
