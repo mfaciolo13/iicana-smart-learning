@@ -4,6 +4,9 @@ import type { PaymentListItem } from "../types";
 import { Badge } from "@/components/ui/Badge";
 import { formatDateAR } from "@/lib/format";
 import { SortableTh, type SortContext } from "@/components/ui/TableControls";
+import { formatCents, toCents } from "@/lib/money";
+import { METHOD_LABELS } from "../lib/pricing";
+import { periodLabel } from "../lib/period-label";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
   pending: { label: "Pendiente", variant: "warning" },
@@ -19,6 +22,25 @@ interface PaymentListProps {
   basePath?: string;
   /** Si se pasa, los encabezados ordenan el listado (?sort=&dir=). */
   sort?: SortContext;
+}
+
+const INVOICE_LABELS: Record<string, { label: string; variant: "success" | "neutral" | "danger" | "warning" }> = {
+  issued: { label: "Facturado", variant: "success" },
+  pending: { label: "En emisión", variant: "warning" },
+  failed: { label: "Fallida", variant: "danger" },
+};
+
+/** Importe a mostrar: lo cobrado si ya se pagó; si no, el precio de lista. */
+function shownAmount(p: PaymentListItem) {
+  return formatCents(toCents(p.status === "paid" && p.finalAmount ? p.finalAmount : p.amount));
+}
+
+function adjustment(p: PaymentListItem) {
+  const discount = p.discountAmount ? toCents(p.discountAmount) : 0;
+  const surcharge = p.surchargeAmount ? toCents(p.surchargeAmount) : 0;
+  if (discount > 0) return { text: `− ${formatCents(discount)}${p.discountPercentage ? ` (${Number(p.discountPercentage)}%)` : ""}`, className: "text-emerald-700" };
+  if (surcharge > 0) return { text: `+ ${formatCents(surcharge)}`, className: "text-amber-700" };
+  return null;
 }
 
 const TH = "text-left text-xs font-medium uppercase tracking-wide text-slate-500 py-3 pr-4";
@@ -44,7 +66,7 @@ export function PaymentList({ payments, showNewLink = false, basePath = "/direct
             href={`${basePath}/new`}
             className="mt-4 inline-flex items-center gap-1 px-4 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors font-medium"
           >
-            + Registrar pago
+            + Nueva cuota
           </Link>
         )}
       </div>
@@ -74,7 +96,7 @@ export function PaymentList({ payments, showNewLink = false, basePath = "/direct
               <div className="ml-3 shrink-0 flex items-center gap-2">
                 <div className="flex flex-col items-end gap-1">
                   <span className="font-semibold text-slate-900 text-sm">
-                    ${parseFloat(p.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                    {shownAmount(p)}
                   </span>
                   <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                 </div>
@@ -91,10 +113,15 @@ export function PaymentList({ payments, showNewLink = false, basePath = "/direct
           <thead>
             <tr className="border-b-2 border-brand-700">
               <Th label="Alumno" field="student" sort={sort} />
-              <Th label="Monto" field="amount" sort={sort} />
+              <Th label="Período" field="due" sort={sort} className="hidden lg:table-cell" />
+              <Th label="Lista" field="amount" sort={sort} className="hidden lg:table-cell" />
+              <Th label="Medio" field="method" sort={sort} className="hidden md:table-cell" />
+              <Th label="Dto / Recargo" field="amount" sort={sort} className="hidden xl:table-cell" />
+              <Th label="Importe" field="amount" sort={sort} />
               <Th label="Vencimiento" field="due" sort={sort} />
               <Th label="Recibo" field="receipt" sort={sort} className="hidden md:table-cell" />
               <Th label="Estado" field="status" sort={sort} />
+              <Th label="Factura" field="invoice" sort={sort} className="hidden xl:table-cell" />
               <th className="py-3" />
             </tr>
           </thead>
@@ -110,9 +137,18 @@ export function PaymentList({ payments, showNewLink = false, basePath = "/direct
                     <p className="font-medium text-slate-900">{p.studentName}</p>
                     <p className="text-xs text-slate-400 font-mono">{p.studentDni}</p>
                   </td>
-                  <td className="py-3.5 pr-4 font-semibold text-slate-900">
-                    ${parseFloat(p.amount).toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  <td className="py-3.5 pr-4 text-slate-500 hidden lg:table-cell">{periodLabel(p.period)}</td>
+                  <td className="py-3.5 pr-4 text-slate-500 tabular-nums hidden lg:table-cell">
+                    {formatCents(toCents(p.listPrice ?? p.amount))}
                   </td>
+                  <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{p.method ? METHOD_LABELS[p.method] : "—"}</td>
+                  <td className="py-3.5 pr-4 tabular-nums hidden xl:table-cell">
+                    {(() => {
+                      const adj = adjustment(p);
+                      return adj ? <span className={adj.className}>{adj.text}</span> : <span className="text-slate-300">—</span>;
+                    })()}
+                  </td>
+                  <td className="py-3.5 pr-4 font-semibold text-slate-900 tabular-nums">{shownAmount(p)}</td>
                   <td className="py-3.5 pr-4">
                     <span className={p.isOverdue && p.status !== "paid" ? "text-red-600 font-medium" : "text-slate-500"}>
                       {formatDateAR(p.dueDate)}
@@ -123,6 +159,15 @@ export function PaymentList({ payments, showNewLink = false, basePath = "/direct
                   </td>
                   <td className="py-3.5 pr-4">
                     <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                  </td>
+                  <td className="py-3.5 pr-4 hidden xl:table-cell">
+                    {p.status !== "paid" ? (
+                      <span className="text-slate-300">—</span>
+                    ) : p.invoiceStatus ? (
+                      <Badge variant={INVOICE_LABELS[p.invoiceStatus]?.variant ?? "neutral"}>{INVOICE_LABELS[p.invoiceStatus]?.label ?? p.invoiceStatus}</Badge>
+                    ) : (
+                      <span className="text-xs text-slate-400">Sin factura</span>
+                    )}
                   </td>
                   <td className="py-3.5 pr-4 text-right">
                     <Link href={`${basePath}/${p.id}`} className="after:absolute after:inset-0 after:content-['']">

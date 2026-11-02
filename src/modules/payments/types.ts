@@ -16,6 +16,22 @@ export interface PaymentWithStudent {
   cancellationReason: string | null;
   studentName: string;
   studentDni: string;
+  courseId: string | null;
+  courseName: string | null;
+  period: string | null;
+  transferPrice: string | null;
+  cashPrice: string | null;
+  discountValidUntil: string | null;
+  listPrice: string | null;
+  discountAmount: string | null;
+  discountPercentage: string | null;
+  surchargeAmount: string | null;
+  finalAmount: string | null;
+  provider: string | null;
+  providerPaymentId: string | null;
+  internalReference: string | null;
+  externalReference: string | null;
+  registeredByName: string | null;
 }
 
 export interface PaymentListItem {
@@ -30,4 +46,19 @@ export interface PaymentListItem {
   studentName: string;
   studentDni: string;
   isOverdue: boolean;
+  studentId?: string;
+  period?: string | null;
+  courseId?: string | null;
+  courseName?: string | null;
+  listPrice?: string | null;
+  discountAmount?: string | null;
+  discountPercentage?: string | null;
+  surchargeAmount?: string | null;
+  finalAmount?: string | null;
+  /** Estado del comprobante interno (not_required = emitido sin requisito fiscal). */
+  receiptStatus?: string | null;
+  receiptDocId?: string | null;
+  /** Estado de la factura: pending | issued | failed; null si todavía no se intentó. */
+  invoiceStatus?: string | null;
+  invoiceDocId?: string | null;
 }

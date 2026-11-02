@@ -1,13 +1,18 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
-import { requireRole, getServerProfile } from "@/lib/auth/helpers";
-import { createPaymentSchema, markAsPaidSchema, updatePaymentStatusSchema, updatePaymentSchema, cancelPaymentSchema } from "./schemas";
+import { requireRole } from "@/lib/auth/helpers";
+import { getCurrentActor } from "@/lib/audit";
+import {
+  createPaymentSchema,
+  markAsPaidSchema,
+  updatePaymentStatusSchema,
+  updatePaymentSchema,
+  cancelPaymentSchema,
+} from "./schemas";
 import {
   createPayment,
-  markAsPaid,
   updatePayment,
-  cancelPayment,
   updatePaymentStatus,
   markOverduePayments,
   getOverdueAlertTargets,
@@ -17,34 +22,48 @@ import {
   paymentExistsForDueDate,
   syncAccessRestriction,
 } from "./services/payments.service";
+import { afterPaymentConfirmed, cancelPaymentWithCash, collectPayment } from "./services/collect.service";
+import { toCents } from "@/lib/money";
 import { portalPath } from "@/lib/portal";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
 import { refreshAnalytics } from "@/lib/analytics-cache";
 
+/** Errores de validación Zod → mensaje + errores por campo, como el resto de los formularios. */
+function validationResult(error: import("zod").ZodError): ActionResult {
+  const flat = error.flatten().fieldErrors as Record<string, string[] | undefined>;
+  return {
+    error: error.issues[0].message,
+    fieldErrors: Object.fromEntries(
+      Object.entries(flat)
+        .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+        .filter(([, v]) => v),
+    ) as Record<string, string>,
+  };
+}
+
+function revalidatePayments() {
+  refreshAnalytics();
+  for (const base of ["/director", "/administrativo", "/alumno"]) revalidatePath(`${base}/payments`);
+}
+
+const text = (formData: FormData, key: string) => ((formData.get(key) as string | null) ?? "") || undefined;
+
 export async function createPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const role = await requireRole(["director", "administrativo"]);
+  const actor = await getCurrentActor();
 
-  const raw = {
+  const parsed = createPaymentSchema.safeParse({
     studentId: formData.get("studentId") as string,
     amount: formData.get("amount") as string,
+    transferPrice: formData.get("transferPrice") as string,
+    cashPrice: formData.get("cashPrice") as string,
+    courseId: formData.get("courseId") as string,
     dueDate: formData.get("dueDate") as string,
-    notes: (formData.get("notes") as string) || undefined,
-  };
-
-  const parsed = createPaymentSchema.safeParse(raw);
-  if (!parsed.success) {
-    const flat = parsed.error.flatten().fieldErrors;
-    return {
-      error: parsed.error.issues[0].message,
-      fieldErrors: Object.fromEntries(
-        Object.entries(flat)
-          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
-          .filter(([, v]) => v)
-      ) as Record<string, string>,
-    };
-  }
+    notes: text(formData, "notes"),
+  });
+  if (!parsed.success) return validationResult(parsed.error);
 
   // Dos cuotas del mismo alumno con el mismo vencimiento casi siempre son una carga duplicada (SCRUM-324).
   if (await paymentExistsForDueDate(parsed.data.studentId, parsed.data.dueDate)) {
@@ -53,66 +72,59 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
 
   let payment;
   try {
-    payment = await createPayment(parsed.data);
+    payment = await createPayment(parsed.data, actor?.id);
   } catch (e) {
     // Índice único (alumno, vencimiento): si dos pedidos llegan a la vez, gana uno solo.
-    if ((e as { code?: string; cause?: { code?: string } })?.code === "23505" || (e as { cause?: { code?: string } })?.cause?.code === "23505") {
-      return { error: "Ese alumno ya tiene una cuota con ese vencimiento" };
-    }
+    if (isUniqueViolation(e)) return { error: "Ese alumno ya tiene una cuota con ese vencimiento" };
     throw e;
   }
 
-  refreshAnalytics();
-  revalidatePath("/director/payments");
-  revalidatePath("/administrativo/payments");
-  return { success: "Pago registrado correctamente", redirectTo: portalPath(role, `/payments/${payment.id}`) };
+  revalidatePayments();
+  return { success: "Cuota registrada correctamente", redirectTo: portalPath(role, `/payments/${payment.id}`) };
 }
 
+/**
+ * Cobro manual de una cuota. El importe que mostró la pantalla viaja solo para compararlo: el
+ * servidor lo recalcula con la fecha del instituto y rechaza el cobro si no coincide.
+ */
 export async function markAsPaidAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director", "administrativo"]);
+  const actor = await getCurrentActor();
+  if (!actor) return { error: "No autorizado" };
 
-  const raw = {
+  const parsed = markAsPaidSchema.safeParse({
     id: formData.get("id") as string,
     method: formData.get("method") as string,
-    receiptNumber: (formData.get("receiptNumber") as string) || undefined,
-  };
+    receiptNumber: text(formData, "receiptNumber"),
+    expectedAmount: text(formData, "expectedAmount"),
+    externalReference: text(formData, "externalReference"),
+    observations: text(formData, "observations"),
+  });
+  if (!parsed.success) return validationResult(parsed.error);
 
-  const parsed = markAsPaidSchema.safeParse(raw);
-  if (!parsed.success) {
-    const flat = parsed.error.flatten().fieldErrors;
-    return {
-      error: parsed.error.issues[0].message,
-      fieldErrors: Object.fromEntries(
-        Object.entries(flat)
-          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
-          .filter(([, v]) => v)
-      ) as Record<string, string>,
-    };
-  }
-
-  let habilitado = false;
+  let result;
   try {
-    const paid = await markAsPaid(parsed.data);
-    if (!paid) {
-      return { error: "Solo se pueden cobrar pagos pendientes, vencidos o suspendidos. Este pago ya fue cobrado o anulado." };
-    }
-    // SCRUM-352: cobrar es lo que saca al alumno de la mora, así que es acá donde
-    // hay que recalcular la restricción. Antes solo se ponía y nunca se levantaba.
-    const sync = await syncAccessRestriction(paid.studentId);
-    habilitado = sync?.lifted ?? false;
-  } catch (err) {
-    if (isUniqueViolation(err)) {
-      return { error: "Ya existe un pago con ese número de recibo" };
-    }
+    result = await collectPayment({
+      paymentId: parsed.data.id,
+      method: parsed.data.method,
+      actor,
+      provider: "manual",
+      expectedFinalCents: parsed.data.expectedAmount ? toCents(parsed.data.expectedAmount) : undefined,
+      receiptNumber: parsed.data.receiptNumber,
+      externalReference: parsed.data.externalReference,
+      observations: parsed.data.observations,
+    });
+  } catch {
     return { error: "No se pudo registrar el pago. Intentá de nuevo." };
   }
+  if (!result.ok) return { error: result.message };
 
-  refreshAnalytics();
-  revalidatePath("/director/payments");
-  revalidatePath("/administrativo/payments");
-  revalidatePath("/alumno/payments");
+  // SCRUM-352: cobrar es lo que saca al alumno de la mora, así que se recalcula la restricción.
+  const { restrictionLifted } = await afterPaymentConfirmed(result);
+
+  revalidatePayments();
   return {
-    success: habilitado
+    success: restrictionLifted
       ? "Pago registrado como abonado · Se habilitó el acceso del alumno al portal"
       : "Pago registrado como abonado",
   };
@@ -121,25 +133,15 @@ export async function markAsPaidAction(_prev: ActionResult, formData: FormData):
 export async function updatePaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director", "administrativo"]);
 
-  const raw = {
+  const parsed = updatePaymentSchema.safeParse({
     id: formData.get("id") as string,
     amount: formData.get("amount") as string,
+    transferPrice: formData.get("transferPrice") as string,
+    cashPrice: formData.get("cashPrice") as string,
     dueDate: formData.get("dueDate") as string,
-    notes: (formData.get("notes") as string) || undefined,
-  };
-
-  const parsed = updatePaymentSchema.safeParse(raw);
-  if (!parsed.success) {
-    const flat = parsed.error.flatten().fieldErrors;
-    return {
-      error: parsed.error.issues[0].message,
-      fieldErrors: Object.fromEntries(
-        Object.entries(flat)
-          .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
-          .filter(([, v]) => v)
-      ) as Record<string, string>,
-    };
-  }
+    notes: text(formData, "notes"),
+  });
+  if (!parsed.success) return validationResult(parsed.error);
 
   const { id, ...data } = parsed.data;
   const updated = await updatePayment(id, data);
@@ -147,40 +149,36 @@ export async function updatePaymentAction(_prev: ActionResult, formData: FormDat
     return { error: "Solo se puede editar un pago pendiente o vencido. Anulá el pago y registrá uno nuevo." };
   }
 
-  refreshAnalytics();
-  revalidatePath("/director/payments");
-  revalidatePath("/administrativo/payments");
+  revalidatePayments();
   return { success: "Pago actualizado correctamente" };
 }
 
 export async function cancelPaymentAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireRole(["director", "administrativo"]);
-
-  const profile = await getServerProfile();
-  if (!profile) return { error: "No autorizado" };
+  const actor = await getCurrentActor();
+  if (!actor) return { error: "No autorizado" };
 
   const parsed = cancelPaymentSchema.safeParse({
     id: formData.get("id") as string,
     reason: (formData.get("reason") as string) ?? "",
   });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const cancelled = await cancelPayment(parsed.data.id, parsed.data.reason, profile.id);
-  if (!cancelled) {
-    return { error: "El pago ya estaba anulado" };
-  }
+  const cancelled = await cancelPaymentWithCash({ paymentId: parsed.data.id, reason: parsed.data.reason, actor });
+  if (!cancelled) return { error: "El pago ya estaba anulado" };
 
   // Anular una cuota la saca de la deuda, así que puede bajar al alumno de 2 impagas
   // a 1 y corresponde levantarle la restricción (SCRUM-352).
-  await syncAccessRestriction(cancelled.studentId);
+  await syncAccessRestriction(cancelled.payment.studentId);
 
-  refreshAnalytics();
-  revalidatePath("/director/payments");
-  revalidatePath("/administrativo/payments");
-  revalidatePath("/alumno/payments");
-  return { success: "Pago anulado correctamente" };
+  revalidatePayments();
+  revalidatePath("/director/payments/cash");
+  revalidatePath("/administrativo/payments/cash");
+  return {
+    success: cancelled.cashReversed
+      ? "Pago anulado · Se revirtió su ingreso en la caja de efectivo"
+      : "Pago anulado correctamente",
+  };
 }
 
 export async function updatePaymentStatusAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {

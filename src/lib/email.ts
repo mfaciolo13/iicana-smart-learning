@@ -1,20 +1,11 @@
 import { Resend } from "resend";
 import { formatDateAR } from "@/lib/format";
+import { esc, emailShell } from "@/lib/email-layout";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "Smart Learning <no-reply@cervantes-smart-learning.com.ar>";
 const IS_DEV = process.env.NODE_ENV === "development";
-
-/** Escapa texto de usuario antes de interpolarlo en el HTML del email (SCRUM-325). */
-function esc(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 /**
  * Resend no lanza cuando el envío falla: devuelve { error }. Se convierte en excepción para que
@@ -43,32 +34,6 @@ const ROLE_LABELS: Record<string, string> = {
   alumno: "alumno/a",
   profesor: "docente",
 };
-
-function emailShell(body: string) {
-  return `<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
-        <tr>
-          <td style="background:linear-gradient(135deg,#1b3356,#2d5383);padding:32px 40px;">
-            <p style="margin:0;color:#bfdbfe;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Smart Learning</p>
-          </td>
-        </tr>
-        <tr><td style="padding:36px 40px;">${body}</td></tr>
-        <tr>
-          <td style="padding:20px 40px;border-top:1px solid #f1f5f9;">
-            <p style="margin:0;color:#cbd5e1;font-size:12px;">Smart Learning — Sistema de Gestión Académica</p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
-}
 
 export async function sendInvitationEmail({
   to,
@@ -765,4 +730,20 @@ export async function sendAssessmentPublishedEmails({
   await sendBatchOrThrow(
     recipients.map((r) => assessmentPublishedPayload({ to: r.email, fullName: r.fullName, ...detail }))
   );
+}
+
+// ─── Envío genérico (cola de correos del módulo de Pagos) ───────────────────
+
+/**
+ * Envía un email ya armado (asunto + HTML). Lo usa la cola `email_outbox`, que guarda el
+ * resultado y reintenta; por eso lanza ante cualquier error en vez de tragárselo.
+ */
+export async function sendRawEmail({ to, subject, html }: { to: string; subject: string; html: string }): Promise<void> {
+  if (IS_DEV) {
+    console.log(`
+📧 [DEV] ${subject} → ${to}
+`);
+    return;
+  }
+  await sendOrThrow({ from: FROM, to, subject, html });
 }

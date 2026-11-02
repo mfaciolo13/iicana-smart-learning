@@ -11,6 +11,8 @@
   pgEnum,
   jsonb,
   unique,
+  bigint,
+  bigserial,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -274,6 +276,24 @@ export const payments = pgTable("payments", {
   // Aviso de mora al alumno y aviso a Dirección (15 días): cada uno con su marca (SCRUM-288)
   overdueAlertSentAt: timestamp("overdue_alert_sent_at", { withTimezone: true }),
   directorAlertSentAt: timestamp("director_alert_sent_at", { withTimezone: true }),
+  // Módulo de Pagos v1.0 (migración 0019). amount es el precio de LISTA mientras la cuota está
+  // impaga y lo efectivamente cobrado una vez pagada; el desglose queda en las columnas de abajo.
+  period: text("period"), // YYYY-MM
+  courseId: uuid("course_id").references(() => courses.id, { onDelete: "set null" }),
+  transferPrice: numeric("transfer_price", { precision: 12, scale: 2 }),
+  cashPrice: numeric("cash_price", { precision: 12, scale: 2 }),
+  discountValidUntil: date("discount_valid_until"),
+  listPriceSnapshot: numeric("list_price_snapshot", { precision: 12, scale: 2 }),
+  discountAmount: numeric("discount_amount", { precision: 12, scale: 2 }),
+  discountPercentage: numeric("discount_percentage", { precision: 5, scale: 2 }),
+  surchargeAmount: numeric("surcharge_amount", { precision: 12, scale: 2 }),
+  finalAmount: numeric("final_amount", { precision: 12, scale: 2 }),
+  provider: text("provider"), // manual | mercadopago
+  providerPaymentId: text("provider_payment_id"),
+  internalReference: text("internal_reference"),
+  externalReference: text("external_reference"),
+  registeredBy: uuid("registered_by").references(() => profiles.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   // Anulación — el registro se conserva por trazabilidad contable, nunca se borra
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   cancelledBy: uuid("cancelled_by").references(() => profiles.id, { onDelete: "set null" }),
@@ -507,6 +527,117 @@ export type NewAttendance = typeof attendance.$inferInsert;
 
 export type Grade = typeof grades.$inferSelect;
 export type NewGrade = typeof grades.$inferInsert;
+
+// ─── Módulo de Pagos v1.0 ─────────────────────────────────────────────────────
+
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedBy: uuid("updated_by").references(() => profiles.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Registro de auditoría de sólo agregar (un trigger impide UPDATE/DELETE). */
+export const auditLog = pgTable("audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  actorId: uuid("actor_id"),
+  actorName: text("actor_name"),
+  actorRole: text("actor_role"),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id"),
+  before: jsonb("before"),
+  after: jsonb("after"),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const studentFeePlans = pgTable("student_fee_plans", {
+  studentId: uuid("student_id")
+    .primaryKey()
+    .references(() => students.id, { onDelete: "cascade" }),
+  courseId: uuid("course_id").references(() => courses.id, { onDelete: "set null" }),
+  listPrice: numeric("list_price", { precision: 12, scale: 2 }).notNull(),
+  transferPrice: numeric("transfer_price", { precision: 12, scale: 2 }),
+  cashPrice: numeric("cash_price", { precision: 12, scale: 2 }),
+  updatedBy: uuid("updated_by").references(() => profiles.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Libro de caja de efectivo, de sólo agregar: el saldo es la suma de sus movimientos. */
+export const cashMovements = pgTable("cash_movements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  seq: bigserial("seq", { mode: "number" }).notNull().unique(),
+  movementType: text("movement_type").notNull(), // income | withdrawal | adjustment
+  direction: text("direction").notNull(), // in | out
+  sourceType: text("source_type").notNull(), // payment | manual | opening | reversal | adjustment
+  sourceId: uuid("source_id"),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  observations: text("observations"),
+  balanceBefore: numeric("balance_before", { precision: 12, scale: 2 }).notNull(),
+  balanceAfter: numeric("balance_after", { precision: 12, scale: 2 }).notNull(),
+  reversalOfId: uuid("reversal_of_id"),
+  createdBy: uuid("created_by"),
+  createdByName: text("created_by_name"),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const cashReconciliations = pgTable("cash_reconciliations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  countedAmount: numeric("counted_amount", { precision: 12, scale: 2 }).notNull(),
+  expectedAmount: numeric("expected_amount", { precision: 12, scale: 2 }).notNull(),
+  difference: numeric("difference", { precision: 12, scale: 2 }).notNull(),
+  notes: text("notes"),
+  createdBy: uuid("created_by"),
+  createdByName: text("created_by_name"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Comprobante interno (receipt) y Factura C (invoice_c) de un pago. Uno de cada tipo por pago. */
+export const paymentDocuments = pgTable("payment_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  paymentId: uuid("payment_id")
+    .notNull()
+    .references(() => payments.id, { onDelete: "restrict" }),
+  documentType: text("document_type").notNull(), // receipt | invoice_c
+  documentNumber: text("document_number"),
+  fiscalStatus: text("fiscal_status").notNull().default("not_required"), // not_required | pending | issued | failed
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  issuedAt: timestamp("issued_at", { withTimezone: true }),
+  cae: text("cae"),
+  caeExpiration: date("cae_expiration"),
+  posNumber: integer("pos_number"),
+  voucherNumber: bigint("voucher_number", { mode: "number" }),
+  fileReference: text("file_reference"),
+  providerResponse: jsonb("provider_response"),
+  errorMessage: text("error_message"),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+  accessToken: text("access_token").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Cola de correos transaccionales con estado y reintentos. */
+export const emailOutbox = pgTable("email_outbox", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventType: text("event_type").notNull(),
+  recipient: text("recipient").notNull(),
+  recipientName: text("recipient_name"),
+  subject: text("subject").notNull(),
+  html: text("html").notNull(),
+  relatedEntityType: text("related_entity_type"),
+  relatedEntityId: text("related_entity_id"),
+  dedupeKey: text("dedupe_key").unique(),
+  deliveryStatus: text("delivery_status").notNull().default("pending"), // pending | sent | failed
+  attemptCount: integer("attempt_count").notNull().default(0),
+  lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;

@@ -21,13 +21,13 @@ test.describe("Administrativo · Pagos", () => {
     await expect(page.getByRole("heading", { name: "Pagos" })).toBeVisible();
   });
 
-  test("el administrativo puede registrar un pago", async ({ page }) => {
+  test("el administrativo puede cargar una cuota", async ({ page }) => {
     await createStudentAdmin(page);
     await page.goto("/administrativo/payments/new");
     await page.waitForLoadState("networkidle");
     await page.locator("#studentId").selectOption({ label: `${ST.fullName} — ${ST.dni}` });
     await page.locator("#amount").fill("15000");
-    await page.getByRole("button", { name: "Registrar pago" }).click();
+    await page.getByRole("button", { name: "Registrar cuota" }).click();
     // Redirige al detalle del pago (/director|/administrativo)/payments/[uuid].
     await page.waitForURL(/\/(director|administrativo)\/payments\/[0-9a-f-]{36}$/, { timeout: 30_000 });
     await expect(page.getByRole("heading", { name: "Detalle del pago" })).toBeVisible({ timeout: 20_000 });
