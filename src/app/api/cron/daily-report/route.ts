@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedCron } from "@/lib/cron-auth";
 import { getDailyReportData } from "@/modules/notifications/services/daily-report.service";
 import { sendDailyReportEmail } from "@/lib/email";
+import { claimSend, releaseSend } from "@/lib/automation-sends";
 
 // SCRUM-319: hasta 60 s por corrida (envíos de email en tanda).
 export const maxDuration = 60;
@@ -21,7 +22,14 @@ export async function GET(request: NextRequest) {
   let sent = 0;
   let failed = 0;
 
+  let skipped = 0;
+
   for (const email of data.directorEmails) {
+    const key = `${data.date}|${email}`;
+    if (!(await claimSend("daily_report", key))) {
+      skipped++;
+      continue;
+    }
     try {
       await sendDailyReportEmail({
         to: email,
@@ -34,10 +42,11 @@ export async function GET(request: NextRequest) {
       sent++;
     } catch (err) {
       console.error(`[cron/daily-report] failed for ${email}:`, err);
+      await releaseSend("daily_report", key);
       failed++;
     }
   }
 
-  console.log(`[cron/daily-report] sent=${sent} failed=${failed}`);
-  return NextResponse.json({ sent, failed, date: data.date });
+  console.log(`[cron/daily-report] sent=${sent} failed=${failed} skipped=${skipped}`);
+  return NextResponse.json({ sent, failed, skipped, date: data.date });
 }

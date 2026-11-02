@@ -11,6 +11,7 @@
   pgEnum,
   jsonb,
   unique,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -507,6 +508,17 @@ export type NewAttendance = typeof attendance.$inferInsert;
 
 export type Grade = typeof grades.$inferSelect;
 export type NewGrade = typeof grades.$inferInsert;
+
+/** Marca de los envíos de los procesos automáticos, para no repetirlos si el proceso corre dos veces. */
+export const automationSends = pgTable(
+  "automation_sends",
+  {
+    kind: text("kind").notNull(),
+    dedupeKey: text("dedupe_key").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.kind, table.dedupeKey] })],
+);
 
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;

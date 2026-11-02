@@ -42,7 +42,8 @@ export async function runRiskDetection(): Promise<RiskDetectionResult> {
     .select({ id: students.id, profileId: students.profileId, fullName: profiles.fullName })
     .from(students)
     .innerJoin(profiles, eq(profiles.id, students.profileId))
-    .where(eq(students.status, "active"));
+    // Los alumnos suspendidos (típicamente por mora) siguen evaluándose: son los de mayor riesgo de abandono.
+    .where(inArray(students.status, ["active", "suspended"]));
 
   if (activeStudents.length === 0) return { assessed: 0, atRisk: 0, atRiskStudents: [] };
 
@@ -52,7 +53,7 @@ export async function runRiskDetection(): Promise<RiskDetectionResult> {
   const overdueRows = await db
     .select({ studentId: payments.studentId })
     .from(payments)
-    .where(and(eq(payments.status, "overdue"), inArray(payments.studentId, studentIds)));
+    .where(and(inArray(payments.status, ["overdue", "suspended"]), inArray(payments.studentId, studentIds)));
 
   const overdueSet = new Set(overdueRows.map((r) => r.studentId));
 

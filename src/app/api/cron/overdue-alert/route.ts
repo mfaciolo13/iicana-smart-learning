@@ -5,7 +5,8 @@ import { payments } from "@/lib/drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 import { getOverdueAlertRecipients } from "@/modules/notifications/services/cron.service";
 import { sendPaymentOverdueAlertEmail } from "@/lib/email";
-import { markOverduePayments, syncAccessRestriction } from "@/modules/payments/services/payments.service";
+import { syncAccessRestriction } from "@/modules/payments/services/payments.service";
+import { runDelinquencyChecks } from "@/modules/payments/services/delinquency.service";
 
 // SCRUM-319: hasta 60 s por corrida (envíos de email en tanda).
 export const maxDuration = 60;
@@ -17,7 +18,9 @@ export async function GET(request: NextRequest) {
 
   // SCRUM-284: antes de avisar, pasar a "Vencida" toda cuota pendiente con vencimiento anterior a hoy
   // (las alertas, la restricción de acceso y el riesgo dependen del estado real en la base).
-  const markedOverdue = await markOverduePayments();
+  // Reglas de mora completas: marcar vencidas, avisar a Dirección a los 15 días y suspender a los 30. Antes sólo
+  // las ejecutaba el botón manual.
+  const { markedOverdue, alerts: directorAlerts, suspended } = await runDelinquencyChecks();
 
   const recipients = await getOverdueAlertRecipients();
 
@@ -60,6 +63,6 @@ export async function GET(request: NextRequest) {
     if (sync?.lifted) lifted++;
   }
 
-  console.log(`[cron/overdue-alert] markedOverdue=${markedOverdue} sent=${sent} failed=${failed} restricted=${restricted} lifted=${lifted} total=${recipients.length}`);
-  return NextResponse.json({ markedOverdue, sent, failed, restricted, lifted, total: recipients.length });
+  console.log(`[cron/overdue-alert] markedOverdue=${markedOverdue} directorAlerts=${directorAlerts} suspended=${suspended} sent=${sent} failed=${failed} restricted=${restricted} lifted=${lifted} total=${recipients.length}`);
+  return NextResponse.json({ markedOverdue, directorAlerts, suspended, sent, failed, restricted, lifted, total: recipients.length });
 }

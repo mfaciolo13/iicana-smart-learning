@@ -10,15 +10,11 @@ import {
   cancelPayment,
   updatePaymentStatus,
   markOverduePayments,
-  getOverdueAlertTargets,
-  markOverdueAlertSent,
-  getSuspensionTargets,
-  suspendStudentAndPayments,
   paymentExistsForDueDate,
   syncAccessRestriction,
 } from "./services/payments.service";
 import { portalPath } from "@/lib/portal";
-import { sendToRole } from "@/modules/notifications/services/notifications.service";
+import { runDelinquencyChecks } from "./services/delinquency.service";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
 import { refreshAnalytics } from "@/lib/analytics-cache";
@@ -48,7 +44,7 @@ export async function createPaymentAction(_prev: ActionResult, formData: FormDat
 
   // Dos cuotas del mismo alumno con el mismo vencimiento casi siempre son una carga duplicada (SCRUM-324).
   if (await paymentExistsForDueDate(parsed.data.studentId, parsed.data.dueDate)) {
-    return { error: "Ese alumno ya tiene una cuota con ese vencimiento" };
+    return { error: "Ese alumno ya tiene una cuota en ese mes" };
   }
 
   let payment;
@@ -233,46 +229,14 @@ export async function markOverduePaymentsAction(_prev: ActionResult): Promise<Ac
 export async function runOverdueChecksAction(_prev: ActionResult, _formData?: FormData): Promise<ActionResult> {
   await requireRole(["director", "administrativo"]);
 
-  await markOverduePayments();
-
-  const alertTargets = await getOverdueAlertTargets();
-  for (const t of alertTargets) {
-    const payload = {
-      type: "payment" as const,
-      title: "Alerta de mora",
-      body: `${t.studentName} tiene un pago vencido hace más de 15 días.`,
-    };
-    await sendToRole("director", payload);
-  }
-  if (alertTargets.length > 0) {
-    await markOverdueAlertSent(alertTargets.map((t) => t.paymentId));
-  }
-
-  const suspensionTargets = await getSuspensionTargets();
-  const byStudent = new Map<string, typeof suspensionTargets>();
-  for (const t of suspensionTargets) {
-    const list = byStudent.get(t.studentId) ?? [];
-    list.push(t);
-    byStudent.set(t.studentId, list);
-  }
-  let suspended = 0;
-  for (const [studentId, items] of byStudent.entries()) {
-    await suspendStudentAndPayments(studentId, items.map((i) => i.paymentId));
-    const { studentName } = items[0];
-    const payload = {
-      type: "payment" as const,
-      title: "Alumno suspendido por mora",
-      body: `${studentName} fue suspendido por tener pagos vencidos hace más de 30 días.`,
-    };
-    await sendToRole("director", payload);
-    suspended++;
-  }
+  // Mismas reglas que corre el proceso automático diario (ver delinquency.service).
+  const { alerts, suspended } = await runDelinquencyChecks();
 
   refreshAnalytics();
   revalidatePath("/director/payments");
   revalidatePath("/administrativo/payments");
   const parts: string[] = [];
-  if (alertTargets.length > 0) parts.push(`${alertTargets.length} alerta(s) de mora enviada(s)`);
+  if (alerts > 0) parts.push(`${alerts} alerta(s) de mora enviada(s)`);
   if (suspended > 0) parts.push(`${suspended} alumno(s) suspendido(s)`);
   return { success: parts.length > 0 ? parts.join(", ") : "Sin cambios pendientes" };
 }
