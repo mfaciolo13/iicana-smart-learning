@@ -39,20 +39,18 @@ const webServerEnv: Record<string, string> = {
       (entry): entry is [string, string] => entry[1] !== undefined
     )
   ),
+  // El stub se fuerza aquí como última clave para que siempre sobreescriba
+  // cualquier valor vacío/undefined que pudiera venir del entorno padre.
   RESEND_API_KEY: "disabled-for-e2e",
 };
 
-// Comando de build: Next.js lee variables de entorno directamente desde el
-// entorno del proceso Node que ejecuta el compilador. pnpm no siempre propaga
-// el `env` de webServer a sus procesos hijos (depende de la versión y del
-// packageManager hook). Para garantizar que RESEND_API_KEY llegue al paso de
-// `next build` (donde se hace la page-data collection de /api/cron/*), la
-// inyectamos explícitamente mediante `env VAR=val` — comando POSIX estándar
-// disponible en todos los runners Linux/macOS de GitHub Actions — en lugar de
-// la sintaxis de asignación de shell (`VAR=val cmd`), que algunos shells
-// restringen. `env` es un binario del sistema, no una feature del shell.
-const buildCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm build";
-const startCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm start";
+// Comandos de build/start/dev limpios, SIN prefijos `env VAR=val`.
+// La variable RESEND_API_KEY llega por el campo `env` del objeto webServer,
+// que Playwright inyecta directamente en el entorno del proceso hijo sin
+// pasar por el shell — esto es portable en Linux, macOS y Windows (donde el
+// binario POSIX `env` puede no estar disponible).
+const buildCommand = "pnpm build";
+const startCommand = "pnpm start";
 const devCommand = "pnpm dev"; // dev no hace page-data collection estática
 
 export default defineConfig({
@@ -117,10 +115,10 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // Usamos `env VAR=val cmd` (binario POSIX) en lugar de la sintaxis de
-      // asignación de shell (`VAR=val cmd`) para máxima portabilidad en CI.
-      // Esto garantiza que RESEND_API_KEY esté presente cuando `next build`
-      // hace la page-data collection de rutas API que instancian Resend.
+      // Comandos limpios sin prefijo `env VAR=val`: la variable RESEND_API_KEY
+      // se inyecta a través del campo `env` de abajo, que Playwright aplica
+      // directamente al entorno del proceso sin invocar un shell intermedio.
+      // Esto garantiza portabilidad en todos los runners de CI.
       command: process.env.E2E_PROD
         ? `${buildCommand} && ${startCommand}`
         : devCommand,
