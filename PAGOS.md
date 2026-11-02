@@ -69,3 +69,32 @@ Aplicarla antes de desplegar el código (en Supabase → SQL editor, o con `psql
 2. Confirmar el recargo de tarjeta de 5 % sobre la lista y su compatibilidad con las condiciones legales y comerciales.
 3. Definir quién carga el saldo inicial de la caja y quién autoriza ingresos, retiros y reversiones.
 4. Definir una dirección institucional para las alertas de retiros (`CASH_ALERT_EMAIL`).
+
+## Aumentos trimestrales de cuotas
+
+Pantalla: **Configuración → Aumentos de cuotas** (`/director/settings/fee-increases`). Solo el rol **Director** puede programar, modificar o cancelar aumentos; cada acción valida el rol en el servidor, no solo oculta el menú. El administrativo consulta los precios ya actualizados (*Pagos → Precios vigentes*) y el alumno ve sus cuotas con los precios nuevos.
+
+### Qué se configura
+
+Porcentaje (≥ 0, hasta 2 decimales), trimestre calendario (`2026-Q4`) y fecha de entrada en vigencia (dentro del trimestre y posterior a hoy). Se pide confirmación antes de programarlo y se muestra cuántas cuotas y planes alcanzaría. Estados: **programado** (editable y cancelable hasta su vigencia), **aplicado** (inmutable) y **cancelado**. Se registra quién lo configuró y quién lo modificó por última vez, y todo queda en la auditoría.
+
+Un trimestre admite **un solo aumento vigente** (índice único): no se puede aplicar dos veces el mismo aumento al mismo período.
+
+### Cómo se aplica
+
+- Lo hace el cron diario `/api/cron/fee-increases` (04:00 UTC): no depende de que alguien abra la pantalla.
+- Fórmula: `nuevo precio = precio anterior × (1 + porcentaje / 100)`, en centavos, redondeo mitad hacia arriba. Ej.: $ 70.000 con 15 % → $ 80.500.
+- Se actualizan las cuotas **sin cobrar** (pendientes, vencidas, suspendidas) que vencen **desde la fecha de vigencia** y los **planes de precios por alumno**, así las cuotas nuevas nacen con el precio actualizado.
+- Los precios de transferencia y efectivo se escalan con el mismo porcentaje, de modo que cada alumno conserva su propia relación entre lista y descuento (los precios individuales de la planilla no se pisan). Si una cuota no tenía precios propios, siguen derivándose del nuevo precio de lista con los descuentos generales.
+- **No se tocan** los pagos confirmados, las cuotas anuladas ni las vencidas anteriores a la vigencia.
+- Todo ocurre en una transacción con el aumento bloqueado: una segunda ejecución (cron repetido, dos instancias) encuentra el aumento ya aplicado y no hace nada.
+- `fee_price_history` guarda el precio anterior, el nuevo, el porcentaje y la fecha de cada cuota o plan tocado (solo agregar). El detalle de una cuota muestra su historial de precios.
+- Un aumento aplicado no puede cambiarse (trigger en la base): ninguna edición posterior altera cuotas o pagos históricos.
+
+### Migración
+
+`src/lib/drizzle/migrations/0022_aumentos_trimestrales.sql` (requiere la 0019): crea `fee_increases` y `fee_price_history` (RLS activado, sin policies) con sus índices únicos y triggers de inmutabilidad.
+
+### Decisiones pendientes
+
+- Política de actualización de los precios individuales de transferencia/efectivo (hoy: proporcional al mismo porcentaje). La planilla muestra casos en que el efectivo del 2.º semestre no es exactamente el 10 % de descuento sobre la nueva lista; si la academia prefiere fijarlos a mano, se editan por alumno en *Precios y recargos* después de aplicado el aumento.
