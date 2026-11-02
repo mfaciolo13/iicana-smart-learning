@@ -50,6 +50,8 @@ export function QuizPlayer({ assessmentId, questions, weekLabel, topic, courseNa
         setError(result.error);
         return;
       }
+      // El servidor devuelve la respuesta que quedó registrada (la primera confirmada), que puede diferir de la elegida ahora.
+      setSelected((prev) => prev.map((v, i) => (i === questionIndex ? result.chosenIndex : v)));
       setFeedback((prev) => prev.map((v, i) => (i === questionIndex ? result : v)));
     });
   }

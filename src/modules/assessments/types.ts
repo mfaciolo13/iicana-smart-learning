@@ -18,6 +18,8 @@ export interface AnswerFeedback {
   correct: boolean;
   correctIndex: number;
   explanation: string;
+  /** Opción que quedó registrada para esa pregunta (la primera que se confirmó). */
+  chosenIndex: number;
 }
 
 export interface AssessmentListItem {

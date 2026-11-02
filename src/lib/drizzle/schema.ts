@@ -11,6 +11,7 @@
   pgEnum,
   jsonb,
   unique,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -333,7 +334,9 @@ export const assessments = pgTable("assessments", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const assessmentAttempts = pgTable("assessment_attempts", {
+export const assessmentAttempts = pgTable(
+  "assessment_attempts",
+  {
   id: uuid("id").primaryKey().defaultRandom(),
   assessmentId: uuid("assessment_id")
     .notNull()
@@ -345,7 +348,27 @@ export const assessmentAttempts = pgTable("assessment_attempts", {
   // answers shape: number[] — index of chosen option per question
   score: integer("score").notNull().default(0), // 0–100
   completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
-});
+  },
+  (table) => [unique("assessment_attempts_assessment_student_unique").on(table.assessmentId, table.studentId)],
+);
+
+/** Respuesta elegida al confirmar cada pregunta del quiz: queda fija aunque se recargue la página. */
+export const assessmentAnswerReveals = pgTable(
+  "assessment_answer_reveals",
+  {
+    assessmentId: uuid("assessment_id")
+      .notNull()
+      .references(() => assessments.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    questionIndex: integer("question_index").notNull(),
+    chosenIndex: integer("chosen_index").notNull(),
+    correct: boolean("correct").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.assessmentId, table.studentId, table.questionIndex] })],
+);
 
 export const marketingCampaigns = pgTable("marketing_campaigns", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateAR } from "@/lib/format";
+import { MIN_SURVEY_RESPONSES, canShowSurveyResults } from "@/modules/teacher-evaluations/lib/anonymity";
 
 const QUESTIONS = [
   "Claridad al explicar",
@@ -68,8 +69,9 @@ export default async function TeacherEvalDetailPage({
   const teacherName = (teacherRow.profiles as unknown as ProfileRaw)?.full_name ?? "";
 
   const surveys = surveyRows ?? [];
+  // Con menos de MIN_SURVEY_RESPONSES respuestas no se muestran promedios ni comentarios (anonimato).
   const surveyAggregate =
-    surveys.length > 0
+    canShowSurveyResults(surveys.length)
       ? {
           avg1: Math.round((surveys.reduce((s, r) => s + r.rating1, 0) / surveys.length) * 10) / 10,
           avg2: Math.round((surveys.reduce((s, r) => s + r.rating2, 0) / surveys.length) * 10) / 10,
@@ -118,7 +120,11 @@ export default async function TeacherEvalDetailPage({
           </h3>
 
           {!surveyAggregate ? (
-            <p className="text-sm text-slate-400">Sin encuestas registradas aún.</p>
+            <p className="text-sm text-slate-400">
+              {surveys.length === 0
+                ? "Sin encuestas registradas aún."
+                : `Hay ${surveys.length} respuesta${surveys.length === 1 ? "" : "s"}. Los resultados se muestran desde las ${MIN_SURVEY_RESPONSES} respuestas, para que ninguna opinión pueda atribuirse a una persona.`}
+            </p>
           ) : (
             <div className="space-y-4">
               {QUESTIONS.map((q, i) => (

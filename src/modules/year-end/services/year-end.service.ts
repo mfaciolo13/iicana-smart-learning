@@ -14,7 +14,7 @@ export interface YearEndRow {
   enrollmentStatus: string;
   attendancePct: number | null;
   gradeAvg: number | null;
-  outcome: "promoted" | "eligible" | "insufficient" | "no_data" | "withdrawn";
+  outcome: "promoted" | "eligible" | "insufficient" | "no_data" | "withdrawn" | "suspended";
 }
 
 export interface YearEndSummary {
@@ -22,6 +22,7 @@ export interface YearEndSummary {
   eligible: number;
   insufficient: number;
   withdrawn: number;
+  suspended: number;
   noData: number;
   total: number;
 }
@@ -90,7 +91,9 @@ export async function getYearEndReport(): Promise<{ rows: YearEndRow[]; summary:
     } else if (attendancePct === null && rawAvg === null) {
       outcome = "no_data";
     } else {
-      outcome = meetsAttendance(present, total) && meetsGrades(rawAvg) ? "eligible" : "insufficient";
+      const meets = meetsAttendance(present, total) && meetsGrades(rawAvg);
+      // Un alumno suspendido (por mora u otro motivo) no se promueve ni egresa: la suspensión administrativa manda.
+      outcome = meets ? (r.studentStatus === "active" ? "eligible" : "suspended") : "insufficient";
     }
 
     return {
@@ -113,12 +116,16 @@ export async function getYearEndReport(): Promise<{ rows: YearEndRow[]; summary:
     eligible: result.filter((r) => r.outcome === "eligible").length,
     insufficient: result.filter((r) => r.outcome === "insufficient").length,
     withdrawn: result.filter((r) => r.outcome === "withdrawn").length,
+    suspended: result.filter((r) => r.outcome === "suspended").length,
     noData: result.filter((r) => r.outcome === "no_data").length,
     total: result.length,
   };
 
   return { rows: result, summary };
 }
+
+/** Último nivel del instituto: terminarlo es lo que da el egreso. */
+export const LAST_LEVEL = "advanced";
 
 export interface PromotedStudent {
   email: string;
@@ -164,7 +171,10 @@ export async function consolidateYearEnd(): Promise<{ promoted: number; graduate
       .where(and(eq(enrollments.studentId, studentId), notInArray(enrollments.status, ["completed", "withdrawn"])))
       .limit(1);
 
-    if (active.length === 0) {
+    // Egresa del instituto recién cuando terminó el último nivel. Un alumno que aprobó Principiante sigue
+    // activo para inscribirse en Elemental (antes quedaba "egresado" y había que reactivarlo uno por uno).
+    const finishedLastLevel = eligibleRows.some((r) => r.studentId === studentId && r.courseLevel === LAST_LEVEL);
+    if (active.length === 0 && finishedLastLevel) {
       await db
         .update(students)
         .set({ status: "graduated", updatedAt: new Date() })

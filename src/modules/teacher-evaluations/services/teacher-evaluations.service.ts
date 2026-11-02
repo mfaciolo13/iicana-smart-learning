@@ -1,4 +1,4 @@
-import { db, dbTx } from "@/lib/drizzle";
+import { db } from "@/lib/drizzle";
 import {
   teacherSurveys,
   teacherSurveySubmissions,
@@ -10,6 +10,7 @@ import {
   students,
 } from "@/lib/drizzle/schema";
 import { eq, and, sql, isNotNull } from "drizzle-orm";
+import { canShowSurveyResults } from "../lib/anonymity";
 import type {
   EnrollmentForSurvey,
   TeacherSurveyInput,
@@ -56,20 +57,26 @@ export async function getEnrollmentsForSurvey(studentId: string): Promise<Enroll
 
 /**
  * Guarda la respuesta y, aparte, la marca de que la inscripción ya respondió (SCRUM-250).
- * Ambos registros no comparten ningún dato que permita unirlos. Devuelve false si esa
- * inscripción ya había respondido (la clave primaria de la marca lo impide aunque haya
- * dos envíos simultáneos).
+ *
+ * Las dos escrituras van en transacciones SEPARADAS: dentro de una misma transacción comparten el
+ * identificador de transacción (columna de sistema xmin) y bastaba cruzar las dos tablas por esa
+ * columna para saber quién escribió cada respuesta. Además la hora de la respuesta se trunca a la
+ * semana, así tampoco se puede cruzar por horario.
+ *
+ * Devuelve false si esa inscripción ya había respondido (la clave primaria de la marca lo impide aunque
+ * haya dos envíos simultáneos). Si falla el guardado de la respuesta se retira la marca para que el
+ * alumno pueda reintentar.
  */
 export async function submitSurvey(input: TeacherSurveyInput & { enrollmentId: string }): Promise<boolean> {
-  return dbTx.transaction(async (tx) => {
-    const marked = await tx
-      .insert(teacherSurveySubmissions)
-      .values({ enrollmentId: input.enrollmentId, courseId: input.courseId })
-      .onConflictDoNothing()
-      .returning({ id: teacherSurveySubmissions.enrollmentId });
-    if (marked.length === 0) return false;
+  const marked = await db
+    .insert(teacherSurveySubmissions)
+    .values({ enrollmentId: input.enrollmentId, courseId: input.courseId })
+    .onConflictDoNothing()
+    .returning({ id: teacherSurveySubmissions.enrollmentId });
+  if (marked.length === 0) return false;
 
-    await tx.insert(teacherSurveys).values({
+  try {
+    await db.insert(teacherSurveys).values({
       teacherId: input.teacherId,
       courseId: input.courseId,
       rating1: input.rating1,
@@ -77,9 +84,13 @@ export async function submitSurvey(input: TeacherSurveyInput & { enrollmentId: s
       rating3: input.rating3,
       rating4: input.rating4,
       comment: input.comment ?? null,
+      createdAt: sql`date_trunc('week', now())`,
     });
-    return true;
-  });
+  } catch (e) {
+    await db.delete(teacherSurveySubmissions).where(eq(teacherSurveySubmissions.enrollmentId, input.enrollmentId));
+    throw e;
+  }
+  return true;
 }
 
 export async function hasSurveySubmitted(enrollmentId: string): Promise<boolean> {
@@ -128,7 +139,7 @@ export async function getTeacherEvalSummaries(): Promise<TeacherEvalSummary[]> {
     .groupBy(teachers.id, profiles.fullName)
     .orderBy(profiles.fullName);
 
-  return rows as TeacherEvalSummary[];
+  return rows.map((r) => (canShowSurveyResults(r.surveyCount) ? r : { ...r, avgRating: null })) as TeacherEvalSummary[];
 }
 
 export async function getTeacherSurveyAggregate(teacherId: string): Promise<TeacherSurveyAggregate | null> {
@@ -143,7 +154,8 @@ export async function getTeacherSurveyAggregate(teacherId: string): Promise<Teac
     .from(teacherSurveys)
     .where(eq(teacherSurveys.teacherId, teacherId));
 
-  if (!agg || agg.total === 0) return null;
+  // Con pocas respuestas no se muestran resultados: serían la opinión identificable de una persona.
+  if (!agg || !canShowSurveyResults(agg.total)) return null;
 
   const comments = await db
     .select({ comment: teacherSurveys.comment })
