@@ -4,6 +4,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getPaymentById } from "../services/payments.service";
 import { getPricingRates } from "../services/settings.service";
 import { getDocumentsForPayment } from "../services/documents.service";
+import { getPriceHistoryForPayment } from "../services/fee-increases.service";
+import { quarterLabel } from "../lib/increase";
 import { pricesOf } from "../services/collect.service";
 import { quoteAllMethods, METHOD_LABELS } from "../lib/pricing";
 import { periodLabel } from "../lib/emails";
@@ -43,7 +45,7 @@ export async function PaymentDetail({ id, portal }: { id: string; portal: "direc
   const isCancelled = payment.status === "cancelled";
   const base = `/${portal}`;
 
-  const [rates, documents] = await Promise.all([getPricingRates(), getDocumentsForPayment(payment.id)]);
+  const [rates, documents, priceHistory] = await Promise.all([getPricingRates(), getDocumentsForPayment(payment.id), getPriceHistoryForPayment(payment.id)]);
   const quotes = isCollectable ? quoteAllMethods(pricesOf(payment), today, rates) : null;
   const invoice = documents.find((d) => d.documentType === "invoice_c");
   const hasBreakdown = payment.status === "paid" && payment.finalAmount != null;
@@ -194,6 +196,21 @@ export async function PaymentDetail({ id, portal }: { id: string; portal: "direc
                   ? "Los descuentos rigen hasta el día " + rates.discountLastDay + " de cada mes, inclusive."
                   : "Los descuentos de esta cuota ya no rigen: transferencia y efectivo van a precio de lista."}
               </p>
+            </Card>
+          )}
+
+          {priceHistory.length > 0 && (
+            <Card title="Historial de precios" description="Esta cuota fue actualizada por aumentos trimestrales." padding="md">
+              <ul className="divide-y divide-slate-100 text-sm">
+                {priceHistory.map((h) => (
+                  <li key={`${h.quarter}-${h.appliedAt.toISOString()}`} className="py-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-slate-600">{quarterLabel(h.quarter)} · +{Number(h.percentage)}%</span>
+                    <span className="tabular-nums text-slate-800">
+                      {formatCents(toCents(h.oldList))} → <strong>{formatCents(toCents(h.newList))}</strong>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </Card>
           )}
 

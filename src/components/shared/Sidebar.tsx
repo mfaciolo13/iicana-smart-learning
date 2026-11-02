@@ -37,6 +37,7 @@ import {
   FolderOpen,
   Wallet,
   History,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 
@@ -94,6 +95,7 @@ const NAV: Record<UserRole, NavGroup[]> = {
       label: "Sistema",
       items: [
         { label: "Precios y recargos", href: "/director/settings/payments", icon: CreditCard },
+        { label: "Aumentos de cuotas", href: "/director/settings/fee-increases", icon: TrendingUp },
         { label: "Auditoría de pagos", href: "/director/payments/audit", icon: History },
         { label: "Automatizaciones", href: "/director/settings/automations", icon: Zap },
         { label: "Notificaciones", href: "/director/settings/notifications", icon: Settings },

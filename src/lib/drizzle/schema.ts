@@ -639,6 +639,45 @@ export const emailOutbox = pgTable("email_outbox", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Aumento trimestral de cuotas configurado por Dirección. */
+export const feeIncreases = pgTable("fee_increases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  percentage: numeric("percentage", { precision: 6, scale: 2 }).notNull(),
+  quarter: text("quarter").notNull(), // YYYY-Qn
+  effectiveDate: date("effective_date").notNull(),
+  status: text("status").notNull().default("scheduled"), // scheduled | applied | cancelled
+  notes: text("notes"),
+  createdBy: uuid("created_by"),
+  createdByName: text("created_by_name"),
+  updatedBy: uuid("updated_by"),
+  updatedByName: text("updated_by_name"),
+  appliedAt: timestamp("applied_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  affectedPayments: integer("affected_payments"),
+  affectedPlans: integer("affected_plans"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Precio anterior y nuevo de cada cuota o plan que tocó un aumento (sólo agregar). */
+export const feePriceHistory = pgTable("fee_price_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  increaseId: uuid("increase_id")
+    .notNull()
+    .references(() => feeIncreases.id, { onDelete: "restrict" }),
+  scope: text("scope").notNull(), // payment | plan
+  paymentId: uuid("payment_id").references(() => payments.id, { onDelete: "restrict" }),
+  studentId: uuid("student_id").references(() => students.id, { onDelete: "restrict" }),
+  oldList: numeric("old_list", { precision: 12, scale: 2 }).notNull(),
+  newList: numeric("new_list", { precision: 12, scale: 2 }).notNull(),
+  oldTransfer: numeric("old_transfer", { precision: 12, scale: 2 }),
+  newTransfer: numeric("new_transfer", { precision: 12, scale: 2 }),
+  oldCash: numeric("old_cash", { precision: 12, scale: 2 }),
+  newCash: numeric("new_cash", { precision: 12, scale: 2 }),
+  percentage: numeric("percentage", { precision: 6, scale: 2 }).notNull(),
+  appliedAt: timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
 
