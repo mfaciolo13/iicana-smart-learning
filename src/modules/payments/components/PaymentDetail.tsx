@@ -9,6 +9,9 @@ import { quoteAllMethods, METHOD_LABELS } from "../lib/pricing";
 import { periodLabel } from "../lib/emails";
 import { markAsPaidAction, updatePaymentStatusAction } from "../actions";
 import { PaymentStatusForm } from "./MarkAsPaidForm";
+import { FormButton } from "@/components/ui/FormButton";
+import { issueInvoiceAction } from "../invoice-actions";
+import { getArcaConfig } from "@/lib/arca";
 import { CollectForm, quoteNote } from "./CollectForm";
 import { PaymentEditForm, PaymentCancelForm } from "./PaymentEditForm";
 import { Badge } from "@/components/ui/Badge";
@@ -194,6 +197,39 @@ export async function PaymentDetail({ id, portal }: { id: string; portal: "direc
                   ? "Los descuentos rigen hasta el día " + rates.discountLastDay + " de cada mes, inclusive."
                   : "Los descuentos de esta cuota ya no rigen: transferencia y efectivo van a precio de lista."}
               </p>
+            </Card>
+          )}
+
+          {payment.status === "paid" && (
+            <Card title="Factura C" padding="md">
+              {invoice?.fiscalStatus === "issued" ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                  <div>
+                    <p className="font-semibold text-slate-900">N.º {invoice.documentNumber}</p>
+                    <p className="text-xs text-slate-500">CAE {invoice.cae} · vence {formatDateAR(invoice.caeExpiration)}</p>
+                  </div>
+                  <Link href={`${base}/payments/${payment.id}/invoice`} className="text-brand-700 hover:underline font-medium inline-flex items-center gap-1">
+                    Ver factura <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3 text-sm">
+                  <p className="text-slate-600">
+                    {invoice?.fiscalStatus === "failed"
+                      ? `La emisión falló: ${invoice.errorMessage ?? "error desconocido"}. Podés reintentar; no se duplica.`
+                      : invoice
+                        ? "La factura está en emisión."
+                        : "Todavía no se emitió la factura de este pago."}
+                  </p>
+                  {getArcaConfig() ? (
+                    <FormButton action={issueInvoiceAction} fields={{ paymentId: payment.id }} variant="secondary" size="sm">
+                      {invoice ? "Reintentar emisión" : "Emitir factura"}
+                    </FormButton>
+                  ) : (
+                    <p className="text-xs text-slate-400">La facturación con ARCA no está configurada en el servidor.</p>
+                  )}
+                </div>
+              )}
             </Card>
           )}
 

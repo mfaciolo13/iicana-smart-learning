@@ -18,7 +18,8 @@ import {
 import { publicBaseUrl, receiptEmail } from "../lib/emails";
 import { ensureReceipt, resolveCourseName, type PaymentDocument } from "./documents.service";
 import { reverseCashPaymentIncome, recordCashPaymentIncome } from "./cash.service";
-import { getPricingRates } from "./settings.service";
+import { getInvoicingSettings, getPricingRates } from "./settings.service";
+import { issueInvoice } from "./invoice.service";
 import { syncAccessRestriction } from "./payments.service";
 
 /** Estados en los que una cuota admite cobro. */
@@ -207,6 +208,14 @@ export async function afterPaymentConfirmed(result: CollectSuccess): Promise<{ r
     console.error("[pagos] no se pudo recalcular la restricción de acceso:", e instanceof Error ? e.message : e);
   }
   await deliverEmails(result.emailIds);
+  // Todo pago electrónico confirmado activa la facturación; el efectivo, sólo si la dirección lo configuró.
+  // Un fallo fiscal nunca deshace el cobro: la factura queda pendiente/fallida y se reintenta.
+  try {
+    const { autoInvoiceCash } = await getInvoicingSettings();
+    if (result.payment.method !== "cash" || autoInvoiceCash) await issueInvoice(result.payment.id);
+  } catch (e) {
+    console.error("[pagos] no se pudo facturar el pago:", e instanceof Error ? e.message : e);
+  }
   return { restrictionLifted };
 }
 

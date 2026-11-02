@@ -36,3 +36,31 @@ export async function savePricingRates(rates: PricingRates, actor: Actor): Promi
     await recordAudit(tx, actor, { action: "settings.pricing_rates", entityType: "app_setting", entityId: RATES_KEY, before, after: rates });
   });
 }
+
+const INVOICING_KEY = "payments.invoicing";
+
+export interface InvoicingSettings {
+  /** Facturar automáticamente también los cobros en efectivo (política a confirmar por la dirección). */
+  autoInvoiceCash: boolean;
+}
+
+export async function getInvoicingSettings(exec: DbExecutor = db): Promise<InvoicingSettings> {
+  try {
+    const [row] = await exec.select().from(appSettings).where(eq(appSettings.key, INVOICING_KEY)).limit(1);
+    const v = row?.value as Partial<InvoicingSettings> | undefined;
+    return { autoInvoiceCash: v?.autoInvoiceCash === true };
+  } catch {
+    return { autoInvoiceCash: false };
+  }
+}
+
+export async function saveInvoicingSettings(settings: InvoicingSettings, actor: Actor): Promise<void> {
+  await dbTx.transaction(async (tx) => {
+    const before = await getInvoicingSettings(tx);
+    await tx
+      .insert(appSettings)
+      .values({ key: INVOICING_KEY, value: settings, updatedBy: actor.id })
+      .onConflictDoUpdate({ target: appSettings.key, set: { value: settings, updatedBy: actor.id, updatedAt: new Date() } });
+    await recordAudit(tx, actor, { action: "settings.invoicing", entityType: "app_setting", entityId: INVOICING_KEY, before, after: settings });
+  });
+}

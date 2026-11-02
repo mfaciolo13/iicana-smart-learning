@@ -26,12 +26,15 @@ export function ReceiptDocument({
   data,
   backHref,
   publicLinkBase,
+  invoiceHref,
 }: {
   data: ReceiptData;
   /** Link "Volver"; se omite en el enlace público de los correos. */
   backHref?: string;
   /** Prefijo para enlazar la factura (`/comprobante`). */
   publicLinkBase?: string;
+  /** Enlace a la factura dentro del portal (alternativa al enlace público). */
+  invoiceHref?: string;
 }) {
   const paid = data.status === "paid";
   const discount = data.discountAmount ? toCents(data.discountAmount) : 0;
@@ -106,8 +109,8 @@ export function ReceiptDocument({
                 <p className="text-slate-500 text-xs mt-1">
                   CAE {invoice.cae} · vence {formatDateAR(invoice.caeExpiration)}
                 </p>
-                {publicLinkBase && (
-                  <Link href={`${publicLinkBase}/${invoice.accessToken}`} className="inline-block mt-2 text-brand-700 hover:underline print:hidden">
+                {(invoiceHref || publicLinkBase) && (
+                  <Link href={invoiceHref ?? `${publicLinkBase}/${invoice.accessToken}`} className="inline-block mt-2 text-brand-700 hover:underline print:hidden">
                     Ver factura
                   </Link>
                 )}

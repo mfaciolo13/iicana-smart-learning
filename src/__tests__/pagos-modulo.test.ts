@@ -175,7 +175,7 @@ describe("permisos del módulo (verificados en el servidor)", () => {
   it("la política de precios y los precios por alumno son solo de Dirección", () => {
     const src = read("src/modules/payments/settings-actions.ts");
     expect(src).not.toMatch(/requireRole\(\[[^\]]*administrativo/);
-    expect(src.match(/requireRole\(\["director"\]\)/g)?.length).toBe(2);
+    expect(src.match(/requireRole\(\["director"\]\)/g)?.length).toBe(3);
   });
 
   it("el portal del docente no tiene pantallas de pagos ni de caja", () => {

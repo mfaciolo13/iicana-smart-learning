@@ -69,3 +69,54 @@ Aplicarla antes de desplegar el código (en Supabase → SQL editor, o con `psql
 2. Confirmar el recargo de tarjeta de 5 % sobre la lista y su compatibilidad con las condiciones legales y comerciales.
 3. Definir quién carga el saldo inicial de la caja y quién autoriza ingresos, retiros y reversiones.
 4. Definir una dirección institucional para las alertas de retiros (`CASH_ALERT_EMAIL`).
+
+## Facturación electrónica (Factura C con ARCA)
+
+Código: `src/lib/arca.ts` (WSAA + WSFEv1) y `src/modules/payments/services/invoice.service.ts`. El comprobante interno **no** es una factura fiscal y así lo dice; la factura es un documento aparte (`payment_documents`, tipo `invoice_c`).
+
+### Cuándo se factura
+
+- Todo pago **electrónico** (transferencia o tarjeta) confirmado activa la emisión automáticamente.
+- Los cobros en **efectivo** se facturan a pedido (botón *Emitir factura* en el detalle del pago) o automáticamente si Dirección lo activa en *Configuración → Precios y recargos → Facturación*. Esta política está pendiente de confirmar (ver «Decisiones»).
+- Solo se factura un pago **confirmado**. La aprobación de Mercado Pago no equivale a una factura.
+
+### Qué guarda
+
+Tipo y número (`0003-00000024`), fecha de emisión, importe, **CAE y vencimiento**, estado (`pending` / `issued` / `failed`), datos del emisor y del receptor tal como se imprimieron, QR de verificación, observaciones/errores de ARCA y la relación con el pago y la cuota. La factura se imprime desde `/…/payments/<id>/invoice` o el enlace seguro `/comprobante/<token>`.
+
+### Fallos e idempotencia
+
+- Si ARCA falla, el pago ya está confirmado: la factura queda `failed` con el motivo y se puede **reintentar** (botón, o el cron diario hasta 5 intentos).
+- Hay **una sola factura por pago** (índice único `(payment_id, document_type)`); una factura emitida se devuelve tal cual.
+- El número de comprobante se **reserva en la fila antes de llamar a ARCA**. Si el proceso se corta después de que ARCA la autorizó, el reintento consulta ese número (`FECompConsultar`), reconoce el CAE y lo adopta en vez de emitir una segunda factura.
+- Un lock transaccional serializa las emisiones para que dos facturas no pidan el mismo número.
+- El ticket de acceso de WSAA (~12 h) se comparte entre instancias en `arca_access_tickets`.
+- Para el receptor se informa el **DNI del alumno** y *Consumidor Final* como condición frente al IVA.
+
+### Configuración
+
+1. Dar de alta el certificado digital en ARCA (clave fiscal → *Administración de Certificados Digitales*), asociarlo al servicio **Facturación Electrónica (wsfe)** y habilitar un **punto de venta** de tipo «Factura Electrónica - Web Services».
+2. Cargar las variables (el PEM admite `\n` escapados):
+
+| Variable | Uso |
+|---|---|
+| `ARCA_ENV` | `homologacion` (por defecto) o `produccion` |
+| `ARCA_CUIT` | CUIT del emisor (11 dígitos) |
+| `ARCA_PTO_VTA` | punto de venta habilitado |
+| `ARCA_CERT` | certificado X.509 en PEM |
+| `ARCA_PRIVATE_KEY` | clave privada en PEM |
+| `ARCA_RAZON_SOCIAL`, `ARCA_DOMICILIO`, `ARCA_INICIO_ACTIVIDADES`, `ARCA_INGRESOS_BRUTOS`, `ARCA_CONDICION_IVA` | datos del emisor que se imprimen en la factura |
+
+3. **Probar primero en homologación** con el certificado de pruebas (las facturas salen marcadas «de PRUEBA»). Recién después pasar a `produccion` con el certificado productivo. Sin estas variables no se emiten facturas y el sistema lo informa en pantalla.
+
+> El cliente de ARCA está implementado según la especificación de WSAA/WSFEv1 y cubierto con pruebas de armado y lectura de mensajes, pero **no pudo probarse contra los servidores de ARCA** sin un certificado propio de la academia. La primera emisión en homologación es parte de la puesta en marcha.
+
+### Migración
+
+`src/lib/drizzle/migrations/0021_facturacion_arca.sql` (requiere la 0019): crea `arca_access_tickets` (RLS activado, sin policies) y la política `payments.invoicing`.
+
+### Decisiones pendientes de la dirección (facturación)
+
+- Datos fiscales de la academia y alta del punto de venta en ARCA.
+- Si el efectivo se factura automáticamente o a pedido.
+- Concepto y período que debe llevar la factura de cada cuota (hoy: servicios, mes de la cuota).

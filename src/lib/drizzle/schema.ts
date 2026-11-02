@@ -639,6 +639,20 @@ export const emailOutbox = pgTable("email_outbox", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Ticket de acceso de WSAA (ARCA), compartido entre instancias del servidor. */
+export const arcaAccessTickets = pgTable(
+  "arca_access_tickets",
+  {
+    service: text("service").notNull(),
+    environment: text("environment").notNull(), // homologacion | produccion
+    token: text("token").notNull(),
+    sign: text("sign").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("arca_access_tickets_pk").on(table.service, table.environment)],
+);
+
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
 
