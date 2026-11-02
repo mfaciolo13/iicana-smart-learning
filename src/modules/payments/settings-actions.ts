@@ -5,8 +5,18 @@ import { z } from "zod";
 import { requireRole } from "@/lib/auth/helpers";
 import { getCurrentActor } from "@/lib/audit";
 import type { ActionResult } from "@/lib/action-result";
-import { pricingRatesSchema, savePricingRates } from "./services/settings.service";
+import { pricingRatesSchema, savePricingRates, saveInvoicingSettings } from "./services/settings.service";
 import { saveFeePlan } from "./services/fee-plans.service";
+
+/** Política de facturación de los cobros en efectivo. Sólo Dirección. */
+export async function saveInvoicingSettingsAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireRole(["director"]);
+  const actor = await getCurrentActor();
+  if (!actor) return { error: "No autorizado" };
+  await saveInvoicingSettings({ autoInvoiceCash: formData.get("autoInvoiceCash") === "on" }, actor);
+  revalidatePath("/director/settings/payments");
+  return { success: "Política de facturación actualizada" };
+}
 
 const blankToUndefined = (v: unknown) => (v === "" || v === null ? undefined : v);
 

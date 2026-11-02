@@ -8,5 +8,5 @@ export default async function PaymentReceiptPage({ params }: { params: Promise<{
   const { id } = await params;
   const data = await getReceiptData(id);
   if (!data || data.status !== "paid") notFound();
-  return <ReceiptDocument data={data} backHref={`/administrativo/payments/${id}`} />;
+  return <ReceiptDocument data={data} backHref={`/administrativo/payments/${id}`} invoiceHref={`/administrativo/payments/${id}/invoice`} />;
 }

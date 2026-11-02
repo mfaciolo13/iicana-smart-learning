@@ -1,15 +1,17 @@
 import { requireRole } from "@/lib/auth/helpers";
-import { PlansTable, RatesForm } from "@/modules/payments/components/PricingSettings";
+import { InvoicingForm, PlansTable, RatesForm } from "@/modules/payments/components/PricingSettings";
 import { Card } from "@/components/ui/Card";
 import { SearchInput } from "@/components/ui/SearchInput";
-import { getPricingRates } from "@/modules/payments/services/settings.service";
+import { getInvoicingSettings, getPricingRates } from "@/modules/payments/services/settings.service";
+import { getArcaConfig } from "@/lib/arca";
 import { listFeePlans } from "@/modules/payments/services/fee-plans.service";
 import { getCourseOptions } from "@/modules/payments/services/payments.service";
 
 export default async function PaymentSettingsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requireRole(["director"]);
   const { q } = await searchParams;
-  const [rates, plans, courses] = await Promise.all([getPricingRates(), listFeePlans(q), getCourseOptions()]);
+  const [rates, plans, courses, invoicing] = await Promise.all([getPricingRates(), listFeePlans(q), getCourseOptions(), getInvoicingSettings()]);
+  const arca = getArcaConfig();
 
   return (
     <div className="space-y-6">
@@ -20,6 +22,7 @@ export default async function PaymentSettingsPage({ searchParams }: { searchPara
         </p>
       </div>
       <RatesForm rates={rates} />
+      <InvoicingForm autoInvoiceCash={invoicing.autoInvoiceCash} arcaConfigured={Boolean(arca)} env={arca?.env ?? "homologacion"} />
       <Card
         title="Precios por alumno"
         description="Precargan las cuotas nuevas del alumno. Si dejás transferencia o efectivo vacíos, se aplica el descuento general."

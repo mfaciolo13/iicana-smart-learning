@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import type { PricingRates } from "../lib/pricing";
-import { savePricingRatesAction, saveFeePlanAction } from "../settings-actions";
+import { savePricingRatesAction, saveFeePlanAction, saveInvoicingSettingsAction } from "../settings-actions";
 import type { FeePlanRow } from "../services/fee-plans.service";
 
 /** Política económica general: descuentos por defecto, recargo de tarjeta y último día de descuento. */
@@ -40,6 +40,43 @@ export function RatesForm({ rates }: { rates: PricingRates }) {
         <div className="sm:col-span-2 flex justify-end">
           <Button type="submit" variant="primary" loading={isPending}>
             Guardar política
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+/** Política de facturación: los pagos electrónicos se facturan solos; el efectivo, sólo si se activa. */
+export function InvoicingForm({ autoInvoiceCash, arcaConfigured, env }: { autoInvoiceCash: boolean; arcaConfigured: boolean; env: string }) {
+  const [state, formAction, isPending] = useActionState(saveInvoicingSettingsAction, undefined);
+
+  useEffect(() => {
+    if (state?.error) toast.error(state.error);
+    if (state?.success) toast.success(state.success);
+  }, [state]);
+
+  return (
+    <Card
+      title="Facturación electrónica (ARCA)"
+      description={
+        arcaConfigured
+          ? `Conectada a ARCA en entorno de ${env === "produccion" ? "producción" : "homologación (pruebas)"}.`
+          : "Falta configurar los datos fiscales (variables ARCA_* del servidor): hasta entonces no se emiten facturas."
+      }
+      padding="md"
+    >
+      <form action={formAction} className="space-y-4">
+        <label className="flex items-start gap-3 text-sm text-slate-700">
+          <input type="checkbox" name="autoInvoiceCash" defaultChecked={autoInvoiceCash} className="mt-1 h-4 w-4 rounded border-slate-300" />
+          <span>
+            Facturar también los cobros en <strong>efectivo</strong> automáticamente.
+            <span className="block text-xs text-slate-400">Los pagos por transferencia y tarjeta siempre se facturan. Si lo dejás apagado, el efectivo se factura a pedido desde el detalle del pago.</span>
+          </span>
+        </label>
+        <div className="flex justify-end">
+          <Button type="submit" variant="secondary" loading={isPending}>
+            Guardar
           </Button>
         </div>
       </form>
