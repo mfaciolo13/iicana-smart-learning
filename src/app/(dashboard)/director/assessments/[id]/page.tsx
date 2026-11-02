@@ -137,7 +137,7 @@ export default async function AdminAssessmentDetailPage({
               )}
               <div className="flex justify-between">
                 <dt className="text-slate-400">Creada</dt>
-                <dd className="text-slate-700">{new Date(assessment.createdAt).toLocaleDateString("es-AR")}</dd>
+                <dd className="text-slate-700">{new Date(assessment.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}</dd>
               </div>
             </dl>
           </Card>

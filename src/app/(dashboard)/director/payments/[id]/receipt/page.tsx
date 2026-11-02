@@ -41,11 +41,9 @@ export default async function PaymentReceiptPage({
   };
 
   const paidAt = payment.paidAt
-    ? new Date(payment.paidAt).toLocaleDateString("es-AR", {
-        day: "2-digit",
+    ? new Date(payment.paidAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba",  day: "2-digit",
         month: "long",
-        year: "numeric",
-      })
+        year: "numeric" })
     : "—";
 
   const amount = parseFloat(payment.amount).toLocaleString("es-AR", {

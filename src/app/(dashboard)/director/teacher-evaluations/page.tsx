@@ -161,7 +161,7 @@ export default async function TeacherEvaluationsPage({
                   <td className="px-5 py-3 text-slate-600">{s.observationCount}</td>
                   <td className="px-5 py-3 text-slate-400">
                     {s.lastObservedAt
-                      ? new Date(s.lastObservedAt).toLocaleDateString("es-AR")
+                      ? new Date(s.lastObservedAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })
                       : "—"}
                   </td>
                   <td className="px-5 py-3 text-right">

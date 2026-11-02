@@ -107,7 +107,7 @@ export function UserList({ users, sort }: UserListProps) {
                     <Badge variant={roleCfg.variant} dot={false}>{roleCfg.label}</Badge>
                   </td>
                   <td className="py-3 pr-4 text-slate-400 text-xs">
-                    {new Date(u.createdAt).toLocaleDateString("es-AR")}
+                    {new Date(u.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
                   </td>
                   <td className="py-3 pr-4 text-right">
                     <Link href={`/director/users/${u.id}`} className="after:absolute after:inset-0 after:content-['']">

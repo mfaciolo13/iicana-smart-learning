@@ -89,7 +89,7 @@ export default async function AlumnoPaymentsPage() {
                         </Badge>
                       </td>
                       <td className="px-6 py-3 text-slate-400">
-                        {p.paidAt ? new Date(p.paidAt).toLocaleDateString("es-AR") : "—"}
+                        {p.paidAt ? new Date(p.paidAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" }) : "—"}
                       </td>
                     </tr>
                   );

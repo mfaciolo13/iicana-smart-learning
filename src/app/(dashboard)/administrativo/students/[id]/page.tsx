@@ -127,7 +127,7 @@ export default async function StudentDetailPage({
             <div className="flex justify-between text-sm">
               <dt className="text-slate-500">Alta</dt>
               <dd className="font-medium text-slate-800">
-                {new Date(student.createdAt).toLocaleDateString("es-AR")}
+                {new Date(student.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
               </dd>
             </div>
           </dl>

@@ -109,7 +109,7 @@ export function EnrollmentList({ enrollments, showNewLink = false, basePath = "/
                     <Badge variant="info" dot={false}>{LEVEL_LABELS[e.courseLevel] ?? e.courseLevel}</Badge>
                   </td>
                   <td className="py-3.5 pr-4 text-slate-500 text-xs hidden lg:table-cell">
-                    {new Date(e.enrolledAt).toLocaleDateString("es-AR")}
+                    {new Date(e.enrolledAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
                   </td>
                   <td className="py-3.5 pr-4">
                     <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>

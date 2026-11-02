@@ -140,7 +140,8 @@ export async function loadProgress(studentId: string, userId: string): Promise<S
     .from(assessmentAttempts)
     .innerJoin(assessments, eq(assessmentAttempts.assessmentId, assessments.id))
     .where(eq(assessmentAttempts.studentId, userId))
-    .orderBy(asc(assessmentAttempts.completedAt))
+    // Las 10 más RECIENTES (antes se tomaban las 10 primeras del año y las últimas nunca aparecían).
+    .orderBy(desc(assessmentAttempts.completedAt))
     .limit(10);
 
   let pendingAssessments = 0;
@@ -175,7 +176,7 @@ export async function loadProgress(studentId: string, userId: string): Promise<S
     gradesTimeline,
     gradesVsCourse,
     paymentSummary: { pagadas, porVencer, vencidas, proximoVencimiento: proximo },
-    assessmentScores: attemptRows.map((r) => ({ evaluacion: r.topic, puntaje: r.score })),
+    assessmentScores: [...attemptRows].reverse().map((r) => ({ evaluacion: r.topic, puntaje: r.score })),
     todo: { pendingSurveys, pendingAssessments },
   };
 }

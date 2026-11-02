@@ -46,7 +46,7 @@ export default async function AlumnoCoursesPage() {
                   <div className="min-w-0">
                     <h3 className="text-base font-semibold text-slate-900">{c.name}</h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Inscripto desde el {new Date(c.enrolledAt).toLocaleDateString("es-AR")}
+                      Inscripto desde el {new Date(c.enrolledAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
                     </p>
                   </div>
                   <div className="flex gap-2">

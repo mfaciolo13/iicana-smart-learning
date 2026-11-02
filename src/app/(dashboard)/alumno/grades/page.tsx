@@ -122,11 +122,9 @@ export default async function AlumnoGradesPage() {
                   <tbody>
                     {courseGrades.map((g) => {
                       const score = parseFloat(g.score);
-                      const date = new Date(g.evaluatedAt).toLocaleDateString("es-AR", {
-                        day: "2-digit",
+                      const date = new Date(g.evaluatedAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba",  day: "2-digit",
                         month: "2-digit",
-                        year: "numeric",
-                      });
+                        year: "numeric" });
                       return (
                         <tr key={g.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                           <td className="px-5 py-3 text-slate-700">

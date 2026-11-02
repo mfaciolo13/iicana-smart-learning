@@ -69,7 +69,7 @@ export default async function RiskPage() {
                             ))}
                           </div>
                           <p className="text-xs text-slate-400 mt-2">
-                            Detectado: {new Date(s.assessedAt).toLocaleDateString("es-AR")}
+                            Detectado: {new Date(s.assessedAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
                           </p>
                         </div>
                         <FormButton
@@ -105,7 +105,7 @@ export default async function RiskPage() {
                         <Badge variant={risk.variant}>{risk.label}</Badge>
                       </div>
                       <span className="text-xs text-slate-400">
-                        Intervenido: {s.intervenedAt ? new Date(s.intervenedAt).toLocaleDateString("es-AR") : "—"}
+                        Intervenido: {s.intervenedAt ? new Date(s.intervenedAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" }) : "—"}
                       </span>
                     </div>
                   );

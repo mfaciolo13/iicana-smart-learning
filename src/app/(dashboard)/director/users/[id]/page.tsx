@@ -93,7 +93,7 @@ export default async function UserDetailPage({
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <dt className="text-slate-400">Alta</dt>
-                <dd className="text-slate-700">{new Date(user.createdAt).toLocaleDateString("es-AR")}</dd>
+                <dd className="text-slate-700">{new Date(user.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-slate-400">Estado</dt>

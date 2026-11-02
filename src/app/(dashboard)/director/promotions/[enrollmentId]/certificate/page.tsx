@@ -42,12 +42,10 @@ export default async function CertificatePage({
   };
 
   const completedDate = data.completedAt
-    ? new Date(data.completedAt).toLocaleDateString("es-AR", {
-        day: "numeric",
+    ? new Date(data.completedAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba",  day: "numeric",
         month: "long",
-        year: "numeric",
-      })
-    : new Date().toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+        year: "numeric" })
+    : new Date().toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba", day: "numeric", month: "long", year: "numeric"  });
 
   const levelLabel = LEVEL_LABELS[data.courseLevel] ?? data.courseLevel;
 

@@ -91,7 +91,7 @@ export default async function PaymentDetailPage({
               {payment.paidAt && (
                 <div>
                   <dt className="text-slate-400 font-medium mb-0.5">Fecha de pago</dt>
-                  <dd className="text-slate-900">{new Date(payment.paidAt).toLocaleDateString("es-AR")}</dd>
+                  <dd className="text-slate-900">{new Date(payment.paidAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}</dd>
                 </div>
               )}
               {payment.method && (
@@ -114,12 +114,12 @@ export default async function PaymentDetailPage({
               )}
               <div>
                 <dt className="text-slate-400 font-medium mb-0.5">Creado</dt>
-                <dd className="text-slate-500">{new Date(payment.createdAt).toLocaleDateString("es-AR")}</dd>
+                <dd className="text-slate-500">{new Date(payment.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}</dd>
               </div>
               {isCancelled && (
                 <div className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <dt className="text-slate-400 font-medium mb-0.5">
-                    Anulado{payment.cancelledAt && ` el ${new Date(payment.cancelledAt).toLocaleDateString("es-AR")}`}
+                    Anulado{payment.cancelledAt && ` el ${new Date(payment.cancelledAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}`}
                   </dt>
                   <dd className="text-slate-700">{payment.cancellationReason ?? "Sin motivo registrado"}</dd>
                 </div>

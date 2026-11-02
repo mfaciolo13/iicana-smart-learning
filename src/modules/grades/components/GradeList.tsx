@@ -114,7 +114,7 @@ export function GradeList({ grades, showNewLink = false, sort }: GradeListProps)
                     <Badge variant={scoreVariant(score)} dot={false}>{score.toFixed(1)}</Badge>
                   </td>
                   <td className="py-3.5 pr-4 text-slate-500 text-xs hidden lg:table-cell">
-                    {new Date(g.evaluatedAt).toLocaleDateString("es-AR")}
+                    {new Date(g.evaluatedAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
                   </td>
                   <td className="py-3.5 pr-4 text-right">
                     <Link href={`/director/grades/${g.id}`} className="after:absolute after:inset-0 after:content-['']">

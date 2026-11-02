@@ -83,12 +83,12 @@ export default async function ComplaintDetailPage({
               </div>
               <div>
                 <dt className="text-slate-400 font-medium mb-0.5">Recibido</dt>
-                <dd className="text-slate-700">{new Date(complaint.createdAt).toLocaleDateString("es-AR")}</dd>
+                <dd className="text-slate-700">{new Date(complaint.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}</dd>
               </div>
               {complaint.resolvedAt && (
                 <div>
                   <dt className="text-slate-400 font-medium mb-0.5">Resuelto</dt>
-                  <dd className="text-slate-700">{new Date(complaint.resolvedAt).toLocaleDateString("es-AR")}</dd>
+                  <dd className="text-slate-700">{new Date(complaint.resolvedAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}</dd>
                 </div>
               )}
             </dl>

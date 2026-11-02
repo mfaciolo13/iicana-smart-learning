@@ -52,12 +52,10 @@ export function SentNotificationList({ notifications }: SentNotificationListProp
                   <span className="text-xs text-slate-400">→ {n.recipientName}</span>
                 )}
                 <span className="text-xs text-slate-400 ml-auto">
-                  {new Date(n.createdAt).toLocaleDateString("es-AR", {
-                    day: "2-digit",
+                  {new Date(n.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba",  day: "2-digit",
                     month: "short",
                     hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                    minute: "2-digit" })}
                 </span>
               </div>
               <p className="text-sm font-semibold text-slate-900">{n.title}</p>

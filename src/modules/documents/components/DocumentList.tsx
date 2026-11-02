@@ -66,7 +66,7 @@ export function DocumentList({ documents, canDelete = false, sort }: DocumentLis
               <td className="py-3 pr-4 text-slate-500 hidden sm:table-cell">{formatSize(doc.fileSize)}</td>
               <td className="py-3 pr-4 text-slate-500 hidden lg:table-cell">{doc.uploadedByName}</td>
               <td className="py-3 pr-4 text-slate-500 hidden lg:table-cell">
-                {new Date(doc.createdAt).toLocaleDateString("es-AR")}
+                {new Date(doc.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
               </td>
               <td className="py-3 text-right">
                 <div className="flex items-center justify-end gap-2">
