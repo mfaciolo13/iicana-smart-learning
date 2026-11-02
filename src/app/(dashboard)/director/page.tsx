@@ -114,7 +114,7 @@ export default async function DirectorDashboardPage() {
         <PeoplePanel riskHref="/director/risk" />
       </Suspense>
 
-      <SectionTitle title="Calidad y atención" hint="Evaluación docente, reclamos y consultas de marketing" />
+      <SectionTitle title="Calidad y atención" hint="Evaluación docente y reclamos" />
       <Suspense fallback={threeCharts}>
         <QualityPanel />
       </Suspense>

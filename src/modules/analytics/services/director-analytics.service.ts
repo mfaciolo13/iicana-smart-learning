@@ -8,8 +8,6 @@ import {
   courses,
   enrollments,
   grades,
-  inquiries,
-  marketingCampaigns,
   payments,
   studentRiskAssessments,
   students,
@@ -245,8 +243,6 @@ export interface QualityAnalytics {
   teacherRatings: { docente: string; calificacion: number; encuestas: number }[];
   complaintsByStatus: { estado: string; reclamos: number }[];
   complaintsByType: { tipo: string; reclamos: number }[];
-  inquiriesByStatus: { estado: string; consultas: number }[];
-  inquiriesByChannel: { canal: string; consultas: number; inscriptos: number }[];
 }
 
 const COMPLAINT_STATUS_LABELS: Record<string, string> = {
@@ -260,15 +256,6 @@ const COMPLAINT_TYPE_LABELS: Record<string, string> = {
   administrative: "Administrativo",
   infrastructure: "Infraestructura",
   teacher: "Docente",
-};
-const INQUIRY_STATUS_LABELS: Record<string, string> = { pending: "Pendientes", enrolled: "Inscriptos", lost: "Perdidos" };
-const CHANNEL_LABELS: Record<string, string> = {
-  social_media: "Redes sociales",
-  email: "Email",
-  flyers: "Folletos",
-  word_of_mouth: "Boca a boca",
-  website: "Sitio web",
-  other: "Otro",
 };
 
 export async function loadQuality(): Promise<QualityAnalytics> {
@@ -294,36 +281,12 @@ export async function loadQuality(): Promise<QualityAnalytics> {
   const byStatus = sumBy("status");
   const byType = sumBy("type");
 
-  const inquiryRows = await db
-    .select({
-      channel: marketingCampaigns.channel,
-      status: inquiries.status,
-      n: sql<number>`cast(count(*) as int)`,
-    })
-    .from(inquiries)
-    .leftJoin(marketingCampaigns, eq(marketingCampaigns.id, inquiries.campaignId))
-    .groupBy(marketingCampaigns.channel, inquiries.status);
-  const inqStatus = new Map<string, number>();
-  const inqChannel = new Map<string, { total: number; enrolled: number }>();
-  for (const r of inquiryRows) {
-    inqStatus.set(r.status, (inqStatus.get(r.status) ?? 0) + r.n);
-    const label = r.channel ? CHANNEL_LABELS[r.channel] ?? r.channel : "Sin campaña";
-    const cur = inqChannel.get(label) ?? { total: 0, enrolled: 0 };
-    cur.total += r.n;
-    if (r.status === "enrolled") cur.enrolled += r.n;
-    inqChannel.set(label, cur);
-  }
-
   return {
     teacherRatings,
     complaintsByStatus: Object.entries(COMPLAINT_STATUS_LABELS).map(([k, label]) => ({ estado: label, reclamos: byStatus.get(k) ?? 0 })),
     complaintsByType: Object.entries(COMPLAINT_TYPE_LABELS)
       .map(([k, label]) => ({ tipo: label, reclamos: byType.get(k) ?? 0 }))
       .filter((r) => r.reclamos > 0),
-    inquiriesByStatus: Object.entries(INQUIRY_STATUS_LABELS).map(([k, label]) => ({ estado: label, consultas: inqStatus.get(k) ?? 0 })),
-    inquiriesByChannel: [...inqChannel.entries()]
-      .map(([canal, v]) => ({ canal, consultas: v.total, inscriptos: v.enrolled }))
-      .sort((a, b) => b.consultas - a.consultas),
   };
 }
 

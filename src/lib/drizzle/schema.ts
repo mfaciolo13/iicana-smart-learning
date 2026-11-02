@@ -61,21 +61,6 @@ export const paymentMethodEnum = pgEnum("payment_method", [
   "card",
 ]);
 
-export const marketingChannelEnum = pgEnum("marketing_channel", [
-  "social_media",
-  "email",
-  "flyers",
-  "word_of_mouth",
-  "website",
-  "other",
-]);
-
-export const inquiryStatusEnum = pgEnum("inquiry_status", [
-  "pending",
-  "enrolled",
-  "lost",
-]);
-
 export const notificationTypeEnum = pgEnum("notification_type", [
   "absence",
   "payment",
@@ -345,35 +330,6 @@ export const assessmentAttempts = pgTable("assessment_attempts", {
   // answers shape: number[] — index of chosen option per question
   score: integer("score").notNull().default(0), // 0–100
   completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const marketingCampaigns = pgTable("marketing_campaigns", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  channel: marketingChannelEnum("channel").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date"),
-  budget: numeric("budget", { precision: 10, scale: 2 }),
-  description: text("description"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
-export const inquiries = pgTable("inquiries", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  email: text("email"),
-  phone: text("phone"),
-  campaignId: uuid("campaign_id").references(() => marketingCampaigns.id, {
-    onDelete: "set null",
-  }),
-  status: inquiryStatusEnum("status").notNull().default("pending"),
-  notes: text("notes"),
-  receivedAt: date("received_at").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
 });
 
 export const teacherSurveys = pgTable("teacher_surveys", {

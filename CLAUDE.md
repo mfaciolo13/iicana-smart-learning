@@ -88,7 +88,6 @@ src/
 │   ├── promotions/
 │   ├── assessments/              # Autoevaluaciones IA (usa @anthropic-ai/sdk)
 │   ├── teacher-evaluations/
-│   ├── marketing/
 │   ├── year-end/
 │   ├── reports/
 │   └── profile/
@@ -121,7 +120,7 @@ modules/[nombre]/
 - Llama a `supabase.auth.getUser()` para validar el token (llamada de red real)
 - Redirige a `/login` si el usuario no está autenticado en rutas protegidas
 - Las rutas protegidas son: `/director`, `/administrativo`, `/profesor`, `/alumno`
-- Dentro de `/director`, bloquea al rol `administrativo` de las secciones exclusivas de dirección (usuarios, docentes, cursos, marketing, etc.) redirigiendo a `/403`
+- Dentro de `/director`, bloquea al rol `administrativo` de las secciones exclusivas de dirección (usuarios, docentes, cursos, etc.) redirigiendo a `/403`
 
 ### helpers.ts
 
@@ -268,15 +267,13 @@ LEVEL_LABELS[course.level] ?? course.level
 | `assessments` | Autoevaluaciones generadas por IA (questions en JSONB) |
 | `assessment_attempts` | Respuestas del alumno |
 | `documents` | Material/documentos compartidos por curso |
-| `marketing_campaigns` | Campañas publicitarias |
-| `inquiries` | Consultas de potenciales alumnos |
 | `teacher_surveys` | Evaluaciones anónimas de docentes |
 | `class_observations` | Observaciones de clase por dirección |
 
 ### Roles (`role` enum)
 
 - `director` — dirección del instituto, acceso total
-- `administrativo` — personal administrativo, acceso operativo (sin usuarios, docentes, cursos, marketing, evaluaciones docentes, promociones, cierre de ciclo)
+- `administrativo` — personal administrativo, acceso operativo (sin usuarios, docentes, cursos, evaluaciones docentes, promociones, cierre de ciclo)
 - `profesor` — docentes
 - `alumno` — estudiantes
 
@@ -415,7 +412,6 @@ RESEND_FROM_EMAIL=Smart Learning <no-reply@cervantes-smart-learning.com.ar>
 - Promociones y cierre de ciclo lectivo
 - Certificados de promoción (imprimibles)
 - Recibos de pago (imprimibles)
-- Marketing y seguimiento de consultas
 - Reportes Excel (asistencia, notas, pagos)
 - Perfil de usuario con foto de avatar
 - Gestión de usuarios con ban/unban y reenvío de invitación

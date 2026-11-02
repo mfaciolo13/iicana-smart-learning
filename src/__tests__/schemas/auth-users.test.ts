@@ -101,7 +101,6 @@ describe("ADMIN_ONLY_ROUTES — protección para rol administrativo", () => {
     "/director/teacher-evaluations",
     "/director/assessments",
     "/director/year-end",
-    "/director/marketing",
     "/director/promotions",
     "/director/profile",
   ];
