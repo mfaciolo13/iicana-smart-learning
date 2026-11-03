@@ -1,16 +1,45 @@
 import { defineConfig, devices } from "@playwright/test";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 // El dev server y el seed apuntan al proyecto Supabase de TEST.
 dotenv.config({ path: ".env.test" });
 
-// Garantizamos que RESEND_API_KEY tenga un valor stub en el proceso de Playwright
-// (y por herencia en cualquier child process que no lo sobreescriba).
-// Esto evita que `new Resend(undefined)` explote en tiempo de build/collect.
-// IMPORTANTE: esta mutación debe ocurrir ANTES de que se construya el objeto
-// `webServer`, ya que el campo `env` lo lee en el mismo tick de evaluación.
+// ── Stub de RESEND_API_KEY ────────────────────────────────────────────────────
+// Next.js lee las variables de entorno en tiempo de BUILD desde:
+//   1. process.env del proceso que corre `next build`
+//   2. Archivos .env* en la raíz del proyecto (con prioridad decreciente)
+//
+// La variable RESEND_API_KEY se instancia en /api/cron/class-reminder durante
+// la page-data collection de `next build`, y explota si es undefined.
+//
+// Estrategia defensiva en capas:
+//   A) Mutar process.env del proceso de Playwright (ya propaga a webServer.env)
+//   B) Escribir un .env.local con el stub → Next.js lo lee automáticamente
+//      en cualquier invocación de `next build` o `next dev`, incluso si el
+//      proceso padre no tiene la variable (ej: step de CI independiente).
+//
+// .env.local está en .gitignore por convención de Next.js, así que este write
+// no contamina el repo. Lo sobreescribimos solo si la clave real no está ya.
 if (!process.env.RESEND_API_KEY) {
   process.env.RESEND_API_KEY = "disabled-for-e2e";
+
+  const envLocalPath = path.resolve(process.cwd(), ".env.local");
+
+  // Leer contenido actual para no destruir valores existentes del desarrollador.
+  let existing = "";
+  try {
+    existing = fs.readFileSync(envLocalPath, "utf-8");
+  } catch {
+    // El archivo no existe: empezamos de cero.
+  }
+
+  // Solo añadimos la línea si no hay ya una asignación de RESEND_API_KEY.
+  if (!/^\s*RESEND_API_KEY\s*=/m.test(existing)) {
+    const stub = "\n# Stub inyectado por playwright.config.ts para E2E\nRESEND_API_KEY=disabled-for-e2e\n";
+    fs.writeFileSync(envLocalPath, existing + stub, "utf-8");
+  }
 }
 
 // Rutas de storageState por rol (inline para no importar .ts desde el config —
@@ -42,17 +71,13 @@ const webServerEnv: Record<string, string> = {
   RESEND_API_KEY: "disabled-for-e2e",
 };
 
-// Comando de build: Next.js lee variables de entorno directamente desde el
-// entorno del proceso Node que ejecuta el compilador. pnpm no siempre propaga
-// el `env` de webServer a sus procesos hijos (depende de la versión y del
-// packageManager hook). Para garantizar que RESEND_API_KEY llegue al paso de
-// `next build` (donde se hace la page-data collection de /api/cron/*), la
-// inyectamos explícitamente mediante `env VAR=val` — comando POSIX estándar
-// disponible en todos los runners Linux/macOS de GitHub Actions — en lugar de
-// la sintaxis de asignación de shell (`VAR=val cmd`), que algunos shells
-// restringen. `env` es un binario del sistema, no una feature del shell.
-const buildCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm build";
-const startCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm start";
+// Usamos `pnpm build` y `pnpm start` sin prefijo `env VAR=val` porque:
+//   1. webServer.env ya inyecta RESEND_API_KEY en el proceso hijo de Playwright.
+//   2. .env.local escrito arriba cubre el caso de builds que corran fuera de
+//      Playwright (ej: step previo de CI que ejecute `pnpm build` por separado).
+// Eliminar el prefijo `env ...` mejora la portabilidad (runners Windows/macOS).
+const buildCommand = "pnpm build";
+const startCommand = "pnpm start";
 const devCommand = "pnpm dev"; // dev no hace page-data collection estática
 
 export default defineConfig({
@@ -117,10 +142,6 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // Usamos `env VAR=val cmd` (binario POSIX) en lugar de la sintaxis de
-      // asignación de shell (`VAR=val cmd`) para máxima portabilidad en CI.
-      // Esto garantiza que RESEND_API_KEY esté presente cuando `next build`
-      // hace la page-data collection de rutas API que instancian Resend.
       command: process.env.E2E_PROD
         ? `${buildCommand} && ${startCommand}`
         : devCommand,
@@ -128,7 +149,7 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
       // `env` recibe el entorno completo del proceso padre más el stub de
-      // RESEND_API_KEY.  Playwright pasa este objeto como entorno del shell
+      // RESEND_API_KEY. Playwright fusiona este objeto como entorno del shell
       // que ejecuta `command`, garantizando que tanto `pnpm build` como
       // `pnpm start` en la cadena `&&` lo hereden.
       env: webServerEnv,
