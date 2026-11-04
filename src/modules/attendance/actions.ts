@@ -5,8 +5,9 @@ import { after } from "next/server";
 import { requireRole, getServerProfile } from "@/lib/auth/helpers";
 import { assertCourseAccess } from "@/lib/auth/course-access";
 import { portalPath } from "@/lib/portal";
-import { isFutureDate } from "@/lib/validation";
-import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo, checkLowAttendanceThreshold, updateAttendanceSession, deleteAttendanceSession, allEnrollmentsInCourse } from "./services/attendance.service";
+import { isRealIsoDate, validateClassDate } from "@/lib/class-date";
+import { isUuid } from "@/lib/uuid";
+import { recordBulkAttendance, isAttendanceRecorded, checkConsecutiveAbsences, getAbsenceAlertInfo, checkLowAttendanceThreshold, updateAttendanceSession, deleteAttendanceSession, allEnrollmentsInCourse, getCourseClassDays } from "./services/attendance.service";
 import { sendToRole } from "@/modules/notifications/services/notifications.service";
 import { sendAlert } from "@/lib/notifications/send-alert";
 import { sendAbsenceAlertEmail, sendTeacherAttendanceAlertEmail } from "@/lib/email";
@@ -38,8 +39,11 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
   if (!courseId || !classDate || enrollmentIds.length === 0) {
     return { error: "Datos incompletos" };
   }
+  if (!isUuid(courseId)) return { error: "Curso inválido" };
   await assertCourseAccess(role, courseId);
-  if (isFutureDate(classDate)) return { error: "La fecha de la clase no puede ser futura" };
+  // Fecha real, no futura y de un día de cursada (antes entraba cruda del formulario).
+  const dateProblem = validateClassDate(classDate, await getCourseClassDays(courseId));
+  if (dateProblem) return { error: dateProblem };
   if (!(await allEnrollmentsInCourse(courseId, enrollmentIds))) return { error: "Hay inscripciones que no pertenecen al curso" };
   if (enrollmentIds.some((id) => readStatus(formData, id) === null)) return { error: "Estado de asistencia inválido" };
 
@@ -53,9 +57,10 @@ export async function recordAttendanceAction(_prev: ActionResult, formData: Form
     notes: (formData.get(`notes_${enrollmentId}`) as string) || null,
   }));
 
-  await recordBulkAttendance(records);
+  const inserted = await recordBulkAttendance(records);
 
-  const absentIds = records.filter((r) => r.status === "absent").map((r) => r.enrollmentId);
+  // Solo las ausencias que realmente se insertaron disparan alertas (un envío duplicado no las repite).
+  const absentIds = records.filter((r) => r.status === "absent" && inserted.has(r.enrollmentId)).map((r) => r.enrollmentId);
   const alerts = await checkConsecutiveAbsences(absentIds);
   if (alerts.length > 0) {
     await Promise.all(
@@ -155,8 +160,11 @@ export async function updateAttendanceAction(_prev: ActionResult, formData: Form
   if (!courseId || !classDate || enrollmentIds.length === 0) {
     return { error: "Datos incompletos" };
   }
+  if (!isUuid(courseId)) return { error: "Curso inválido" };
   await assertCourseAccess(role, courseId);
-  if (isFutureDate(classDate)) return { error: "La fecha de la clase no puede ser futura" };
+  // Corregir una lista existente: la fecha debe ser real y no futura (no se exige día de cursada: ya existe).
+  const dateProblem = validateClassDate(classDate);
+  if (dateProblem) return { error: dateProblem };
   if (!(await allEnrollmentsInCourse(courseId, enrollmentIds))) return { error: "Hay inscripciones que no pertenecen al curso" };
   if (enrollmentIds.some((id) => readStatus(formData, id) === null)) return { error: "Estado de asistencia inválido" };
 
@@ -187,6 +195,7 @@ export async function deleteAttendanceSessionAction(_prev: ActionResult, formDat
   const classDate = formData.get("classDate") as string;
 
   if (!courseId || !classDate) return { error: "Datos incompletos" };
+  if (!isUuid(courseId) || !isRealIsoDate(classDate)) return { error: "Datos inválidos" };
   await assertCourseAccess(role, courseId);
 
   const deleted = await deleteAttendanceSession(courseId, classDate);

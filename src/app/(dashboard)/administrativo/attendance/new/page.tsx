@@ -7,6 +7,7 @@ import { Input, Field, Select } from "@/components/ui/Input";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
 import { formatDateAR } from "@/lib/format";
 import { todayInstitute } from "@/lib/validation";
+import { isRealIsoDate } from "@/lib/class-date";
 
 export default async function TakeAttendancePage({
   searchParams,
@@ -17,7 +18,8 @@ export default async function TakeAttendancePage({
   // Hora del instituto, no UTC: pasadas las 21:00 de Córdoba el "hoy" en UTC ya es
   // mañana, y el servidor rechaza esa fecha por futura (SCRUM-355).
   const today = todayInstitute();
-  const classDate = date ?? today;
+  // Una fecha mal formada o futura en la URL (?date=20991231) se ignora: vuelve a hoy.
+  const classDate = isRealIsoDate(date) && date <= today ? date : today;
 
   const supabase = await createClient();
 

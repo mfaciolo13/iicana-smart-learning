@@ -58,7 +58,8 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
       classroom: course?.classroom ?? "",
       maxCapacity: initialCapacity,
       teacherId: course?.teacherId ?? undefined,
-      classDays: course?.classDays ?? [],
+      // Un curso viejo con domingo cargado se muestra sin ese día: el instituto no dicta los domingos.
+      classDays: (course?.classDays ?? []).filter((d) => d !== "sunday"),
       classTime: course?.classTime?.slice(0, 5) ?? "",
       classDurationMinutes: course?.classDurationMinutes ?? 90,
       diagnosticFrequency: course?.diagnosticFrequency ?? 0,
@@ -102,7 +103,7 @@ export function CourseForm({ course, teachers, action, submitLabel = "Guardar" }
               defaultDuration={course?.classDurationMinutes}
               onChange={({ days, time, duration }) => {
                 const shouldValidate = form.formState.isSubmitted;
-                setValue("classDays", days, { shouldValidate });
+                setValue("classDays", days.filter((d) => d !== "sunday"), { shouldValidate });
                 setValue("classTime", time, { shouldValidate });
                 setValue("classDurationMinutes", duration, { shouldValidate });
               }}

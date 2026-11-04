@@ -312,10 +312,12 @@ export async function checkLowAttendanceThreshold(
 export async function recordBulkAttendance(
   records: { enrollmentId: string; classDate: string; status: "present" | "absent" | "late"; notes?: string | null }[]
 ) {
-  if (records.length === 0) return;
+  if (records.length === 0) return new Set<string>();
   // onConflictDoNothing: red de seguridad ante envíos concurrentes/duplicados del mismo
   // formulario — el constraint único (enrollment_id, class_date) es lo que realmente lo impide.
-  await db
+  // Se devuelve QUÉ filas se insertaron de verdad: las alertas se calculan sobre eso, no sobre lo que mandó
+  // el formulario (dos envíos simultáneos duplicaban las alertas de ausencia).
+  const inserted = await db
     .insert(attendance)
     .values(
       records.map((r) => ({
@@ -325,7 +327,9 @@ export async function recordBulkAttendance(
         notes: r.notes ?? null,
       }))
     )
-    .onConflictDoNothing({ target: [attendance.enrollmentId, attendance.classDate] });
+    .onConflictDoNothing({ target: [attendance.enrollmentId, attendance.classDate] })
+    .returning({ enrollmentId: attendance.enrollmentId });
+  return new Set(inserted.map((r) => r.enrollmentId));
 }
 
 /**
@@ -421,4 +425,10 @@ export async function allEnrollmentsInCourse(courseId: string, enrollmentIds: st
     .from(enrollments)
     .where(and(eq(enrollments.courseId, courseId), inArray(enrollments.id, unique)));
   return rows.length === unique.length;
+}
+
+/** Días de cursada del curso (monday…saturday), para validar que la fecha de la lista sea un día de clase. */
+export async function getCourseClassDays(courseId: string): Promise<string[]> {
+  const [row] = await db.select({ days: courses.classDays }).from(courses).where(eq(courses.id, courseId)).limit(1);
+  return row?.days ?? [];
 }

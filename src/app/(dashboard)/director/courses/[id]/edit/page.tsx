@@ -16,7 +16,7 @@ export default async function EditCoursePage({
   const [{ data: courseRow }, teachers] = await Promise.all([
     supabase
       .from("courses")
-      .select("id, name, level, schedule, class_days, class_time, class_duration_minutes, classroom, max_capacity, status, created_at, updated_at, teacher_id")
+      .select("id, name, level, schedule, class_days, class_time, class_duration_minutes, classroom, max_capacity, diagnostic_frequency, status, created_at, updated_at, teacher_id")
       .eq("id", id)
       .single(),
     getCachedTeachers(),
@@ -38,7 +38,8 @@ export default async function EditCoursePage({
     classDurationMinutes: courseRow.class_duration_minutes,
     classroom: courseRow.classroom as string | null,
     maxCapacity: courseRow.max_capacity,
-    diagnosticFrequency: 0,
+    // Antes se armaba con 0 fijo: guardar la edición apagaba la autoevaluación diagnóstica en silencio.
+    diagnosticFrequency: courseRow.diagnostic_frequency ?? 0,
     status: courseRow.status as CourseWithTeacher["status"],
     teacherId: courseRow.teacher_id as string | null,
     createdAt: new Date(courseRow.created_at),

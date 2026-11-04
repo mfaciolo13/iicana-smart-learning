@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { DAY_OF_WEEK_VALUES } from "./lib/schedule";
+import { CLASS_DAY_VALUES } from "./lib/schedule";
 
 export const createCourseSchema = z.object({
-  name: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
+  name: z.string().trim().min(2, "Nombre debe tener al menos 2 caracteres").max(100, "El nombre no puede superar los 100 caracteres"),
   level: z.enum([
     "beginner",
     "elementary",
@@ -11,19 +11,19 @@ export const createCourseSchema = z.object({
     "upper_intermediate",
     "advanced",
   ], { error: "Seleccioná un nivel" }),
-  classDays: z.array(z.enum(DAY_OF_WEEK_VALUES)).min(1, "Seleccioná al menos un día"),
+  classDays: z.array(z.enum(CLASS_DAY_VALUES, { error: "El instituto no dicta clases los domingos" })).min(1, "Seleccioná al menos un día"),
   classTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida"),
-  classDurationMinutes: z.coerce.number().int("Debe ser un número entero").min(15, "La duración mínima es 15 minutos").max(240, "La duración máxima es 240 minutos").default(90),
-  classroom: z.string().optional(),
+  classDurationMinutes: z.coerce.number({ error: "La duración debe ser un número" }).int("Debe ser un número entero").min(15, "La duración mínima es 15 minutos").max(240, "La duración máxima es 240 minutos").default(90),
+  classroom: z.string().trim().max(60, "El aula no puede superar los 60 caracteres").optional(),
   maxCapacity: z.coerce
-    .number()
+    .number({ error: "El cupo debe ser un número" })
     .int("El cupo debe ser un número entero")
     .min(1, "El cupo mínimo es 1")
     .max(15, "El cupo máximo es 15 alumnos")
     .default(15),
   // "Sin asignar" llega como "" desde el <select>: se trata como no informado.
   teacherId: z.preprocess((v) => (v === "" ? undefined : v), z.uuid("Docente inválido").optional()),
-  diagnosticFrequency: z.coerce.number().int().min(0).max(20).default(0),
+  diagnosticFrequency: z.coerce.number({ error: "La frecuencia debe ser un número" }).int("La frecuencia debe ser un número entero").min(0, "La frecuencia no puede ser negativa").max(20, "La frecuencia máxima es 20").default(0),
 });
 
 export const updateCourseSchema = createCourseSchema.partial().extend({

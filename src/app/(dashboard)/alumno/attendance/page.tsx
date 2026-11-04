@@ -78,7 +78,7 @@ export default async function AlumnoAttendancePage() {
           {attendanceRate !== null && (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-4 mb-6 flex items-center justify-between">
               <p className="text-sm font-medium text-slate-700">Porcentaje de asistencia</p>
-              <span className={`text-xl font-bold ${attendanceRate >= 75 ? "text-emerald-600" : "text-red-500"}`}>
+              <span className={`text-xl font-bold ${attendanceRate >= 80 ? "text-emerald-600" : "text-red-500"}`}>
                 {attendanceRate}%
               </span>
             </div>
