@@ -26,11 +26,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const [next, setNext] = useState("");
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(loginSchema) as Resolver<FormValues>,
     defaultValues: { email: "", password: "" },
   });
+
+  useEffect(() => {
+    // Destino original (?next=): lo valida el servidor, acá solo se lo reenvía.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNext(new URLSearchParams(window.location.search).get("next") ?? "");
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_KEY);
@@ -78,6 +85,7 @@ export default function LoginPage() {
       )}
 
       <form ref={formRef} onSubmit={onSubmit} className="space-y-5" aria-labelledby="login-title">
+        <input type="hidden" name="next" value={next} />
         <Field label="Email" required id="email" error={errors.email?.message}>
           <Input
             id="email"

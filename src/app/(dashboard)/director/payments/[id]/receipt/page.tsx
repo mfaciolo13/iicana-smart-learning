@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PrintButton } from "./PrintButton";
+import { isUuid } from "@/lib/uuid";
 
 const METHOD_LABELS: Record<string, string> = {
   cash: "Efectivo",
@@ -16,6 +17,7 @@ export default async function PaymentReceiptPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const supabase = await createClient();
   const { data: row } = await supabase

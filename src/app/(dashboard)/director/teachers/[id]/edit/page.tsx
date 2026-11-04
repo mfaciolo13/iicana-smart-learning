@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { updateTeacherAction } from "@/modules/teachers/actions";
 import { TeacherForm } from "@/modules/teachers/components/TeacherForm";
 import type { TeacherWithProfile } from "@/modules/teachers/types";
+import { isUuid } from "@/lib/uuid";
 
 export default async function EditTeacherPage({
   params,
@@ -10,6 +11,7 @@ export default async function EditTeacherPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const { data: row } = await supabase

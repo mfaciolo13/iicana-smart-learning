@@ -7,6 +7,7 @@ import { UserEditForm } from "@/modules/users/components/UserEditForm";
 import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { isUuid } from "@/lib/uuid";
 
 const ROLE_CONFIG: Record<string, { label: string; variant: "info" | "success" | "warning" | "neutral" }> = {
   director: { label: "Director", variant: "warning" },
@@ -32,6 +33,7 @@ export default async function UserDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const user = await getUserDetail(id);
 

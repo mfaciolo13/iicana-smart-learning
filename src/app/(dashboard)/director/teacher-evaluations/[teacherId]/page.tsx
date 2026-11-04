@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateAR } from "@/lib/format";
+import { isUuid } from "@/lib/uuid";
 
 const QUESTIONS = [
   "Claridad al explicar",
@@ -42,6 +43,7 @@ export default async function TeacherEvalDetailPage({
   params: Promise<{ teacherId: string }>;
 }) {
   const { teacherId } = await params;
+  if (!isUuid(teacherId)) notFound();
 
   const supabase = await createClient();
 

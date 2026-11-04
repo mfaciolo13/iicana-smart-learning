@@ -5,7 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/helpers";
 import { buildInviteUrl } from "@/lib/site-url";
 import { createTeacherSchema, updateTeacherSchema } from "./schemas";
-import { createTeacher, updateTeacher, deleteTeacher, dniExists } from "./services/teachers.service";
+import { createTeacher, updateTeacher, deleteTeacher, dniExists, getTeacherRemovalInfo, unassignTeacherCourses } from "./services/teachers.service";
+import { revokeSessions } from "@/modules/users/services/users.service";
 import { sendInvitationEmail } from "@/lib/email";
 import { isUniqueViolation } from "@/lib/db-errors";
 import type { ActionResult } from "@/lib/action-result";
@@ -79,17 +80,18 @@ export async function createTeacherAction(_prev: ActionResult, formData: FormDat
 
   const safeInviteUrl = await buildInviteUrl(authData.user.id);
 
-  await sendInvitationEmail({
+  // Si Resend falla no se puede decir "listo": se avisa para que se reenvíe la invitación.
+  const inviteSent = await sendInvitationEmail({
     to: parsed.data.email,
     fullName: parsed.data.fullName,
     role: "profesor",
     inviteLink: safeInviteUrl,
-  }).catch(() => {});
+  }).then(() => true).catch(() => false);
 
   updateTag("teachers");
   refreshAnalytics();
   revalidatePath("/director/teachers");
-  return { success: "Docente registrado correctamente", redirectTo: "/director/teachers" };
+  return { success: inviteSent ? "Docente registrado correctamente" : "Docente registrado, pero NO se pudo enviar el email de invitación. Reenviala desde el detalle del usuario.", redirectTo: "/director/teachers" };
 }
 
 export async function updateTeacherAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -121,8 +123,10 @@ export async function updateTeacherAction(_prev: ActionResult, formData: FormDat
     return { error: "Ya existe otro docente registrado con ese DNI" };
   }
 
+  const clearPhone = formData.has("phone") && !String(formData.get("phone") ?? "").trim();
+
   try {
-    await updateTeacher(parsed.data);
+    await updateTeacher({ ...parsed.data, ...(clearPhone && { phone: null }) });
   } catch (err) {
     if (isUniqueViolation(err)) {
       return { error: "Ya existe otro docente registrado con ese DNI" };
@@ -142,7 +146,31 @@ export async function deleteTeacherAction(_prev: ActionResult, formData: FormDat
   const id = formData.get("id") as string;
   if (!id) return { error: "ID requerido" };
 
+  const info = await getTeacherRemovalInfo(id);
+  if (!info) return { error: "El docente no existe" };
+
+  const adminSupabase = createAdminClient();
+  if (info.courses > 0 || info.evaluations > 0) {
+    // Baja lógica (igual que con los alumnos): borrar al docente destruiría sus encuestas anónimas y
+    // observaciones de clase por cascada, dejaría sus cursos huérfanos y su cuenta seguiría activa.
+    const { error } = await adminSupabase.auth.admin.updateUserById(info.profileId, { ban_duration: "87600h" });
+    if (error) return { error: "No se pudo bloquear el acceso del docente. Intentá de nuevo." };
+    await revokeSessions(info.profileId);
+    const unassigned = await unassignTeacherCourses(id);
+    updateTag("teachers");
+    refreshAnalytics();
+    revalidatePath("/director/teachers");
+    revalidatePath("/director/courses");
+    return {
+      success: `Docente dado de baja: ya no puede ingresar, se conservaron sus ${info.evaluations} evaluaciones${unassigned > 0 ? ` y quedó sin docente en ${unassigned} curso${unassigned === 1 ? "" : "s"}` : ""}.`,
+      redirectTo: "/director/teachers",
+    };
+  }
+
+  // Sin cursos ni evaluaciones: borrado físico, incluidos el perfil y la cuenta de acceso.
   await deleteTeacher(id);
+  await adminSupabase.from("profiles").delete().eq("id", info.profileId);
+  await adminSupabase.auth.admin.deleteUser(info.profileId).catch(() => {});
 
   updateTag("teachers");
   refreshAnalytics();

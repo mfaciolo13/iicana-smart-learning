@@ -3,6 +3,7 @@ import { Eye, ChevronRight } from "lucide-react";
 import type { GradeWithDetails } from "../types";
 import { Badge } from "@/components/ui/Badge";
 import { Th, type SortContext } from "@/components/ui/TableControls";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 const TYPE_LABELS: Record<string, string> = {
   parcial: "Parcial",
@@ -10,15 +11,6 @@ const TYPE_LABELS: Record<string, string> = {
   oral: "Oral",
   homework: "Tarea",
   quiz: "Quiz",
-};
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Principiante",
-  elementary: "Elemental",
-  pre_intermediate: "Pre-inter.",
-  intermediate: "Intermedio",
-  upper_intermediate: "Upper-inter.",
-  advanced: "Avanzado",
 };
 
 function scoreVariant(score: number): "success" | "warning" | "danger" {

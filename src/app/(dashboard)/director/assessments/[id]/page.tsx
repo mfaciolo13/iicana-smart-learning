@@ -7,6 +7,7 @@ import { FormButton } from "@/components/ui/FormButton";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import type { AssessmentStatus, QuizQuestion } from "@/modules/assessments/types";
+import { isUuid } from "@/lib/uuid";
 
 const STATUS_CONFIG: Record<AssessmentStatus, { label: string; variant: "info" | "success" | "neutral" | "warning" }> = {
   draft: { label: "Borrador", variant: "warning" },
@@ -22,6 +23,7 @@ export default async function AdminAssessmentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
 
   const supabase = await createClient();
 

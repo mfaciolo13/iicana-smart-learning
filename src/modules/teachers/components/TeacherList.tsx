@@ -41,7 +41,7 @@ export function TeacherList({ teachers, sort }: TeacherListProps) {
             className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 hover:border-brand-200 transition-colors"
           >
             <div className="min-w-0">
-              <p className="font-medium text-slate-900 truncate">{teacher.fullName}</p>
+              <p className="font-medium text-slate-900 truncate">{teacher.fullName}{teacher.deactivated && <span className="ml-2 text-[10px] font-semibold uppercase text-slate-400">Baja</span>}</p>
               <p className="text-xs text-slate-400 font-mono mt-0.5">{teacher.dni}</p>
               {teacher.specialization && (
                 <p className="text-xs text-slate-500 mt-0.5">{teacher.specialization}</p>
@@ -67,7 +67,7 @@ export function TeacherList({ teachers, sort }: TeacherListProps) {
           <tbody className="divide-y divide-slate-100">
             {teachers.map((teacher) => (
               <tr key={teacher.id} className="hover:bg-brand-50 transition-colors relative group cursor-pointer">
-                <td className="py-3.5 pr-4 font-medium text-slate-900">{teacher.fullName}</td>
+                <td className="py-3.5 pr-4 font-medium text-slate-900">{teacher.fullName}{teacher.deactivated && <span className="ml-2 text-[10px] font-semibold uppercase text-slate-400">Baja</span>}</td>
                 <td className="py-3.5 pr-4 font-mono text-slate-600 text-xs">{teacher.dni}</td>
                 <td className="py-3.5 pr-4 text-slate-500 hidden md:table-cell">{teacher.email}</td>
                 <td className="py-3.5 pr-4 text-slate-500">

@@ -14,8 +14,20 @@ describe("phoneField", () => {
     expect(phoneField().parse(" 3511234567 ")).toBe("3511234567");
   });
 
-  it("sigue rechazando caracteres no numéricos", () => {
-    expect(phoneField().safeParse("351-1234567").success).toBe(false);
+  it("sigue rechazando letras y símbolos que no son de un teléfono", () => {
+    expect(phoneField().safeParse("abc1234567").success).toBe(false);
+    expect(phoneField().safeParse("351#1234567").success).toBe(false);
+  });
+
+  // Hallazgo del QA en vivo: un teléfono guardado con "+54" impedía guardar cualquier cambio del perfil.
+  it.each([
+    ["+543511234567", "3511234567"],
+    ["+54 9 351 123-4567", "3511234567"],
+    ["(0351) 123-4567", "3511234567"],
+    ["351-1234567", "3511234567"],
+    ["5493511234567", "3511234567"],
+  ])("normaliza %j a %j", (input, expected) => {
+    expect(phoneField().parse(input)).toBe(expected);
   });
 });
 

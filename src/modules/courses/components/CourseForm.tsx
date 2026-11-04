@@ -14,16 +14,17 @@ import { cn } from "@/lib/cn";
 import { createCourseSchema } from "../schemas";
 import type { ActionResult } from "@/lib/action-result";
 import { useFormAction } from "@/lib/use-form-action";
+import { LEVEL_LABELS } from "@/lib/level-labels";
 
 const CAPACITIES = Array.from({ length: 15 }, (_, i) => i + 1);
 
 const LEVELS = [
-  { value: "beginner", label: "Principiante" },
-  { value: "elementary", label: "Elemental" },
-  { value: "pre_intermediate", label: "Pre-intermedio" },
-  { value: "intermediate", label: "Intermedio" },
-  { value: "upper_intermediate", label: "Upper-intermedio" },
-  { value: "advanced", label: "Avanzado" },
+  { value: "beginner", label: LEVEL_LABELS["beginner"] },
+  { value: "elementary", label: LEVEL_LABELS["elementary"] },
+  { value: "pre_intermediate", label: LEVEL_LABELS["pre_intermediate"] },
+  { value: "intermediate", label: LEVEL_LABELS["intermediate"] },
+  { value: "upper_intermediate", label: LEVEL_LABELS["upper_intermediate"] },
+  { value: "advanced", label: LEVEL_LABELS["advanced"] },
 ];
 
 const STATUSES = [

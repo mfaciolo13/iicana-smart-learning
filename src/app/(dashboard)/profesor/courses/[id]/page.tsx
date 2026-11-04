@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { LEVEL_LABELS } from "@/lib/level-labels";
 import type { EnrollmentListItem } from "@/modules/enrollments/types";
+import { isUuid } from "@/lib/uuid";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "success" | "neutral" | "info" }> = {
   active: { label: "Activo", variant: "success" },
@@ -20,6 +21,7 @@ export default async function ProfesorCourseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const user = await getServerUser();
   if (!user) redirect("/login");
 

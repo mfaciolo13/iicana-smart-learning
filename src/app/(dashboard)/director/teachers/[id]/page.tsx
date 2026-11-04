@@ -7,6 +7,8 @@ import { resendInvitationAction } from "@/modules/users/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/uuid";
 
 export default async function TeacherDetailPage({
   params,
@@ -14,6 +16,7 @@ export default async function TeacherDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const supabase = await createClient();
 
   const { data: row } = await supabase
@@ -60,9 +63,9 @@ export default async function TeacherDetailPage({
             action={deleteTeacherAction}
             fields={{ id: teacher.id }}
             variant="danger"
-            confirmMessage="¿Estás seguro de eliminar este docente? Esta acción no se puede deshacer."
+            confirmMessage="Si el docente tiene cursos o evaluaciones se lo da de baja (se bloquea su acceso y se conservan sus evaluaciones); si no, se elimina. ¿Continuar?"
           >
-            Eliminar
+            Dar de baja / eliminar
           </FormButton>
         </div>
       </div>

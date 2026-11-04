@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getSiteUrl } from "@/lib/site-url";
 import { z } from "zod";
 import { loginSchema } from "./schemas";
+import { safeNextPath } from "@/lib/auth/safe-next";
 import { sendPasswordResetEmail } from "@/lib/email";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -53,7 +54,8 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   }
 
   const role = profile.role;
-  redirect(`/${role}`);
+  // Vuelve a la pantalla que pidió antes de que lo mandaran a iniciar sesión (solo dentro de su portal).
+  redirect(safeNextPath(formData.get("next"), role) ?? `/${role}`);
 }
 
 export async function logoutAction() {

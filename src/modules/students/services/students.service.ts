@@ -125,7 +125,7 @@ export async function createStudent(
   return student;
 }
 
-export async function updateStudent(input: UpdateStudentInput) {
+export async function updateStudent(input: Omit<UpdateStudentInput, "phone"> & { phone?: string | null }) {
   // fullName y phone viven en `profiles`, no en `students`: Drizzle ignoraría esas
   // claves en silencio (SCRUM-242), así que se actualizan por separado.
   const { id, fullName, phone, ...studentData } = input;
@@ -174,4 +174,10 @@ export async function getStudentRemovalInfo(id: string) {
     .limit(1);
   if (!row) return null;
   return { profileId: row.profileId, impact: { paymentsCount: row.payments, enrollmentsCount: row.enrollments } };
+}
+
+/** Estado actual del alumno y su perfil (para decidir si una edición es una reactivación). */
+export async function getStudentStatus(id: string) {
+  const [row] = await db.select({ status: students.status, profileId: students.profileId }).from(students).where(eq(students.id, id)).limit(1);
+  return row ?? null;
 }
