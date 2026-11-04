@@ -15,7 +15,7 @@ function relativeTime(date: Date): string {
   if (diffHours < 24) return `hace ${diffHours}h`;
   if (diffDays === 1) return "ayer";
   if (diffDays < 7) return `hace ${diffDays} días`;
-  return date.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+  return date.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba", day: "numeric", month: "short"  });
 }
 
 /** Últimas inscripciones y pagos, mezclados por fecha. */

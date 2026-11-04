@@ -84,7 +84,7 @@ export default async function EnrollmentDetailPage({
               { label: "Nombre", value: enrollment.course.name },
               { label: "Nivel", value: LEVEL_LABELS[enrollment.course.level] ?? enrollment.course.level },
               { label: "Horario", value: enrollment.course.schedule },
-              { label: "Inscripto el", value: new Date(enrollment.enrolledAt).toLocaleDateString("es-AR") },
+              { label: "Inscripto el", value: new Date(enrollment.enrolledAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" }) },
             ].map((item) => (
               <div key={item.label} className="flex justify-between text-sm">
                 <dt className="text-slate-500">{item.label}</dt>

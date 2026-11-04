@@ -123,7 +123,7 @@ export default async function ProfesorAssessmentDetailPage({
               <div className="flex justify-between">
                 <dt className="text-slate-400">Creada</dt>
                 <dd className="text-slate-700">
-                  {new Date(detail.createdAt).toLocaleDateString("es-AR")}
+                  {new Date(detail.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
                 </dd>
               </div>
             </dl>

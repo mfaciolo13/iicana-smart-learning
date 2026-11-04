@@ -75,13 +75,11 @@ export default async function AttemptResultPage({
             {correctCount} de {questions.length} respuestas correctas
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Completada el {result.completedAt.toLocaleDateString("es-AR", {
-              day: "numeric",
+            Completada el {result.completedAt.toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba",  day: "numeric",
               month: "long",
               year: "numeric",
               hour: "2-digit",
-              minute: "2-digit",
-            })}
+              minute: "2-digit" })}
           </p>
         </div>
 

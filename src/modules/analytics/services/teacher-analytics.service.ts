@@ -158,7 +158,8 @@ export async function loadCourse(courseId: string): Promise<TeacherCourseAnalyti
     .groupBy(attendance.classDate)
     .orderBy(desc(attendance.classDate))
     .limit(12);
-  const attendanceBySession = sessionRows
+  // Se invierte una COPIA: .reverse() muta el arreglo y más abajo "las dos últimas clases" salían de la punta equivocada.
+  const attendanceBySession = [...sessionRows]
     .reverse()
     .map((r) => ({
       fecha: shortDate(r.fecha),
@@ -250,6 +251,7 @@ export async function loadCourse(courseId: string): Promise<TeacherCourseAnalyti
   if (lastTwo.length === 2) {
     const absent = await db
       .select({
+        enrollmentId: enrollments.id,
         alumno: profiles.fullName,
         n: sql<number>`cast(count(*) as int)`,
       })
@@ -260,11 +262,13 @@ export async function loadCourse(courseId: string): Promise<TeacherCourseAnalyti
       .where(
         and(
           eq(enrollments.courseId, courseId),
+          eq(enrollments.status, "active"),
           eq(attendance.status, "absent"),
           sql`${attendance.classDate} in (${sql.join(lastTwo.map((d) => sql`${d}::date`), sql`, `)})`
         )
       )
-      .groupBy(profiles.fullName);
+      // Por inscripción, no por nombre: dos alumnos homónimos con una falta cada uno no suman dos.
+      .groupBy(enrollments.id, profiles.fullName);
     atRisk = absent.filter((r) => r.n >= 2).map((r) => ({ alumno: r.alumno, motivo: "Faltó a las dos últimas clases" }));
   }
 

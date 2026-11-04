@@ -74,7 +74,7 @@ export default async function TeacherDetailPage({
               { label: "Email", value: teacher.profile.email },
               { label: "Teléfono", value: teacher.profile.phone ?? "—" },
               { label: "DNI", value: teacher.dni },
-              { label: "Alta", value: new Date(teacher.createdAt).toLocaleDateString("es-AR") },
+              { label: "Alta", value: new Date(teacher.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" }) },
             ].map((item) => (
               <div key={item.label} className="flex justify-between text-sm">
                 <dt className="text-slate-500">{item.label}</dt>

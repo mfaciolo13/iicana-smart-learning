@@ -26,7 +26,7 @@ export async function KpiSection() {
   const overduePayments = paymentSummary.overdue;
   const now = new Date();
   const monthLabel = now
-    .toLocaleDateString("es-AR", { month: "long", year: "numeric" })
+    .toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba", month: "long", year: "numeric"  })
     .replace(/^\w/, (c) => c.toUpperCase());
 
   const kpis: StatTileProps[] = [

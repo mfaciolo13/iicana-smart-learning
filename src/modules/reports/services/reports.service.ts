@@ -21,7 +21,7 @@ export async function getAttendanceReport() {
       present: sql<number>`cast(sum(case when ${attendance.status} = 'present' then 1 else 0 end) as int)`,
       absent: sql<number>`cast(sum(case when ${attendance.status} = 'absent' then 1 else 0 end) as int)`,
       late: sql<number>`cast(sum(case when ${attendance.status} = 'late' then 1 else 0 end) as int)`,
-      pct: sql<number>`round(sum(case when ${attendance.status} in ('present','late') then 1 else 0 end) * 100.0 / count(*), 1)`,
+      pct: sql<number>`cast(round(sum(case when ${attendance.status} in ('present','late') then 1 else 0 end) * 100.0 / count(*), 1) as float)`.mapWith(Number),
     })
     .from(attendance)
     .innerJoin(enrollments, eq(attendance.enrollmentId, enrollments.id))

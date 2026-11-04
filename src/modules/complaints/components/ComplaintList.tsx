@@ -73,7 +73,7 @@ export function ComplaintList({ complaints, adminView = false, newLink, detailBa
                   <p className="font-medium text-slate-900 truncate">{c.authorName}</p>
                 )}
                 <p className="text-xs text-slate-500 mt-0.5 truncate">{c.description}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{new Date(c.createdAt).toLocaleDateString("es-AR")}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{new Date(c.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}</p>
               </div>
               <div className="shrink-0 flex items-center gap-2">
                 <div className="flex flex-col items-end gap-1">
@@ -134,7 +134,7 @@ export function ComplaintList({ complaints, adminView = false, newLink, detailBa
                     <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
                   </td>
                   <td className="py-3.5 pr-4 text-slate-400 text-xs">
-                    {new Date(c.createdAt).toLocaleDateString("es-AR")}
+                    {new Date(c.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" })}
                   </td>
                   <td className="py-3.5 pr-4 text-right">
                     {detailHref && (

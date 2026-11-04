@@ -80,7 +80,7 @@ export async function CourseDetailPage({ id, basePath, enrollmentsBasePath, canM
             {[
               { label: "Horario", value: course.schedule },
               { label: "Aula", value: course.classroom ?? "—" },
-              { label: "Alta", value: new Date(course.createdAt).toLocaleDateString("es-AR") },
+              { label: "Alta", value: new Date(course.createdAt).toLocaleDateString("es-AR", { timeZone: "America/Argentina/Cordoba" }) },
             ].map((item) => (
               <div key={item.label} className="flex justify-between text-sm">
                 <dt className="text-slate-500">{item.label}</dt>
