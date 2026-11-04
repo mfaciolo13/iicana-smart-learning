@@ -11,7 +11,7 @@ import { markOverduePaymentsAction, runOverdueChecksAction } from "../actions";
 import { effectiveStatus, summarizePayments } from "../lib/buckets";
 import { paginate, parseTableQuery, sortRows, tableHref } from "@/lib/table";
 import { ExportButton } from "@/components/ui/ExportButton";
-import { PAYMENT_FILTER_FIELDS as FIELDS, PAYMENT_STATUS_TABS as STATUS_TABS, filterPayments } from "../lib/filters";
+import { PAYMENT_STATUS_TABS as STATUS_TABS, buildPaymentFilterFields, filterPayments } from "../lib/filters";
 
 const STATUS_ORDER = ["overdue", "pending", "suspended", "paid", "cancelled"];
 
@@ -21,13 +21,14 @@ type SearchParams = Record<string, string | undefined>;
 export async function PaymentsListPage({ sp, basePath }: { sp: SearchParams; basePath: string }) {
   const { q } = sp;
   const query = parseTableQuery(sp, {
-    sortable: ["student", "amount", "due", "receipt", "status"],
+    sortable: ["student", "amount", "due", "receipt", "status", "method", "invoice"],
     defaultSort: "due",
     defaultDir: "desc",
   });
 
   const allPayments = await getPayments();
   const summary = summarizePayments(allPayments);
+  const FIELDS = buildPaymentFilterFields(allPayments);
   const { list, activeTab, filters } = filterPayments(allPayments, sp);
 
   const sorted = sortRows(list, query, {
@@ -36,6 +37,8 @@ export async function PaymentsListPage({ sp, basePath }: { sp: SearchParams; bas
     due: (p) => p.dueDate,
     receipt: (p) => p.receiptNumber,
     status: (p) => STATUS_ORDER.indexOf(effectiveStatus(p)),
+    method: (p) => p.method,
+    invoice: (p) => p.invoiceStatus,
   });
   const page = paginate(sorted, query);
   const hasFilters = Boolean(q) || Object.keys(filters).length > 0 || activeTab !== "all";
@@ -57,8 +60,23 @@ export async function PaymentsListPage({ sp, basePath }: { sp: SearchParams; bas
           <FormButton action={runOverdueChecksAction} variant="secondary" size="sm">
             Verificar alertas y mora
           </FormButton>
-          <Link href={`${basePath}/new`} className={buttonVariants({ variant: "primary" })}>
-            + Registrar pago
+          <Link href={`${basePath}/cash`} className={buttonVariants({ variant: "secondary" })}>
+            Caja
+          </Link>
+          {basePath.startsWith("/administrativo") ? (
+            <Link href={`${basePath}/plans`} className={buttonVariants({ variant: "secondary" })}>
+              Precios vigentes
+            </Link>
+          ) : (
+            <Link href={`${basePath}/audit`} className={buttonVariants({ variant: "secondary" })}>
+              Auditoría
+            </Link>
+          )}
+          <Link href={`${basePath}/new`} className={buttonVariants({ variant: "secondary" })}>
+            + Nueva cuota
+          </Link>
+          <Link href={`${basePath}/collect`} className={buttonVariants({ variant: "primary" })}>
+            Cobrar cuota
           </Link>
         </div>
       </div>

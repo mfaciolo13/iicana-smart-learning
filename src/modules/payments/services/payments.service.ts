@@ -1,41 +1,64 @@
+import { getServerUser } from "@/lib/auth/helpers";
 import { db } from "@/lib/drizzle";
 import { todayInstitute } from "@/lib/validation";
 import { addDaysInstitute } from "@/lib/format";
-import { payments, students, profiles } from "@/lib/drizzle/schema";
+import { payments, students, profiles, courses, paymentDocuments } from "@/lib/drizzle/schema";
 import { eq, ne, desc, and, lt, gte, sql, inArray, isNull } from "drizzle-orm";
-import type { CreatePaymentInput, MarkAsPaidInput } from "../schemas";
+import { alias } from "drizzle-orm/pg-core";
+import { defaultDiscountValidUntil, periodOf } from "../lib/pricing";
+import { getPricingRates } from "./settings.service";
+import type { CreatePaymentInput } from "../schemas";
 import type { PaymentListItem, PaymentWithStudent } from "../types";
 
 // Fecha de hoy en la zona horaria del instituto (con UTC, a partir de las 21:00 ya era "mañana").
 const today = () => todayInstitute();
 
-export async function getPayments(status?: string): Promise<PaymentListItem[]> {
+const invoiceDoc = alias(paymentDocuments, "invoice_doc");
+const receiptDoc = alias(paymentDocuments, "receipt_doc");
+
+export async function getPayments(status?: string, studentId?: string): Promise<PaymentListItem[]> {
   const rows = await db
     .select({
       id: payments.id,
+      studentId: payments.studentId,
       amount: payments.amount,
       dueDate: payments.dueDate,
       paidAt: payments.paidAt,
       status: payments.status,
       receiptNumber: payments.receiptNumber,
       method: payments.method,
+      period: payments.period,
+      courseId: payments.courseId,
+      courseName: courses.name,
+      listPrice: payments.listPriceSnapshot,
+      discountAmount: payments.discountAmount,
+      discountPercentage: payments.discountPercentage,
+      surchargeAmount: payments.surchargeAmount,
+      finalAmount: payments.finalAmount,
+      receiptStatus: receiptDoc.fiscalStatus,
+      receiptDocId: receiptDoc.id,
+      invoiceStatus: invoiceDoc.fiscalStatus,
+      invoiceDocId: invoiceDoc.id,
       studentName: profiles.fullName,
       studentDni: students.dni,
     })
     .from(payments)
     .innerJoin(students, eq(payments.studentId, students.id))
     .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .leftJoin(courses, eq(payments.courseId, courses.id))
+    .leftJoin(receiptDoc, and(eq(receiptDoc.paymentId, payments.id), eq(receiptDoc.documentType, "receipt")))
+    .leftJoin(invoiceDoc, and(eq(invoiceDoc.paymentId, payments.id), eq(invoiceDoc.documentType, "invoice_c")))
     .where(
-      status && status !== "all"
-        ? status === "overdue"
-          ? and(
-              inArray(payments.status, ["pending", "overdue"]),
-              lt(payments.dueDate, today())
-            )
-          : status === "pending"
-            ? and(inArray(payments.status, ["pending", "overdue"]), gte(payments.dueDate, today()))
-            : eq(payments.status, status as "pending" | "paid" | "overdue" | "suspended" | "cancelled")
-        : undefined
+      and(
+        studentId ? eq(payments.studentId, studentId) : undefined,
+        status && status !== "all"
+          ? status === "overdue"
+            ? and(inArray(payments.status, ["pending", "overdue"]), lt(payments.dueDate, today()))
+            : status === "pending"
+              ? and(inArray(payments.status, ["pending", "overdue"]), gte(payments.dueDate, today()))
+              : eq(payments.status, status as "pending" | "paid" | "overdue" | "suspended" | "cancelled")
+          : undefined,
+      ),
     )
     .orderBy(desc(payments.dueDate));
 
@@ -48,32 +71,11 @@ export async function getPayments(status?: string): Promise<PaymentListItem[]> {
 }
 
 export async function getPaymentsByStudent(studentId: string): Promise<PaymentListItem[]> {
-  const rows = await db
-    .select({
-      id: payments.id,
-      amount: payments.amount,
-      dueDate: payments.dueDate,
-      paidAt: payments.paidAt,
-      status: payments.status,
-      receiptNumber: payments.receiptNumber,
-      studentName: profiles.fullName,
-      studentDni: students.dni,
-    })
-    .from(payments)
-    .innerJoin(students, eq(payments.studentId, students.id))
-    .innerJoin(profiles, eq(students.profileId, profiles.id))
-    .where(eq(payments.studentId, studentId))
-    .orderBy(desc(payments.dueDate));
-
-  return rows.map((r) => ({
-    ...r,
-    isOverdue:
-      (r.status === "pending" || r.status === "overdue") &&
-      r.dueDate < today(),
-  })) as PaymentListItem[];
+  return getPayments(undefined, studentId);
 }
 
 export async function getPaymentById(id: string): Promise<PaymentWithStudent | null> {
+  const registrar = alias(profiles, "registrar");
   const rows = await db
     .select({
       id: payments.id,
@@ -90,47 +92,54 @@ export async function getPaymentById(id: string): Promise<PaymentWithStudent | n
       cancellationReason: payments.cancellationReason,
       studentName: profiles.fullName,
       studentDni: students.dni,
+      courseId: payments.courseId,
+      courseName: courses.name,
+      period: payments.period,
+      transferPrice: payments.transferPrice,
+      cashPrice: payments.cashPrice,
+      discountValidUntil: payments.discountValidUntil,
+      listPrice: payments.listPriceSnapshot,
+      discountAmount: payments.discountAmount,
+      discountPercentage: payments.discountPercentage,
+      surchargeAmount: payments.surchargeAmount,
+      finalAmount: payments.finalAmount,
+      provider: payments.provider,
+      providerPaymentId: payments.providerPaymentId,
+      internalReference: payments.internalReference,
+      externalReference: payments.externalReference,
+      registeredByName: registrar.fullName,
     })
     .from(payments)
     .innerJoin(students, eq(payments.studentId, students.id))
     .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .leftJoin(courses, eq(payments.courseId, courses.id))
+    .leftJoin(registrar, eq(payments.registeredBy, registrar.id))
     .where(eq(payments.id, id))
     .limit(1);
 
   return (rows[0] as PaymentWithStudent) ?? null;
 }
 
-export async function createPayment(input: CreatePaymentInput) {
+export async function createPayment(input: CreatePaymentInput, registeredBy?: string) {
+  const rates = await getPricingRates();
   const [payment] = await db
     .insert(payments)
     .values({
       studentId: input.studentId,
+      // `amount` es el precio de lista mientras la cuota está impaga (ver migración 0019).
       amount: String(input.amount),
+      transferPrice: input.transferPrice != null ? String(input.transferPrice) : null,
+      cashPrice: input.cashPrice != null ? String(input.cashPrice) : null,
+      courseId: input.courseId ?? null,
       dueDate: input.dueDate,
+      period: periodOf(input.dueDate),
+      discountValidUntil: defaultDiscountValidUntil(input.dueDate, rates),
       notes: input.notes ?? null,
       status: "pending",
+      registeredBy: registeredBy ?? null,
     })
     .returning();
   return payment;
-}
-
-/**
- * Registra el cobro de un pago. Solo aplica a pagos adeudados (pendiente, vencido o
- * suspendido por mora): un pago ya cobrado o anulado no puede "resucitar" ni pisar
- * su fecha, método y recibo originales (SCRUM-249). Devuelve null si no corresponde.
- */
-export async function markAsPaid(input: MarkAsPaidInput) {
-  const [updated] = await db
-    .update(payments)
-    .set({
-      status: "paid",
-      paidAt: new Date(),
-      method: input.method,
-      receiptNumber: input.receiptNumber ?? null,
-    })
-    .where(and(eq(payments.id, input.id), inArray(payments.status, ["pending", "overdue", "suspended"])))
-    .returning();
-  return updated ?? null;
 }
 
 /**
@@ -141,37 +150,22 @@ export async function markAsPaid(input: MarkAsPaidInput) {
  */
 export async function updatePayment(
   id: string,
-  input: { amount: number; dueDate: string; notes?: string | null }
+  input: { amount: number; dueDate: string; notes?: string | null; transferPrice?: number | null; cashPrice?: number | null }
 ) {
   const [updated] = await db
     .update(payments)
     .set({
       amount: String(input.amount),
+      transferPrice: input.transferPrice != null ? String(input.transferPrice) : null,
+      cashPrice: input.cashPrice != null ? String(input.cashPrice) : null,
       dueDate: input.dueDate,
+      period: periodOf(input.dueDate),
       notes: input.notes ?? null,
+      updatedAt: new Date(),
     })
     .where(and(eq(payments.id, id), inArray(payments.status, ["pending", "overdue"])))
     .returning();
   return updated ?? null;
-}
-
-/**
- * Anula un pago. No lo borra: conserva el registro con el motivo, quién lo anuló
- * y cuándo. Un pago anulado queda fuera de los totales de recaudación y de mora,
- * y no vuelve a dispararse contra él ninguna automatización de cobranza.
- */
-export async function cancelPayment(id: string, reason: string, cancelledBy: string) {
-  const [cancelled] = await db
-    .update(payments)
-    .set({
-      status: "cancelled",
-      cancelledAt: new Date(),
-      cancelledBy,
-      cancellationReason: reason,
-    })
-    .where(and(eq(payments.id, id), ne(payments.status, "cancelled")))
-    .returning();
-  return cancelled ?? null;
 }
 
 /**
@@ -370,4 +364,101 @@ export async function paymentExistsForDueDate(studentId: string, dueDate: string
     .where(and(eq(payments.studentId, studentId), eq(payments.dueDate, dueDate), ne(payments.status, "cancelled")))
     .limit(1);
   return !!row;
+}
+
+/** Id de alumno del usuario con sesión, o null si no es alumno. */
+export async function getCurrentStudentId(): Promise<string | null> {
+  const user = await getServerUser();
+  if (!user) return null;
+  const [row] = await db.select({ id: students.id }).from(students).where(eq(students.profileId, user.id)).limit(1);
+  return row?.id ?? null;
+}
+
+export interface StudentOption {
+  id: string;
+  fullName: string;
+  dni: string;
+}
+
+/** Alumnos activos para los desplegables de cobro y alta de cuota (consulta directa: no depende del cliente de servicio). */
+export async function getStudentOptions(): Promise<StudentOption[]> {
+  return db
+    .select({ id: students.id, fullName: profiles.fullName, dni: students.dni })
+    .from(students)
+    .innerJoin(profiles, eq(students.profileId, profiles.id))
+    .where(ne(students.status, "inactive"))
+    .orderBy(profiles.fullName);
+}
+
+/** Cursos vigentes para asociar una cuota. */
+export async function getCourseOptions(): Promise<{ id: string; name: string }[]> {
+  return db.select({ id: courses.id, name: courses.name }).from(courses).where(ne(courses.status, "inactive")).orderBy(courses.name);
+}
+
+export interface CollectableCuota {
+  id: string;
+  studentId: string;
+  amount: string;
+  transferPrice: string | null;
+  cashPrice: string | null;
+  discountValidUntil: string | null;
+  dueDate: string;
+  period: string | null;
+  courseName: string | null;
+  status: "pending" | "overdue" | "suspended";
+}
+
+/** Cuotas adeudadas de todos los alumnos, para el flujo "alumno → cuota → medio de pago". */
+export async function getCollectableCuotas(): Promise<CollectableCuota[]> {
+  return db
+    .select({
+      id: payments.id,
+      studentId: payments.studentId,
+      amount: payments.amount,
+      transferPrice: payments.transferPrice,
+      cashPrice: payments.cashPrice,
+      discountValidUntil: payments.discountValidUntil,
+      dueDate: payments.dueDate,
+      period: payments.period,
+      courseName: courses.name,
+      status: payments.status,
+    })
+    .from(payments)
+    .leftJoin(courses, eq(payments.courseId, courses.id))
+    .where(inArray(payments.status, ["pending", "overdue", "suspended"]))
+    .orderBy(payments.dueDate) as Promise<CollectableCuota[]>;
+}
+
+export interface FinanceRow {
+  month: string; // YYYY-MM de la fecha de cobro (hora del instituto)
+  cash: number;
+  transfer: number;
+  card: number;
+  total: number;
+  count: number;
+}
+
+/** Recaudación de los últimos `months` meses por medio de pago (centavos), para el resumen financiero. */
+export async function getFinanceSummary(months = 6): Promise<FinanceRow[]> {
+  const rows = await db.execute<{ month: string; method: string; cents: string; n: string }>(sql`
+    select to_char(paid_at at time zone 'America/Argentina/Cordoba', 'YYYY-MM') as month,
+           method::text as method,
+           coalesce(sum(round(coalesce(final_amount, amount) * 100)), 0)::text as cents,
+           count(*)::text as n
+    from payments
+    where status = 'paid' and paid_at is not null
+      and paid_at >= (date_trunc('month', now() at time zone 'America/Argentina/Cordoba') - make_interval(months => ${months - 1})) at time zone 'America/Argentina/Cordoba'
+    group by 1, 2
+    order by 1 desc
+  `);
+  const byMonth = new Map<string, FinanceRow>();
+  for (const r of rows as unknown as { month: string; method: string; cents: string; n: string }[]) {
+    const row = byMonth.get(r.month) ?? { month: r.month, cash: 0, transfer: 0, card: 0, total: 0, count: 0 };
+    const cents = Number(r.cents);
+    if (r.method === "cash" || r.method === "transfer" || r.method === "card") row[r.method] += cents;
+    row.total += cents;
+    row.count += Number(r.n);
+    byMonth.set(r.month, row);
+  }
+  return [...byMonth.values()].sort((a, b) => b.month.localeCompare(a.month));
 }

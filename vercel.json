@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/risk-detection",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/outbox",
+      "schedule": "0 13 * * *"
     }
   ]
 }

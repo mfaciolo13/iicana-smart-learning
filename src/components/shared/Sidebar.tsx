@@ -35,6 +35,8 @@ import {
   ShieldAlert,
   Zap,
   FolderOpen,
+  Wallet,
+  History,
   type LucideIcon,
 } from "lucide-react";
 
@@ -71,6 +73,7 @@ const NAV: Record<UserRole, NavGroup[]> = {
       label: "Administración",
       items: [
         { label: "Pagos", href: "/director/payments", icon: CreditCard },
+        { label: "Caja", href: "/director/payments/cash", icon: Wallet },
         { label: "Comunicaciones", href: "/director/notifications", icon: MessageSquare },
         { label: "Reclamos", href: "/director/complaints", icon: AlertCircle },
         { label: "Reportes", href: "/director/reports", icon: BarChart2 },
@@ -90,6 +93,8 @@ const NAV: Record<UserRole, NavGroup[]> = {
     {
       label: "Sistema",
       items: [
+        { label: "Precios y recargos", href: "/director/settings/payments", icon: CreditCard },
+        { label: "Auditoría de pagos", href: "/director/payments/audit", icon: History },
         { label: "Automatizaciones", href: "/director/settings/automations", icon: Zap },
         { label: "Notificaciones", href: "/director/settings/notifications", icon: Settings },
         { label: "Mi Perfil", href: "/director/profile", icon: UserCircle },
@@ -112,6 +117,7 @@ const NAV: Record<UserRole, NavGroup[]> = {
       label: "Administración",
       items: [
         { label: "Pagos", href: "/administrativo/payments", icon: CreditCard },
+        { label: "Caja", href: "/administrativo/payments/cash", icon: Wallet },
         { label: "Comunicaciones", href: "/administrativo/notifications", icon: MessageSquare },
         { label: "Reclamos", href: "/administrativo/complaints", icon: AlertCircle },
         { label: "Reportes", href: "/administrativo/reports", icon: BarChart2 },
@@ -196,6 +202,11 @@ export function Sidebar({ role, fullName, avatarUrl, isOpen = false, onClose }: 
     // "Usuarios" y "Administrativos" comparten path: el genérico no se marca cuando hay ?role=.
     const hasQuerySibling = allItems.some((o) => o !== item && o.href.startsWith(`${hrefPath}?`));
     if (hasQuerySibling && searchParams.get("role")) return false;
+    // "Pagos" no se marca cuando se está en una sección más específica (ej. /payments/cash).
+    const moreSpecific = allItems.some(
+      (o) => o !== item && !o.href.includes("?") && o.href.length > hrefPath.length && o.href.startsWith(`${hrefPath}/`) && pathname.startsWith(o.href),
+    );
+    if (moreSpecific) return false;
     return pathname.startsWith(hrefPath);
   }
 

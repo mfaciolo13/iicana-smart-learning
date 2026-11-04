@@ -5,10 +5,8 @@
 // Funciona tanto con errores de postgres-js (Drizzle) como de PostgREST (Supabase),
 // que exponen el código en la propiedad `code`.
 export function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: string }).code === "23505"
-  );
+  if (typeof err !== "object" || err === null) return false;
+  // Drizzle envuelve el error de postgres.js en "cause"; PostgREST lo expone directo en "code".
+  const code = (err as { code?: string }).code ?? (err as { cause?: { code?: string } }).cause?.code;
+  return code === "23505";
 }

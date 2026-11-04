@@ -32,7 +32,7 @@ async function createPaymentFor(page: import("@playwright/test").Page, st: { ful
   // Nombre sin dígitos → el label es exacto y estable.
   await page.locator("#studentId").selectOption({ label: `${st.fullName} — ${st.dni}` });
   await page.locator("#amount").fill("15000");
-  await page.getByRole("button", { name: "Registrar pago" }).click();
+  await page.getByRole("button", { name: "Registrar cuota" }).click();
   // createPaymentAction redirige al DETALLE del pago, no a la lista.
   await page.waitForURL(/\/director\/payments\/[0-9a-f-]{36}$/, { timeout: 30_000 });
 }
@@ -50,7 +50,7 @@ test.describe("Director · Pagos · validaciones (casos borde)", () => {
     await page.goto("/director/payments/new");
     await selectStudentByDni(page, SEED_DNI);
     await page.locator("#amount").fill("0");
-    await page.getByRole("button", { name: "Registrar pago" }).click();
+    await page.getByRole("button", { name: "Registrar cuota" }).click();
     await expect(page.getByText(/mayor a 0/i)).toBeVisible();
     await expect(page).toHaveURL(/\/director\/payments\/new/);
   });
@@ -71,10 +71,12 @@ test.describe("Director · Pagos · marcar como pagado", () => {
     await page.goto("/director/payments");
     await page.locator("tr", { hasText: st.dni }).getByRole("link").first().click();
     await page.waitForURL(/\/director\/payments\/[0-9a-f-]{36}$/, { timeout: 30_000 });
-    await page.locator("#method").selectOption("cash");
-    await page.getByRole("button", { name: "Confirmar pago" }).click();
+    // El importe lo calcula el servidor: se elige el medio, se revisa el desglose y se confirma.
+    await page.getByText("Efectivo", { exact: true }).first().click();
+    await page.getByRole("button", { name: "Revisar y cobrar" }).click();
+    await page.getByRole("button", { name: "Confirmar cobro" }).click();
     await expect(page.getByText("Pagado").first()).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole("link", { name: /Ver recibo/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Ver comprobante/i })).toBeVisible();
   });
 });
 

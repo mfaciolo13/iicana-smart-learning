@@ -10,12 +10,14 @@ import { updatePaymentAction, cancelPaymentAction } from "../actions";
 interface PaymentEditFormProps {
   paymentId: string;
   amount: string;
+  transferPrice: string | null;
+  cashPrice: string | null;
   dueDate: string;
   notes: string | null;
 }
 
-/** Edición de un pago no cobrado — monto, vencimiento y observaciones. */
-export function PaymentEditForm({ paymentId, amount, dueDate, notes }: PaymentEditFormProps) {
+/** Edición de un pago no cobrado — precios, vencimiento y observaciones. */
+export function PaymentEditForm({ paymentId, amount, transferPrice, cashPrice, dueDate, notes }: PaymentEditFormProps) {
   const [state, formAction, isPending] = useActionState(updatePaymentAction, undefined);
 
   useEffect(() => {
@@ -28,15 +30,16 @@ export function PaymentEditForm({ paymentId, amount, dueDate, notes }: PaymentEd
       <form action={formAction} className="space-y-4">
         <input type="hidden" name="id" value={paymentId} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Monto" required id="amount" error={state?.fieldErrors?.amount}>
-            <Input
-              id="amount"
-              name="amount"
-              type="number"
-              step="0.01"
-              min="0"
-              defaultValue={parseFloat(amount)}
-            />
+          <Field label="Precio de lista ($)" required id="amount" error={state?.fieldErrors?.amount}>
+            <Input id="amount" name="amount" type="number" step="0.01" min="0" defaultValue={parseFloat(amount)} />
+          </Field>
+
+          <Field label="Precio por transferencia ($)" id="transferPrice" helper="Vacío = descuento general" error={state?.fieldErrors?.transferPrice}>
+            <Input id="transferPrice" name="transferPrice" type="number" step="0.01" min="0" defaultValue={transferPrice ? parseFloat(transferPrice) : ""} />
+          </Field>
+
+          <Field label="Precio en efectivo ($)" id="cashPrice" helper="Vacío = descuento general" error={state?.fieldErrors?.cashPrice}>
+            <Input id="cashPrice" name="cashPrice" type="number" step="0.01" min="0" defaultValue={cashPrice ? parseFloat(cashPrice) : ""} />
           </Field>
 
           <Field label="Vencimiento" required id="dueDate" error={state?.fieldErrors?.dueDate}>
@@ -62,7 +65,7 @@ export function PaymentEditForm({ paymentId, amount, dueDate, notes }: PaymentEd
  * Anulación de un pago. Exige un motivo escrito: el registro se conserva para
  * auditoría, y sin motivo la anulación no sería explicable meses después.
  */
-export function PaymentCancelForm({ paymentId }: { paymentId: string }) {
+export function PaymentCancelForm({ paymentId, isCash = false }: { paymentId: string; isCash?: boolean }) {
   const [state, formAction, isPending] = useActionState(cancelPaymentAction, undefined);
   const [confirming, setConfirming] = useState(false);
 
@@ -78,6 +81,7 @@ export function PaymentCancelForm({ paymentId }: { paymentId: string }) {
       <Card title="Anular pago" padding="md">
         <p className="text-xs text-slate-400 mb-3">
           El pago deja de contar para recaudación y mora, pero el registro se conserva para auditoría.
+          {isCash && " Como se cobró en efectivo, se revierte su ingreso en la caja con un movimiento compensatorio."}
         </p>
         <Button variant="danger" size="sm" fullWidth className="justify-center" onClick={() => setConfirming(true)}>
           Anular pago
