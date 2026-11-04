@@ -23,6 +23,7 @@ import {
   getAssessmentDetail,
   isStudentEnrolledInCourse,
   hasAttempt,
+  recordAnswerReveal,
   countAssessmentsToday,
 } from "./services/assessments.service";
 import { parseQuestions, isTimeoutError, AI_TIMEOUT_MS, AI_MAX_TOKENS, MAX_AI_ASSESSMENTS_PER_COURSE_PER_DAY } from "./lib/questions";
@@ -401,10 +402,21 @@ export async function checkAnswerAction(
   const question = (detail.questions as unknown as QuizQuestion[])[questionIndex];
   if (!question || chosenIndex >= question.options.length) return { error: "Respuesta inválida" };
 
-  return {
+  // La primera respuesta confirmada es la que cuenta: se registra antes de revelar la correcta, así
+  // recargar la página y volver a elegir no sirve para sacar 100 %.
+  const recorded = await recordAnswerReveal({
+    assessmentId,
+    studentProfileId: user.id,
+    questionIndex,
+    chosenIndex,
     correct: chosenIndex === question.correct,
+  });
+
+  return {
+    correct: recorded.chosenIndex === question.correct,
     correctIndex: question.correct,
     explanation: question.explanation,
+    chosenIndex: recorded.chosenIndex,
   };
 }
 

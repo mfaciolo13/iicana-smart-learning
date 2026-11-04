@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { getYearEndReport } from "@/modules/year-end/services/year-end.service";
+import { ATTENDANCE_THRESHOLD, GRADE_THRESHOLD } from "@/modules/promotions/eligibility";
 import { consolidateYearEndAction } from "@/modules/year-end/actions";
 import { FormButton } from "@/components/ui/FormButton";
 import { LEVEL_LABELS } from "@/lib/level-labels";
@@ -12,18 +13,13 @@ import { parseFilters, type FilterField } from "@/lib/filters";
 import { LEVEL_ORDER } from "@/lib/level-labels";
 
 const BASE_PATH = "/director/year-end";
-const ATTENDANCE_THRESHOLD = 80;
-const GRADE_THRESHOLD = 7.0;
-
-type StudentRaw = { dni: string; profiles: { full_name: string } | null } | null;
-type CourseRaw = { name: string; level: string } | null;
-type Outcome = "promoted" | "eligible" | "insufficient" | "no_data" | "withdrawn";
 
 const OUTCOME_STYLE: Record<string, string> = {
   promoted: "text-emerald-700 bg-emerald-50",
   eligible: "text-brand-700 bg-brand-50",
   insufficient: "text-red-700 bg-red-50",
   withdrawn: "text-slate-500 bg-slate-100",
+  suspended: "text-amber-700 bg-amber-50",
   no_data: "text-slate-400 bg-slate-50",
 };
 
@@ -32,6 +28,7 @@ const OUTCOME_LABEL: Record<string, string> = {
   eligible: "Apto",
   insufficient: "Insuficiente",
   withdrawn: "Dado de baja",
+  suspended: "Suspendido",
   no_data: "Sin datos",
 };
 
@@ -41,85 +38,12 @@ export default async function YearEndPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
-  const supabase = await createClient();
-
-  const { data: enrollmentRows } = await supabase
-    .from("enrollments")
-    .select("id, status, students(dni, profiles(full_name)), courses(name, level)");
-
-  const enrollmentIds = (enrollmentRows ?? []).map((e) => e.id);
-
-  const [{ data: attRows }, { data: gradeRows }] = await Promise.all([
-    supabase.from("attendance").select("enrollment_id, status").in("enrollment_id", enrollmentIds),
-    supabase.from("grades").select("enrollment_id, score").in("enrollment_id", enrollmentIds),
-  ]);
-
-  const attStats = new Map<string, { total: number; present: number }>();
-  for (const a of attRows ?? []) {
-    const cur = attStats.get(a.enrollment_id) ?? { total: 0, present: 0 };
-    cur.total++;
-    if (a.status === "present" || a.status === "late") cur.present++;
-    attStats.set(a.enrollment_id, cur);
-  }
-
-  const gradeStats = new Map<string, { sum: number; count: number }>();
-  for (const g of gradeRows ?? []) {
-    const cur = gradeStats.get(g.enrollment_id) ?? { sum: 0, count: 0 };
-    cur.sum += parseFloat(g.score);
-    cur.count++;
-    gradeStats.set(g.enrollment_id, cur);
-  }
-
-  const rows = (enrollmentRows ?? [])
-    .map((e) => {
-      const student = e.students as unknown as StudentRaw;
-      const course = e.courses as unknown as CourseRaw;
-      const att = attStats.get(e.id);
-      const grades = gradeStats.get(e.id);
-
-      const total = att?.total ?? 0;
-      const present = att?.present ?? 0;
-      const attendancePct = total > 0 ? Math.round((present / total) * 100) : null;
-      const gradeAvg =
-        grades && grades.count > 0 ? Math.round((grades.sum / grades.count) * 10) / 10 : null;
-
-      let outcome: Outcome;
-      if (e.status === "withdrawn") {
-        outcome = "withdrawn";
-      } else if (e.status === "completed") {
-        outcome = "promoted";
-      } else if (attendancePct === null && gradeAvg === null) {
-        outcome = "no_data";
-      } else {
-        const meetsAttendance = attendancePct !== null && attendancePct >= ATTENDANCE_THRESHOLD;
-        const meetsGrades = gradeAvg !== null && gradeAvg >= GRADE_THRESHOLD;
-        outcome = meetsAttendance && meetsGrades ? "eligible" : "insufficient";
-      }
-
-      return {
-        enrollmentId: e.id,
-        studentName: student?.profiles?.full_name ?? "",
-        studentDni: student?.dni ?? "",
-        courseName: course?.name ?? "",
-        courseLevel: course?.level ?? "",
-        attendancePct,
-        gradeAvg,
-        outcome,
-      };
-    })
-    .sort((a, b) => a.studentName.localeCompare(b.studentName));
-
-  const summary = {
-    promoted: rows.filter((r) => r.outcome === "promoted").length,
-    eligible: rows.filter((r) => r.outcome === "eligible").length,
-    insufficient: rows.filter((r) => r.outcome === "insufficient").length,
-    withdrawn: rows.filter((r) => r.outcome === "withdrawn").length,
-    total: rows.length,
-  };
+  // El informe lo arma el servicio (valores exactos, agregados en SQL, sin tope de filas).
+  const { rows, summary } = await getYearEndReport();
 
   const hasPending = summary.eligible > 0;
 
-  const OUTCOME_ORDER = ["eligible", "insufficient", "promoted", "withdrawn", "no_data"];
+  const OUTCOME_ORDER = ["eligible", "insufficient", "suspended", "promoted", "withdrawn", "no_data"];
   const query = parseTableQuery(sp, { sortable: ["student", "course", "attendance", "average", "outcome"], defaultSort: "student" });
   const courseNames = [...new Set(rows.map((r) => r.courseName))].sort((a, b) => a.localeCompare(b, "es"));
   const fields: FilterField[] = [
@@ -156,20 +80,25 @@ export default async function YearEndPage({
         </div>
         <FormButton
           action={consolidateYearEndAction}
-          variant="primary"
-          confirmMessage="¿Confirmar cierre? Se promoverán todos los alumnos aptos y se marcarán los egresados."
+          variant="danger"
+          confirmMessage={
+            summary.eligible === 0
+              ? "No hay alumnos aptos pendientes: no se promoverá a nadie."
+              : `Se van a promover ${summary.eligible} alumno${summary.eligible === 1 ? "" : "s"} apto${summary.eligible === 1 ? "" : "s"} y se enviará un email de felicitación a cada uno. Solo egresan quienes terminan el último nivel. Esta acción no se puede deshacer.`
+          }
         >
           Cerrar ciclo lectivo
         </FormButton>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
         {[
           { label: "Total", value: summary.total, style: "" },
           { label: "Promovidos", value: summary.promoted, style: "text-emerald-700" },
           { label: "Aptos", value: summary.eligible, style: "text-brand-700" },
           { label: "Insuficientes", value: summary.insufficient, style: "text-red-700" },
+          { label: "Suspendidos", value: summary.suspended, style: "text-amber-700" },
           { label: "Bajas", value: summary.withdrawn, style: "text-slate-500" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">

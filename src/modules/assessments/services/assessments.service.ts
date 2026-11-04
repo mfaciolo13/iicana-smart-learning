@@ -2,6 +2,7 @@ import { db } from "@/lib/drizzle";
 import {
   assessments,
   assessmentAttempts,
+  assessmentAnswerReveals,
   courses,
   enrollments,
   students,
@@ -259,7 +260,10 @@ export async function submitAttempt(
   studentProfileId: string,
   questions: QuizQuestion[]
 ) {
-  const correct = input.answers.filter(
+  // Las respuestas ya confirmadas (y reveladas) cuentan tal como se confirmaron: recargar la página no permite cambiarlas.
+  const reveals = await getRevealedAnswers(input.assessmentId, studentProfileId);
+  const finalAnswers = input.answers.map((ans, i) => reveals.get(i)?.chosenIndex ?? ans);
+  const correct = finalAnswers.filter(
     (ans, i) => questions[i] && ans === questions[i].correct
   ).length;
   const score = Math.round((correct / questions.length) * 100);
@@ -269,7 +273,7 @@ export async function submitAttempt(
     .values({
       assessmentId: input.assessmentId,
       studentId: studentProfileId,
-      answers: input.answers as unknown as typeof assessmentAttempts.$inferInsert["answers"],
+      answers: finalAnswers as unknown as typeof assessmentAttempts.$inferInsert["answers"],
       score,
     })
     .returning();
@@ -305,4 +309,32 @@ export async function countAssessmentsToday(courseId: string): Promise<number> {
     .from(assessments)
     .where(and(eq(assessments.courseId, courseId), gte(assessments.createdAt, startOfDay)));
   return row?.n ?? 0;
+}
+
+/** Respuestas que el alumno ya confirmó (y por lo tanto ya vio corregidas), por número de pregunta. */
+export async function getRevealedAnswers(assessmentId: string, studentProfileId: string) {
+  const rows = await db
+    .select({ questionIndex: assessmentAnswerReveals.questionIndex, chosenIndex: assessmentAnswerReveals.chosenIndex, correct: assessmentAnswerReveals.correct })
+    .from(assessmentAnswerReveals)
+    .where(and(eq(assessmentAnswerReveals.assessmentId, assessmentId), eq(assessmentAnswerReveals.studentId, studentProfileId)));
+  return new Map(rows.map((r) => [r.questionIndex, r]));
+}
+
+/**
+ * Registra la respuesta elegida al confirmar una pregunta. Si ya había una confirmación, se conserva la
+ * primera y se devuelve esa: el alumno no puede ver la respuesta correcta y volver a elegir.
+ */
+export async function recordAnswerReveal(p: {
+  assessmentId: string;
+  studentProfileId: string;
+  questionIndex: number;
+  chosenIndex: number;
+  correct: boolean;
+}) {
+  await db
+    .insert(assessmentAnswerReveals)
+    .values({ assessmentId: p.assessmentId, studentId: p.studentProfileId, questionIndex: p.questionIndex, chosenIndex: p.chosenIndex, correct: p.correct })
+    .onConflictDoNothing();
+  const revealed = await getRevealedAnswers(p.assessmentId, p.studentProfileId);
+  return revealed.get(p.questionIndex)!;
 }
