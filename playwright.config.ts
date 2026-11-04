@@ -7,8 +7,6 @@ dotenv.config({ path: ".env.test" });
 // Garantizamos que RESEND_API_KEY tenga un valor stub en el proceso de Playwright
 // (y por herencia en cualquier child process que no lo sobreescriba).
 // Esto evita que `new Resend(undefined)` explote en tiempo de build/collect.
-// IMPORTANTE: esta mutación debe ocurrir ANTES de que se construya el objeto
-// `webServer`, ya que el campo `env` lo lee en el mismo tick de evaluación.
 if (!process.env.RESEND_API_KEY) {
   process.env.RESEND_API_KEY = "disabled-for-e2e";
 }
@@ -28,11 +26,10 @@ const isRemote = baseURL !== "http://localhost:3000";
 const chrome = devices["Desktop Chrome"];
 
 // Entorno base que se pasa explícitamente al webServer: fusionamos TODO el
-// process.env del proceso padre con la clave stub.  De este modo, tanto
+// process.env del proceso padre con la clave stub. De este modo, tanto
 // `pnpm build` como `pnpm start` (o `pnpm dev`) heredan las variables de
 // Supabase, NEXTAUTH, etc. que ya están en el entorno del runner de CI, más
-// RESEND_API_KEY, sin depender de la sintaxis POSIX `VAR=val cmd` (que no
-// funciona en todos los runners de GitHub Actions según el shell configurado).
+// RESEND_API_KEY, sin depender de la sintaxis POSIX `VAR=val cmd`.
 const webServerEnv: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(process.env).filter(
@@ -42,18 +39,23 @@ const webServerEnv: Record<string, string> = {
   RESEND_API_KEY: "disabled-for-e2e",
 };
 
-// Comando de build: Next.js lee variables de entorno directamente desde el
-// entorno del proceso Node que ejecuta el compilador. pnpm no siempre propaga
-// el `env` de webServer a sus procesos hijos (depende de la versión y del
-// packageManager hook). Para garantizar que RESEND_API_KEY llegue al paso de
-// `next build` (donde se hace la page-data collection de /api/cron/*), la
-// inyectamos explícitamente mediante `env VAR=val` — comando POSIX estándar
-// disponible en todos los runners Linux/macOS de GitHub Actions — en lugar de
-// la sintaxis de asignación de shell (`VAR=val cmd`), que algunos shells
-// restringen. `env` es un binario del sistema, no una feature del shell.
-const buildCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm build";
-const startCommand = "env RESEND_API_KEY=disabled-for-e2e pnpm start";
-const devCommand = "pnpm dev"; // dev no hace page-data collection estática
+// Playwright ejecuta el `command` del webServer con `sh -c "<command>"` en
+// Linux/macOS. La forma más robusta y portable de garantizar que
+// RESEND_API_KEY llegue al proceso de `next build` (donde se hace la
+// page-data collection de /api/cron/* que instancia Resend) es incrustarla
+// directamente en la cadena de comando como asignación de variable de shell
+// POSIX (`VAR=val cmd`). Esto es más confiable que depender del binario `env`
+// (que puede no estar en PATH en algunos runners) o del campo `env` del
+// webServer (que Playwright puede no propagar a todos los subprocesos de pnpm
+// según la versión del package manager).
+//
+// Usamos `sh -c '...'` explícitamente para garantizar la semántica de
+// asignación inline en cualquier runner de GitHub Actions con shell POSIX.
+const buildCmd =
+  "sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm build'";
+const startCmd =
+  "sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm start'";
+const devCmd = "pnpm dev"; // dev no hace page-data collection estática
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -63,8 +65,9 @@ export default defineConfig({
   workers: 1,
   reporter: [["html", { open: "never" }], ["list"]],
   timeout: 60_000,
-  // Default de expect: 15s absorbe páginas lentas cuando el dev server está bajo
-  // carga durante la suite completa (evita falsos negativos de listas sembradas).
+  // Default de expect: 15s absorbe páginas lentas cuando el dev server está
+  // bajo carga durante la suite completa (evita falsos negativos de listas
+  // sembradas).
   expect: { timeout: 15_000 },
 
   use: {
@@ -117,20 +120,20 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // Usamos `env VAR=val cmd` (binario POSIX) en lugar de la sintaxis de
-      // asignación de shell (`VAR=val cmd`) para máxima portabilidad en CI.
-      // Esto garantiza que RESEND_API_KEY esté presente cuando `next build`
-      // hace la page-data collection de rutas API que instancian Resend.
+      // `sh -c 'VAR=val cmd'` es POSIX estándar y garantiza que la variable
+      // esté en el entorno del proceso que sh lanza directamente, sin
+      // depender del binario `env` ni de la propagación de Playwright.
+      // Para el caso `&&`, encadenamos dentro del mismo `sh -c '...'` para
+      // que ambos comandos compartan el mismo entorno de shell.
       command: process.env.E2E_PROD
-        ? `${buildCommand} && ${startCommand}`
-        : devCommand,
+        ? `sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start'`
+        : devCmd,
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // `env` recibe el entorno completo del proceso padre más el stub de
-      // RESEND_API_KEY.  Playwright pasa este objeto como entorno del shell
-      // que ejecuta `command`, garantizando que tanto `pnpm build` como
-      // `pnpm start` en la cadena `&&` lo hereden.
+      // `env` como campo de Playwright: capa adicional de seguridad que
+      // inyecta el entorno completo + stub al proceso hijo. Combinado con la
+      // asignación inline en `command`, garantiza máxima cobertura.
       env: webServerEnv,
     },
   }),
