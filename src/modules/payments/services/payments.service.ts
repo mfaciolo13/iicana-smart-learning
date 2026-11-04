@@ -2,7 +2,7 @@ import { db } from "@/lib/drizzle";
 import { todayInstitute } from "@/lib/validation";
 import { addDaysInstitute } from "@/lib/format";
 import { payments, students, profiles } from "@/lib/drizzle/schema";
-import { eq, ne, desc, and, lt, gte, sql, inArray, isNull } from "drizzle-orm";
+import { eq, ne, desc, and, lt, lte, gte, sql, inArray, isNull } from "drizzle-orm";
 import type { CreatePaymentInput, MarkAsPaidInput } from "../schemas";
 import type { PaymentListItem, PaymentWithStudent } from "../types";
 
@@ -362,12 +362,19 @@ export async function getPaymentSummary() {
   return row;
 }
 
-/** Ya hay una cuota vigente (no anulada) del alumno con ese vencimiento. */
+/**
+ * Ya hay una cuota vigente (no anulada) del alumno EN ESE MES. Antes sólo se comparaba la fecha exacta: una
+ * cuota al 10/11 y otra al 11/11 eran "distintas", el alumno recibía dos recordatorios y, con un mes de
+ * atraso, llegaba a dos impagas y se le restringía el portal por una carga duplicada.
+ */
 export async function paymentExistsForDueDate(studentId: string, dueDate: string): Promise<boolean> {
+  const first = `${dueDate.slice(0, 7)}-01`;
+  const [y, m] = dueDate.split("-").map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
   const [row] = await db
     .select({ id: payments.id })
     .from(payments)
-    .where(and(eq(payments.studentId, studentId), eq(payments.dueDate, dueDate), ne(payments.status, "cancelled")))
+    .where(and(eq(payments.studentId, studentId), gte(payments.dueDate, first), lte(payments.dueDate, last), ne(payments.status, "cancelled")))
     .limit(1);
   return !!row;
 }

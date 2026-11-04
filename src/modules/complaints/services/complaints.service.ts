@@ -83,11 +83,14 @@ export async function createComplaint(userId: string, input: CreateComplaintInpu
 }
 
 export async function updateComplaintStatus(id: string, status: ComplaintStatus) {
+  const [current] = await db.select({ resolvedAt: complaints.resolvedAt }).from(complaints).where(eq(complaints.id, id)).limit(1);
+  const closing = status === "resolved" || status === "closed";
   const [updated] = await db
     .update(complaints)
     .set({
       status,
-      resolvedAt: status === "resolved" || status === "closed" ? new Date() : null,
+      // Pasar de "resuelto" a "cerrado" conserva la fecha en que se resolvió (antes se pisaba con la de cierre).
+      resolvedAt: closing ? (current?.resolvedAt ?? new Date()) : null,
       updatedAt: new Date(),
     })
     .where(eq(complaints.id, id))

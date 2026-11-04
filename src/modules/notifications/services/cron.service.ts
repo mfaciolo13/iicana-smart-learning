@@ -4,6 +4,7 @@ import {
   enrollments,
   students,
   profiles,
+  teachers,
   payments,
   notificationSettings,
   userNotificationPreferences,
@@ -31,23 +32,25 @@ export interface ClassReminderRecipient {
 
 export async function getClassReminderRecipients(): Promise<ClassReminderRecipient[]> {
   const setting = await db
-    .select({ enabled: notificationSettings.enabled })
+    .select({ enabled: notificationSettings.enabled, timingHours: notificationSettings.timingHours })
     .from(notificationSettings)
     .where(eq(notificationSettings.alertType, "class_reminder"))
     .limit(1);
 
   if (!setting[0]?.enabled) return [];
 
-  // "Mañana" según el calendario del instituto, no el de UTC.
-  const classDate = addDaysInstitute(1);
-  const tomorrowDay = DAY_MAP[new Date(`${classDate}T00:00:00Z`).getUTCDay()];
+  // Anticipación configurada por Dirección (24, 48 horas…): antes se ignoraba y el aviso salía siempre el día anterior.
+  // El proceso corre una vez por día: se avisa de la clase de dentro de ⌈horas / 24⌉ días (calendario del instituto).
+  const daysAhead = Math.max(1, Math.ceil((setting[0].timingHours ?? 24) / 24));
+  const classDate = addDaysInstitute(daysAhead);
+  const classDay = DAY_MAP[new Date(`${classDate}T00:00:00Z`).getUTCDay()];
 
   const activeCourses = await db
-    .select({ id: courses.id, name: courses.name, classTime: courses.classTime, classDays: courses.classDays })
+    .select({ id: courses.id, name: courses.name, classTime: courses.classTime, classDays: courses.classDays, teacherId: courses.teacherId })
     .from(courses)
     .where(eq(courses.status, "active"));
 
-  const tomorrowCourses = activeCourses.filter((c) => (c.classDays as string[]).includes(tomorrowDay));
+  const tomorrowCourses = activeCourses.filter((c) => (c.classDays as string[]).includes(classDay));
   if (tomorrowCourses.length === 0) return [];
 
   const tomorrowCourseIds = tomorrowCourses.map((c) => c.id);
@@ -85,7 +88,7 @@ export async function getClassReminderRecipients(): Promise<ClassReminderRecipie
 
   const optOutSet = new Set(optOuts.map((o) => o.userId));
 
-  return rows
+  const studentRecipients = rows
     .filter((r) => !optOutSet.has(r.userId))
     .map((r) => {
       const course = courseMap.get(r.courseId)!;
@@ -97,9 +100,27 @@ export async function getClassReminderRecipients(): Promise<ClassReminderRecipie
         classTime: course.classTime.slice(0, 5),
       };
     });
+
+  // El docente del curso también recibe el aviso (la pantalla de automatizaciones lo promete: "alumnos y docentes").
+  const teacherIds = [...new Set(tomorrowCourses.map((c) => c.teacherId).filter((t): t is string => !!t))];
+  const teacherRows = teacherIds.length
+    ? await db
+        .select({ teacherId: teachers.id, email: profiles.email, fullName: profiles.fullName, userId: profiles.id })
+        .from(teachers)
+        .innerJoin(profiles, eq(profiles.id, teachers.profileId))
+        .where(inArray(teachers.id, teacherIds))
+    : [];
+  const teacherRecipients = tomorrowCourses.flatMap((c) => {
+    const t = teacherRows.find((x) => x.teacherId === c.teacherId);
+    if (!t || optOutSet.has(t.userId)) return [];
+    return [{ email: t.email, fullName: t.fullName, courseName: c.name, classDate, classTime: c.classTime.slice(0, 5) }];
+  });
+
+  return [...studentRecipients, ...teacherRecipients];
 }
 
 export interface PaymentReminderRecipient {
+  paymentId: string;
   email: string;
   fullName: string;
   courseName: string;
@@ -124,6 +145,7 @@ export async function getPaymentReminderRecipients(): Promise<PaymentReminderRec
       email: profiles.email,
       fullName: profiles.fullName,
       userId: profiles.id,
+      paymentId: payments.id,
       amount: payments.amount,
       dueDate: payments.dueDate,
     })
@@ -168,6 +190,7 @@ export async function getPaymentReminderRecipients(): Promise<PaymentReminderRec
   return rows
     .filter((r) => !optOutSet.has(r.userId))
     .map((r) => ({
+      paymentId: r.paymentId,
       email: r.email,
       fullName: r.fullName,
       courseName: courseByProfile.get(r.userId) ?? "Smart Learning",

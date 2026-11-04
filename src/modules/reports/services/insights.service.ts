@@ -176,12 +176,12 @@ export interface RiskTrend {
 export async function getRiskTrend(): Promise<RiskTrend> {
   const rows = await db
     .select({
-      date: sql<string>`to_char(${studentRiskAssessments.assessedAt}, 'YYYY-MM-DD')`,
+      date: sql<string>`to_char(${studentRiskAssessments.assessedAt} at time zone 'America/Argentina/Cordoba', 'YYYY-MM-DD')`,
       atRisk: sql<number>`cast(count(*) filter (where ${studentRiskAssessments.riskLevel} != 'none') as int)`,
     })
     .from(studentRiskAssessments)
-    .groupBy(sql`to_char(${studentRiskAssessments.assessedAt}, 'YYYY-MM-DD')`)
-    .orderBy(sql`to_char(${studentRiskAssessments.assessedAt}, 'YYYY-MM-DD')`);
+    .groupBy(sql`to_char(${studentRiskAssessments.assessedAt} at time zone 'America/Argentina/Cordoba', 'YYYY-MM-DD')`)
+    .orderBy(sql`to_char(${studentRiskAssessments.assessedAt} at time zone 'America/Argentina/Cordoba', 'YYYY-MM-DD')`);
 
   const points = rows.map((r) => ({ date: r.date, atRisk: r.atRisk }));
   const hasEnoughHistory = points.length >= 2;
