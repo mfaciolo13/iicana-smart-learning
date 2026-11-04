@@ -57,7 +57,7 @@ Cada rol es un `project` en `playwright.config.ts` que reutiliza su sesión.
 ## Mapa de cobertura
 
 **Flujo E2E dedicado (crear/editar/borrar + validaciones + casos borde):**
-- **Director:** Alumnos, Docentes, Cursos, Inscripciones, Pagos, Notas, Comunicaciones, Marketing, Asistencia, Usuarios (alta administrativo), Promociones (+certificado), Evaluaciones docentes (observación), Reportes (descarga Excel), Documentos (subida).
+- **Director:** Alumnos, Docentes, Cursos, Inscripciones, Pagos, Notas, Comunicaciones, Asistencia, Usuarios (alta administrativo), Promociones (+certificado), Evaluaciones docentes (observación), Reportes (descarga Excel), Documentos (subida).
 - **Administrativo:** Alumnos, Pagos, Inscripciones, Asistencia, Comunicaciones (+ Reclamos/Reportes de solo-lectura).
 - **Profesor:** Notas (carga), Asistencia.
 - **Alumno:** Reclamos (alta), Autoevaluación (rendir de punta a punta).

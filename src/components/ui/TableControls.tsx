@@ -15,7 +15,7 @@ interface SortableThProps {
   field: string;
   ctx: SortContext;
   className?: string;
-  /** Estilo de las tablas sin mayúsculas (marketing, promociones...): texto gris más chico y con más aire. */
+  /** Estilo de las tablas sin mayúsculas (promociones...): texto gris más chico y con más aire. */
   plain?: boolean;
 }
 

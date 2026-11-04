@@ -19,7 +19,6 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     "/director/notifications",
     "/director/assessments",
     "/director/documents",
-    "/director/marketing",
     "/director/teacher-evaluations",
     "/director/promotions",
     "/director/year-end",
@@ -78,7 +77,6 @@ export const ADMIN_ONLY_ROUTES = [
   "/director/teacher-evaluations",
   "/director/assessments",
   "/director/year-end",
-  "/director/marketing",
   "/director/promotions",
   "/director/settings/notifications",
 ];

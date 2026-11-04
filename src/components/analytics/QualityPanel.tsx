@@ -4,7 +4,7 @@ import { DonutChart } from "@/components/charts/DonutChart";
 import { COLORS, withColor } from "@/components/charts/palette";
 import { getQualityAnalytics } from "@/modules/analytics/services/director-analytics.service";
 
-type Part = "teachers" | "complaints" | "inquiries";
+type Part = "teachers" | "complaints";
 
 const COMPLAINT_COLORS: Record<string, string> = {
   Abiertos: COLORS.red,
@@ -13,9 +13,9 @@ const COMPLAINT_COLORS: Record<string, string> = {
   Cerrados: COLORS.slate,
 };
 
-/** Evaluación docente, reclamos y consultas de marketing. */
+/** Evaluación docente y reclamos. */
 export async function QualityPanel({
-  parts = ["teachers", "complaints", "inquiries"],
+  parts = ["teachers", "complaints"],
   complaintsHref = "/director/complaints",
 }: {
   parts?: Part[];
@@ -26,7 +26,7 @@ export async function QualityPanel({
   const complaintsTotal = q.complaintsByStatus.reduce((s, r) => s + r.reclamos, 0);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {show("teachers") && (
         <ChartCard
           title="Evaluación docente"
@@ -61,25 +61,6 @@ export async function QualityPanel({
         </ChartCard>
       )}
 
-      {show("inquiries") && (
-        <ChartCard
-          title="Consultas por canal"
-          subtitle="Consultas recibidas e inscriptos por canal de marketing"
-          href="/director/marketing"
-          empty={q.inquiriesByChannel.length === 0}
-          emptyText="Todavía no hay consultas registradas"
-        >
-          <BarsChart
-            data={q.inquiriesByChannel}
-            xKey="canal"
-            format="number"
-            series={[
-              { key: "consultas", label: "Consultas", color: COLORS.brandSoft },
-              { key: "inscriptos", label: "Inscriptos", color: COLORS.green },
-            ]}
-          />
-        </ChartCard>
-      )}
     </div>
   );
 }

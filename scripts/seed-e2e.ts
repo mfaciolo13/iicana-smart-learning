@@ -73,8 +73,6 @@ async function teardown() {
 
   // El orden aprovecha los onDelete cascade / set null del schema.
   await db.delete(schema.courses).where(like(schema.courses.name, "E2E%"));
-  await db.delete(schema.inquiries).where(like(schema.inquiries.name, "E2E%"));
-  await db.delete(schema.marketingCampaigns).where(like(schema.marketingCampaigns.name, "E2E%"));
   // Los documentos subidos por usuarios E2E referencian profiles con una FK SIN
   // cascade (documents.uploaded_by_id), así que hay que borrarlos ANTES de los
   // profiles o el delete de profiles falla por violación de FK.
@@ -278,27 +276,6 @@ async function seed() {
         explanation: "Sujeto plural 'they' → are.",
       },
     ],
-  });
-
-  // Campaña de marketing + consulta
-  const [campaign] = await db
-    .insert(schema.marketingCampaigns)
-    .values({
-      name: "E2E Campaña Verano",
-      channel: "social_media",
-      startDate: isoDate(new Date(now.getFullYear(), 0, 1)),
-      budget: "50000.00",
-      description: "Campaña de prueba del seed E2E.",
-    })
-    .returning();
-
-  await db.insert(schema.inquiries).values({
-    name: "E2E Consulta Prueba",
-    email: "consulta@e2e.test",
-    phone: "3516789012",
-    campaignId: campaign.id,
-    status: "pending",
-    receivedAt: isoDate(new Date()),
   });
 
   // Encuesta docente (anónima)
