@@ -39,23 +39,22 @@ const webServerEnv: Record<string, string> = {
   RESEND_API_KEY: "disabled-for-e2e",
 };
 
-// Playwright ejecuta el `command` del webServer con `sh -c "<command>"` en
-// Linux/macOS. La forma más robusta y portable de garantizar que
-// RESEND_API_KEY llegue al proceso de `next build` (donde se hace la
-// page-data collection de /api/cron/* que instancia Resend) es incrustarla
-// directamente en la cadena de comando como asignación de variable de shell
-// POSIX (`VAR=val cmd`). Esto es más confiable que depender del binario `env`
-// (que puede no estar en PATH en algunos runners) o del campo `env` del
-// webServer (que Playwright puede no propagar a todos los subprocesos de pnpm
-// según la versión del package manager).
+// Usamos `export` dentro del bloque `sh -c '...'` para que la variable sea
+// heredada por todos los subprocesos que pnpm/next lancen internamente
+// (workers, child_process.fork, etc.), independientemente de cómo el runner
+// de CI propague el entorno. El `export` es más robusto que la asignación
+// inline (`VAR=val cmd`) porque garantiza la propagación a subshells y
+// procesos hijos en profundidad.
 //
-// Usamos `sh -c '...'` explícitamente para garantizar la semántica de
-// asignación inline en cualquier runner de GitHub Actions con shell POSIX.
-const buildCmd =
-  "sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm build'";
-const startCmd =
-  "sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm start'";
-const devCmd = "pnpm dev"; // dev no hace page-data collection estática
+// Se usa `&&` dentro del mismo bloque `sh -c '...'` para que ambos comandos
+// (build y start) compartan el mismo entorno de shell con la variable exportada.
+const buildAndStartCmd =
+  "sh -c 'export RESEND_API_KEY=disabled-for-e2e && pnpm build && pnpm start'";
+
+// dev no hace page-data collection estática, pero exportamos la variable
+// igualmente para consistencia y por si alguna ruta se evalúa en frío.
+const devCmd =
+  "sh -c 'export RESEND_API_KEY=disabled-for-e2e && pnpm dev'";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -120,20 +119,17 @@ export default defineConfig({
 
   ...(!isRemote && {
     webServer: {
-      // `sh -c 'VAR=val cmd'` es POSIX estándar y garantiza que la variable
-      // esté en el entorno del proceso que sh lanza directamente, sin
-      // depender del binario `env` ni de la propagación de Playwright.
-      // Para el caso `&&`, encadenamos dentro del mismo `sh -c '...'` para
-      // que ambos comandos compartan el mismo entorno de shell.
-      command: process.env.E2E_PROD
-        ? `sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start'`
-        : devCmd,
+      // `export VAR=val` dentro de `sh -c '...'` garantiza que la variable sea
+      // heredada por todos los subprocesos que pnpm/next lancen internamente,
+      // incluyendo workers de Node.js y child_process.fork. Es más robusto que
+      // la asignación inline (`VAR=val cmd`) que solo aplica al proceso directo.
+      command: process.env.E2E_PROD ? buildAndStartCmd : devCmd,
       url: "http://localhost:3000",
       reuseExistingServer: false,
       timeout: process.env.E2E_PROD ? 180_000 : 120_000,
-      // `env` como campo de Playwright: capa adicional de seguridad que
-      // inyecta el entorno completo + stub al proceso hijo. Combinado con la
-      // asignación inline en `command`, garantiza máxima cobertura.
+      // `env` como campo de Playwright: capa adicional que inyecta el entorno
+      // completo + stub al proceso hijo. Combinado con `export` en el comando,
+      // garantiza máxima cobertura en cualquier runner de CI.
       env: webServerEnv,
     },
   }),
