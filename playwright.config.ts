@@ -6,9 +6,11 @@ dotenv.config({ path: ".env.test" });
 
 // Garantizamos que RESEND_API_KEY tenga un valor stub en el proceso de Playwright
 // (y por herencia en cualquier child process que no lo sobreescriba).
-// Esto evita que `new Resend(undefined)` explote en tiempo de build/collect.
+// El valor debe empezar con "re_" porque el SDK de Resend valida el formato
+// del key en el constructor — un valor arbitrario como "disabled-for-e2e"
+// lanza "Missing API key" / formato inválido en tiempo de build/collect.
 if (!process.env.RESEND_API_KEY) {
-  process.env.RESEND_API_KEY = "disabled-for-e2e";
+  process.env.RESEND_API_KEY = "re_disabled_for_e2e_placeholder";
 }
 
 // Rutas de storageState por rol (inline para no importar .ts desde el config —
@@ -25,6 +27,11 @@ const isRemote = baseURL !== "http://localhost:3000";
 
 const chrome = devices["Desktop Chrome"];
 
+// El stub debe empezar con "re_" para satisfacer la validación de formato del
+// constructor de Resend. Sin esto, next build falla al hacer la page-data
+// collection de /api/cron/daily-report con "Missing API key".
+const RESEND_STUB = "re_disabled_for_e2e_placeholder";
+
 // Entorno base que se pasa explícitamente al webServer: fusionamos TODO el
 // process.env del proceso padre con la clave stub. De este modo, tanto
 // `pnpm build` como `pnpm start` (o `pnpm dev`) heredan las variables de
@@ -36,7 +43,7 @@ const webServerEnv: Record<string, string> = {
       (entry): entry is [string, string] => entry[1] !== undefined
     )
   ),
-  RESEND_API_KEY: "disabled-for-e2e",
+  RESEND_API_KEY: RESEND_STUB,
 };
 
 // Playwright ejecuta el `command` del webServer con `sh -c "<command>"` en
@@ -49,12 +56,9 @@ const webServerEnv: Record<string, string> = {
 // webServer (que Playwright puede no propagar a todos los subprocesos de pnpm
 // según la versión del package manager).
 //
-// Usamos `sh -c '...'` explícitamente para garantizar la semántica de
-// asignación inline en cualquier runner de GitHub Actions con shell POSIX.
-const buildCmd =
-  "sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm build'";
-const startCmd =
-  "sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm start'";
+// IMPORTANTE: el valor debe empezar con "re_" para superar la validación de
+// formato del SDK de Resend. Un valor como "disabled-for-e2e" hace que el
+// constructor lance "Missing API key" aunque técnicamente no esté vacío.
 const devCmd = "pnpm dev"; // dev no hace page-data collection estática
 
 export default defineConfig({
@@ -125,8 +129,10 @@ export default defineConfig({
       // depender del binario `env` ni de la propagación de Playwright.
       // Para el caso `&&`, encadenamos dentro del mismo `sh -c '...'` para
       // que ambos comandos compartan el mismo entorno de shell.
+      // El valor "re_disabled_for_e2e_placeholder" empieza con "re_" para
+      // satisfacer la validación de formato del constructor new Resend().
       command: process.env.E2E_PROD
-        ? `sh -c 'RESEND_API_KEY=disabled-for-e2e pnpm build && RESEND_API_KEY=disabled-for-e2e pnpm start'`
+        ? `sh -c 'RESEND_API_KEY=${RESEND_STUB} pnpm build && RESEND_API_KEY=${RESEND_STUB} pnpm start'`
         : devCmd,
       url: "http://localhost:3000",
       reuseExistingServer: false,
